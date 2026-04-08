@@ -78,17 +78,15 @@ Année universitaire : 2025–2026
 ## Installation
 
 1. Cloner le dépôt :
-```
+
 ```
 git clone https://github.com/sarrraah/Esprit-WEB-2A22-2025-2026-SmartMealPlanner.git
-```
-```
 cd Esprit-WEB-2A22-2025-2026-SmartMealPlanner
 ```
-```
+
 ## Utilisation
 Les instructions d’utilisation seront définies après l’implémentation des fonctionnalités principales.
-```
-```
+
+
 ## Acknowledgments
 Nous remercions **Esprit School of Engineering** et nos encadrants pour leur accompagnement dans ce projet académique.
