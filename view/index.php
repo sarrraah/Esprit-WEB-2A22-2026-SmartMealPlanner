@@ -1,5 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+<?php
+require_once '../config.php';
+
+$showDeactivatedModal = isset($_GET['deactivated']) && $_GET['deactivated'] == '1';
+$deactivatedUserId = $_GET['id'] ?? '';
+$reactivationSuccess = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reactivate_user_id'])) {
+  $reactivateUserId = $_POST['reactivate_user_id'];
+
+  try {
+    $pdo = config::getConnexion();
+
+    $sqlUpdate = "UPDATE user SET statut = :statut WHERE id = :id";
+    $stmtUpdate = $pdo->prepare($sqlUpdate);
+    $stmtUpdate->execute([
+      'statut' => 'active',
+      'id' => $reactivateUserId
+    ]);
+
+    $reactivationSuccess = true;
+    $showDeactivatedModal = false;
+  } catch (Exception $e) {
+    $reactivationSuccess = false;
+  }
+}
+?>
 
 <head>
   <meta charset="utf-8">
@@ -26,14 +53,6 @@
 
   <!-- Main CSS File -->
   <link href="assets/css/main.css" rel="stylesheet">
-
-  <!-- =======================================================
-  * Template Name: Yummy
-  * Template URL: https://bootstrapmade.com/yummy-bootstrap-restaurant-website-template/
-  * Updated: Aug 07 2024 with Bootstrap v5.3.3
-  * Author: BootstrapMade.com
-  * License: https://bootstrapmade.com/license/
-  ======================================================== -->
 </head>
 
 <body class="index-page">
@@ -41,25 +60,32 @@
   <header id="header" class="header d-flex align-items-center sticky-top">
     <div class="container position-relative d-flex align-items-center justify-content-between">
 
-      <a href="index.html" class="logo d-flex align-items-center me-auto me-xl-0">
-        <!-- Uncomment the line below if you also wish to use an image logo -->
-        <!-- <img src="assets/img/logo.png" alt=""> -->
+      <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
         <h1 class="sitename">Yummy</h1>
         <span>.</span>
       </a>
 
       <nav id="navmenu" class="navmenu">
         <ul>
-          <li><a href="#hero" class="active">Home<br></a></li>
+          <li><a href="#hero" class="active">Home</a></li>
           <li><a href="#about">About</a></li>
           <li><a href="#menu">Menu</a></li>
           <li><a href="#events">Events</a></li>
           <li><a href="#chefs">Chefs</a></li>
           <li><a href="#gallery">Gallery</a></li>
-          <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+
+          <li class="dropdown">
+            <a href="#">
+              <span>Dropdown</span>
+              <i class="bi bi-chevron-down toggle-dropdown"></i>
+            </a>
             <ul>
               <li><a href="#">Dropdown 1</a></li>
-              <li class="dropdown"><a href="#"><span>Deep Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+              <li class="dropdown">
+                <a href="#">
+                  <span>Deep Dropdown</span>
+                  <i class="bi bi-chevron-down toggle-dropdown"></i>
+                </a>
                 <ul>
                   <li><a href="#">Deep Dropdown 1</a></li>
                   <li><a href="#">Deep Dropdown 2</a></li>
@@ -73,12 +99,17 @@
               <li><a href="#">Dropdown 4</a></li>
             </ul>
           </li>
+
           <li><a href="#contact">Contact</a></li>
         </ul>
+
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
 
-      <a class="btn-getstarted" href="index.html#book-a-table">Book a Table</a>
+      <div class="d-flex align-items-center gap-2">
+        <a class="btn-book-a-table" href="front/signup.php">Sign Up</a>
+        <a class="btn-book-a-table" href="front/signin.php">Sign In</a>
+      </div>
 
     </div>
   </header>
@@ -1183,6 +1214,91 @@
 
   <!-- Main JS File -->
   <script src="assets/js/main.js"></script>
+  <div class="modal fade" id="deactivatedModal" tabindex="-1" aria-labelledby="deactivatedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 22px; overflow: hidden; border: none; box-shadow: 0 20px 50px rgba(0,0,0,0.15);">
+
+        <div class="modal-header" style="background: linear-gradient(135deg, #fff 0%, #fff5f5 100%); border-bottom: 1px solid #f3d7d7;">
+          <h5 class="modal-title fw-bold" id="deactivatedModalLabel" style="color:#ce1212;">
+            Account Deactivated
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body text-center py-4 px-4">
+          <div style="width: 82px; height: 82px; margin: 0 auto 18px; border-radius: 50%; background: rgba(206,18,18,0.10); display:flex; align-items:center; justify-content:center;">
+            <i class="bi bi-person-x-fill" style="font-size: 34px; color:#ce1212;"></i>
+          </div>
+
+          <h4 style="font-weight:700; color:#212529; margin-bottom:10px;">
+            Your account has been deactivated
+          </h4>
+
+          <p style="color:#6c757d; font-size:15px; margin-bottom:0;">
+            Would you like to reactivate your account and continue?
+          </p>
+        </div>
+
+        <div class="modal-footer d-flex justify-content-center gap-2 border-0 pb-4">
+          <a href="index.php" class="btn btn-light px-4 py-2" style="border-radius:999px; border:1px solid #ddd;">
+            Cancel
+          </a>
+
+          <form method="POST" action="" style="display:inline;">
+            <input type="text" name="reactivate_user_id" value="<?= htmlspecialchars((string)$deactivatedUserId) ?>" style="display:none;">
+            <button type="submit"
+              class="btn px-4 py-2"
+              style="border-radius:999px; background:#ce1212; color:#fff; border:none;">
+              Reactivate Account
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <?php if ($showDeactivatedModal): ?>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var deactivatedModal = new bootstrap.Modal(document.getElementById('deactivatedModal'));
+        deactivatedModal.show();
+      });
+    </script>
+  <?php endif; ?>
+  <div class="modal fade" id="reactivatedModal" tabindex="-1" aria-labelledby="reactivatedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 22px; overflow: hidden; border: none; box-shadow: 0 20px 50px rgba(0,0,0,0.15);">
+
+        <div class="modal-header" style="background: linear-gradient(135deg, #fff 0%, #f4fff7 100%); border-bottom: 1px solid #d8f0df;">
+          <h5 class="modal-title fw-bold" id="reactivatedModalLabel" style="color:#198754;">
+            Account Reactivated
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body text-center py-4 px-4">
+          <div style="width: 82px; height: 82px; margin: 0 auto 18px; border-radius: 50%; background: rgba(25,135,84,0.10); display:flex; align-items:center; justify-content:center;">
+            <i class="bi bi-check-circle-fill" style="font-size: 34px; color:#198754;"></i>
+          </div>
+
+          <h4 style="font-weight:700; color:#212529; margin-bottom:10px;">
+            Your account has been reactivated
+          </h4>
+
+          <p style="color:#6c757d; font-size:15px; margin-bottom:0;">
+            You can now sign in again whenever you want.
+          </p>
+        </div>
+
+        <div class="modal-footer d-flex justify-content-center border-0 pb-4">
+          <button type="button" class="btn btn-success px-4 py-2" data-bs-dismiss="modal" style="border-radius:999px;">
+            Okay
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
 </body>
 
