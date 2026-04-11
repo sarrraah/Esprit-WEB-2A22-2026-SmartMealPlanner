@@ -1,0 +1,200 @@
+[
+    {
+        "id": 1,
+        "name": "Mediterranean Chickpea Salad with Feta & Herbs",
+        "calories": 398,
+        "description": "Chickpeas, cucumber, tomato, feta, and olive oil vinaigrette. Fresh and filling for lunch.",
+        "image": "assets/img/menu/menu-item-2.png",
+        "recipeUrl": "https://example.com/recipes/chickpea-salad",
+        "mealType": "lunch"
+    },
+    {
+        "id": 2,
+        "name": "Ginger-Soy Turkey Stir-Fry with Market Vegetables",
+        "calories": 524,
+        "description": "Lean turkey strips with bell peppers, broccoli, and light soy-ginger sauce over brown rice.",
+        "image": "assets/img/menu/menu-item-3.png",
+        "recipeUrl": "https://example.com/recipes/turkey-stir-fry",
+        "mealType": "dinner"
+    },
+    {
+        "id": 3,
+        "name": "Overnight Oats with Seasonal Berries & Chia",
+        "calories": 356,
+        "description": "Rolled oats soaked in almond milk with chia seeds, topped with mixed berries and a drizzle of honey.",
+        "image": "assets/img/menu/menu-item-4.png",
+        "recipeUrl": "https://example.com/recipes/overnight-oats",
+        "mealType": "breakfast"
+    },
+    {
+        "id": 4,
+        "name": "Red Lentil Soup with Spinach & Aromatic Spices",
+        "calories": 312,
+        "description": "Hearty red lentil soup with spinach, carrots, and warm spices. Perfect for meal prep.",
+        "image": "assets/img/menu/menu-item-5.png",
+        "recipeUrl": "https://example.com/recipes/lentil-soup",
+        "mealType": "lunch"
+    },
+    {
+        "id": 5,
+        "name": "Herb-Roasted Chicken with Caramelized Sweet Potato",
+        "calories": 548,
+        "description": "Herb-baked chicken thigh with roasted sweet potato wedges and steamed green beans.",
+        "image": "assets/img/menu/menu-item-6.png",
+        "recipeUrl": "https://example.com/recipes/baked-chicken",
+        "mealType": "dinner"
+    },
+    {
+        "id": 6,
+        "name": "Rustic Chicken & Potato Soup",
+        "calories": 328,
+        "description": "A warming bowl of chicken soup with tender potatoes and vegetables—ideal for cozy nights.",
+        "image": "assets/img/meals/meal-07.png",
+        "recipeUrl": "https://example.com/recipes/chicken-potato-soup",
+        "mealType": "lunch"
+    },
+    {
+        "id": 7,
+        "name": "Continental Breakfast Plate",
+        "calories": 438,
+        "description": "A relaxed morning plate inspired by a perfect home café—great with your favorite brew.",
+        "image": "assets/img/meals/meal-08.png",
+        "recipeUrl": "https://example.com/recipes/cafe-breakfast",
+        "mealType": "breakfast"
+    },
+    {
+        "id": 8,
+        "name": "Wok-Seared Beef Fried Rice with Scrambled Egg",
+        "calories": 684,
+        "description": "Classic savory fried rice with tender beef strips and fluffy scrambled eggs.",
+        "image": "assets/img/meals/meal-09.png",
+        "recipeUrl": "https://example.com/recipes/beef-egg-fried-rice",
+        "mealType": "dinner"
+    },
+    {
+        "id": 9,
+        "name": "Sesame-Glazed Chicken with Jasmine Rice & Cucumber",
+        "calories": 592,
+        "description": "Bite-sized chicken in a glossy sesame glaze with rice, peas, and fresh cucumber.",
+        "image": "assets/img/meals/meal-10.png",
+        "recipeUrl": "https://example.com/recipes/sesame-chicken-bowl",
+        "mealType": "dinner"
+    },
+    {
+        "id": 10,
+        "name": "Crispy Chicken Breast on Mixed Garden Greens",
+        "calories": 612,
+        "description": "Mixed greens with tomatoes and sweet peppers, topped with golden crispy chicken.",
+        "image": "assets/img/meals/meal-11.png",
+        "recipeUrl": "https://example.com/recipes/crispy-chicken-salad",
+        "mealType": "lunch"
+    },
+    {
+        "id": 11,
+        "name": "Pan-Seared Steak with Pommes Purée & Roasted Asparagus",
+        "calories": 798,
+        "description": "Sliced steak with balsamic glaze, creamy mashed potatoes, and charred asparagus.",
+        "image": "assets/img/meals/meal-12.png",
+        "recipeUrl": "https://example.com/recipes/steak-mash-asparagus",
+        "mealType": "dinner"
+    },
+    {
+        "id": 12,
+        "name": "Seared Beef with Broccoli & Honey-Glazed Carrots",
+        "calories": 538,
+        "description": "Pan-seared steak strips with roasted broccoli and glossy glazed carrots.",
+        "image": "assets/img/meals/meal-13.png",
+        "recipeUrl": "https://example.com/recipes/steak-broccoli-carrots",
+        "mealType": "dinner"
+    },
+    {
+        "id": 13,
+        "name": "Chargrilled Chicken Brochettes with Seasoned Frites",
+        "calories": 862,
+        "description": "BBQ-glazed chicken skewers with peppers, crispy seasoned fries, and dipping sauce.",
+        "image": "assets/img/meals/meal-14.png",
+        "recipeUrl": "https://example.com/recipes/chicken-skewers-fries",
+        "mealType": "dinner"
+    },
+    {
+        "id": 14,
+        "name": "Chilled Shrimp Salad with Avocado & Citrus Dressing",
+        "calories": 428,
+        "description": "Shrimp with avocado, cherry tomatoes, red onion, cilantro, and lime-forward dressing.",
+        "image": "assets/img/meals/meal-15.png",
+        "recipeUrl": "https://example.com/recipes/shrimp-avocado-salad",
+        "mealType": "lunch"
+    },
+    {
+        "id": 15,
+        "name": "Grilled Chicken Bowl with Brown Rice & Garden Vegetables",
+        "calories": 548,
+        "description": "Glazed grilled chicken over brown rice with lettuce, cucumber, and fresh herbs.",
+        "image": "assets/img/meals/meal-16.png",
+        "recipeUrl": "https://example.com/recipes/chicken-brown-rice-bowl",
+        "mealType": "lunch"
+    },
+    {
+        "id": 16,
+        "name": "Beef Tenderloin & Broccoli with Stir-Fry Noodles",
+        "calories": 668,
+        "description": "Thick noodles with beef, broccoli, carrots, and a savory soy-style sauce, sesame finish.",
+        "image": "assets/img/meals/meal-17.png",
+        "recipeUrl": "https://example.com/recipes/beef-broccoli-noodles",
+        "mealType": "dinner"
+    },
+    {
+        "id": 17,
+        "name": "Mediterranean Grilled Chicken Fusilli with Tzatziki",
+        "calories": 612,
+        "description": "Grilled chicken with rotini, cucumber, cherry tomatoes, red onion, and tzatziki.",
+        "image": "assets/img/meals/meal-18.png",
+        "recipeUrl": "https://example.com/recipes/mediterranean-chicken-pasta-bowl",
+        "mealType": "lunch"
+    },
+    {
+        "id": 18,
+        "name": "Seasonal Berry & Banana Smoothie Bowl with Granola",
+        "calories": 445,
+        "description": "Pink smoothie base topped with granola, nuts, banana, berries, and a mint garnish.",
+        "image": "assets/img/meals/meal-19.png",
+        "recipeUrl": "https://example.com/recipes/strawberry-banana-smoothie-bowl",
+        "mealType": "breakfast"
+    },
+    {
+        "id": 19,
+        "name": "Creamy Rotini Pasta Salad with Garden Vegetables",
+        "calories": 482,
+        "description": "Rotini with tomatoes, cucumber, olives, carrot, red onion, and creamy dressing.",
+        "image": "assets/img/meals/meal-20.png",
+        "recipeUrl": "https://example.com/recipes/creamy-rotini-salad",
+        "mealType": "lunch"
+    },
+    {
+        "id": 20,
+        "name": "Avocado Tartine with Soft Scramble & Seasonal Berries",
+        "calories": 465,
+        "description": "Whole-grain avocado toast, fluffy scrambled eggs, and fresh sliced strawberries.",
+        "image": "assets/img/meals/meal-21.png",
+        "recipeUrl": "https://example.com/recipes/avocado-toast-breakfast",
+        "mealType": "breakfast"
+    },
+    {
+        "id": 21,
+        "name": "Gulf Shrimp & Broccoli in Light Garlic Sauce",
+        "calories": 356,
+        "description": "Juicy shrimp and bright broccoli in a light savory, peppery stir-fry sauce.",
+        "image": "assets/img/meals/meal-22.png",
+        "recipeUrl": "https://example.com/recipes/shrimp-broccoli-stir-fry",
+        "mealType": "dinner"
+    },
+    {
+        "id": 22,
+        "name": "Antioxidant Berry Smoothie Bowl with Nut Butter",
+        "calories": 420,
+        "description": "Purple berry smoothie base with banana, kiwi, pomegranate, blueberries, citrus, and nut butter.",
+        "image": "assets/img/meals/meal-23.png",
+        "recipeUrl": "https://example.com/recipes/berry-smoothie-bowl",
+        "mealType": "snack"
+    }
+]

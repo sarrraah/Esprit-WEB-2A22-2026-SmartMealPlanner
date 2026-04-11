@@ -1,0 +1,293 @@
+/**
+ * Smart Meal Planner — Meals module (wireframe layout on Yummy template tokens)
+ */
+
+.meals-module {
+  padding-bottom: 80px;
+  --meal-type-breakfast: #d4a012;
+  --meal-type-lunch: #2f8f54;
+  --meal-type-dinner: #ce1212;
+  --meal-type-snack: #7e4cdb;
+}
+
+.meals-module .meal-card {
+  position: relative;
+  background: var(--surface-color);
+  border-radius: 8px;
+  overflow: visible;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--default-color), transparent 90%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+  border: 5px solid color-mix(in srgb, var(--default-color), transparent 92%);
+}
+
+.meals-module .meal-card:hover,
+.meals-module .meal-card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--default-color), transparent 85%);
+}
+
+.meals-module .meal-card[data-meal-type="breakfast"]:hover,
+.meals-module .meal-card[data-meal-type="breakfast"]:focus-visible {
+  border-color: var(--meal-type-breakfast);
+}
+
+.meals-module .meal-card[data-meal-type="lunch"]:hover,
+.meals-module .meal-card[data-meal-type="lunch"]:focus-visible {
+  border-color: var(--meal-type-lunch);
+}
+
+.meals-module .meal-card[data-meal-type="dinner"]:hover,
+.meals-module .meal-card[data-meal-type="dinner"]:focus-visible {
+  border-color: var(--meal-type-dinner);
+}
+
+.meals-module .meal-card[data-meal-type="snack"]:hover,
+.meals-module .meal-card[data-meal-type="snack"]:focus-visible {
+  border-color: var(--meal-type-snack);
+}
+
+/* Meal type label: visible only on hover / keyboard focus */
+.meals-module .meal-card::after {
+  content: attr(data-meal-type-label);
+  position: absolute;
+  left: 50%;
+  top: 0.65rem;
+  transform: translateX(-50%) translateY(-6px);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  background: rgba(33, 37, 41, 0.92);
+  color: #fff;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  z-index: 3;
+  pointer-events: none;
+  font-family: var(--nav-font);
+  white-space: nowrap;
+  max-width: calc(100% - 1rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meals-module .meal-card:hover::after,
+.meals-module .meal-card:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.meals-module .meal-card:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.meals-module .meal-card__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: color-mix(in srgb, var(--accent-color), transparent 92%);
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.meals-module .meal-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.meals-module .meal-card__body {
+  padding: 1rem 1rem 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  background: var(--surface-color);
+  border-radius: 0 0 6px 6px;
+}
+
+.meals-module .meal-card__name {
+  font-family: var(--default-font);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.meals-module .meal-card__calories {
+  font-family: var(--nav-font);
+  font-size: 0.95rem;
+  color: color-mix(in srgb, var(--default-color), transparent 35%);
+  margin: 0;
+}
+
+.meals-module .meal-card__calories strong {
+  color: var(--accent-color);
+  font-weight: 700;
+}
+
+/* Detail modal — image + info top; description left, actions right below */
+#mealDetailModal .modal-content {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#mealDetailModal .modal-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+}
+
+#mealDetailModal .meal-detail__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 767.98px) {
+  #mealDetailModal .meal-detail__top {
+    grid-template-columns: 1fr;
+  }
+}
+
+#mealDetailModal .meal-detail__image-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent-color), transparent 92%);
+  aspect-ratio: 4 / 3;
+}
+
+#mealDetailModal .meal-detail__image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#mealDetailModal .meal-detail__title {
+  font-family: var(--default-font);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin: 0 0 0.5rem 0;
+}
+
+#mealDetailModal .meal-detail__calories {
+  font-family: var(--nav-font);
+  font-size: 1.15rem;
+  color: var(--accent-color);
+  font-weight: 700;
+  margin: 0;
+}
+
+#mealDetailModal .meal-detail__copy {
+  min-width: 0;
+}
+
+#mealDetailModal .meal-detail__type {
+  font-family: var(--nav-font);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.65rem 0;
+}
+
+#mealDetailModal .meal-detail__type--breakfast {
+  color: #b8890f;
+}
+
+#mealDetailModal .meal-detail__type--lunch {
+  color: #2f8f54;
+}
+
+#mealDetailModal .meal-detail__type--dinner {
+  color: #ce1212;
+}
+
+#mealDetailModal .meal-detail__type--snack {
+  color: #6b3fc4;
+}
+
+#mealDetailModal .meal-detail__bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 767.98px) {
+  #mealDetailModal .meal-detail__bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+#mealDetailModal .meal-detail__description {
+  font-family: var(--default-font);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--default-color), transparent 15%);
+  margin: 0;
+}
+
+#mealDetailModal .meal-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 767.98px) {
+  #mealDetailModal .meal-detail__actions {
+    justify-content: flex-start;
+  }
+}
+
+#mealDetailModal .btn-meal-recipe {
+  background: var(--accent-color);
+  color: var(--contrast-color);
+  border: none;
+  padding: 0.65rem 1.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  font-family: var(--nav-font);
+  transition: 0.3s;
+}
+
+#mealDetailModal .btn-meal-recipe:hover {
+  background: color-mix(in srgb, var(--accent-color), #000 12%);
+  color: var(--contrast-color);
+}
+
+#mealDetailModal .btn-meal-add {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--accent-color);
+  background: var(--surface-color);
+  color: var(--accent-color);
+  border-radius: 8px;
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: 0.3s;
+}
+
+#mealDetailModal .btn-meal-add:hover {
+  background: var(--accent-color);
+  color: var(--contrast-color);
+}

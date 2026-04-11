@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * API: create or update a meal (multipart form POST).
+ */
+header('Content-Type: application/json; charset=utf-8');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['ok' => false, 'errors' => ['Use POST.'], 'message' => ''], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+require_once __DIR__ . '/../../controller/MealAdminController.php';
+
+$result = MealAdminController::handlePost($_POST, $_FILES);
+echo json_encode($result, JSON_UNESCAPED_UNICODE);

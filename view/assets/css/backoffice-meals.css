@@ -1,0 +1,219 @@
+/**
+ * Back office — meals admin (two-column layout).
+ */
+.bo-meals-page {
+  min-height: 100vh;
+  background: color-mix(in srgb, var(--default-color), transparent 96%);
+}
+
+.bo-meals-page .bo-header {
+  background: var(--surface-color);
+  border-bottom: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+  padding: 0.75rem 0;
+}
+
+.bo-meals-page .bo-header .sitename {
+  font-family: var(--heading-font);
+  font-size: 1.75rem;
+  color: var(--heading-color);
+  margin: 0;
+}
+
+.bo-meals-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 1.75rem;
+  padding: 1.75rem 0 3rem;
+  align-items: start;
+}
+
+@media (max-width: 991.98px) {
+  .bo-meals-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bo-panel {
+  background: var(--surface-color);
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+  padding: 1.35rem 1.5rem;
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--default-color), transparent 92%);
+}
+
+.bo-panel h2 {
+  font-family: var(--default-font);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin: 0 0 1.1rem 0;
+  padding-bottom: 0.65rem;
+  border-bottom: 2px solid var(--accent-color);
+}
+
+.bo-form .form-label {
+  font-family: var(--nav-font);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--heading-color);
+}
+
+.bo-form .form-text {
+  font-size: 0.8rem;
+}
+
+.bo-form .text-danger {
+  font-size: 0.8rem;
+}
+
+.bo-form .bo-insert-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.bo-form .bo-image-preview {
+  max-width: 120px;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  display: none;
+}
+
+.bo-form .bo-image-preview.is-visible {
+  display: block;
+}
+
+.bo-feedback {
+  min-height: 0;
+  margin-bottom: 1rem;
+}
+
+.bo-feedback:empty {
+  margin-bottom: 0;
+}
+
+.bo-alert-errors {
+  background: #fde8e8;
+  border: 1px solid #f5b5b5;
+  color: #9b1c1c;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.bo-alert-errors ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.bo-alert-ok {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #1b5e20;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.bo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.bo-toolbar .form-control,
+.bo-toolbar .form-select {
+  max-width: 200px;
+}
+
+.bo-toolbar .bo-search {
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+}
+
+.bo-table-wrap {
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  border-radius: 8px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.bo-table {
+  font-family: var(--nav-font);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.bo-table thead th {
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--accent-color), transparent 92%);
+  color: var(--heading-color);
+  font-weight: 700;
+  white-space: nowrap;
+  z-index: 1;
+  border-bottom: 2px solid color-mix(in srgb, var(--accent-color), transparent 70%);
+}
+
+.bo-table tbody tr {
+  cursor: pointer;
+}
+
+.bo-table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent-color), transparent 95%);
+}
+
+.bo-table tbody tr.bo-row-selected {
+  background: color-mix(in srgb, var(--accent-color), transparent 85%);
+}
+
+.bo-table .bo-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.bo-table .bo-desc-preview {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bo-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.1rem;
+}
+
+.bo-actions-row .btn-outline-secondary,
+.bo-actions-row .btn-outline-danger {
+  min-width: 110px;
+}
+
+.bo-muted {
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--default-color), transparent 40%);
+  margin-top: 1rem;
+}
+
+/* Validation errors per field */
+.is-invalid {
+  border-color: #dc3545 !important;
+}
+.bo-field-error {
+  color: #dc3545;
+  font-size: .875em;
+  margin-top: .25rem;
+}
