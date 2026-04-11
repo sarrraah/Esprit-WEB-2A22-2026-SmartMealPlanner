@@ -5,12 +5,8 @@ require_once __DIR__ . '/../../controller/MealController.php';
 $meals = MealController::listMeals();
 $assetPrefix = '../assets/';
 
-// Normalise a stored image path to a browser-relative URL from FrontOffice/.
-// Stored paths may be "assets/img/…" or "assets/img/meals/uploads/…"
-function resolveImageUrl(string $image, string $assetPrefix): string {
-    // Strip leading "assets/" so we never get "../assets/assets/…"
-    $image = preg_replace('#^assets/#', '', $image);
-    return $assetPrefix . $image;
+function resolveImageUrl(string $image, string $prefix): string {
+    return $prefix . ltrim(preg_replace('#^assets/#', '', $image), '/');
 }
 
 ?>
@@ -23,7 +19,7 @@ function resolveImageUrl(string $image, string $assetPrefix): string {
   <title>Meals — Smart Meal Planner</title>
   <meta name="description" content="Browse meals for your smart meal plan.">
 
-  <link href="<?php echo $assetPrefix; ?>img/favicon.png" rel="icon">
+  <link href="<?php echo $assetPrefix; ?>img/favicon.jpg" rel="icon">
 
   <link href="https://fonts.googleapis.com" rel="preconnect">
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
@@ -41,8 +37,8 @@ function resolveImageUrl(string $image, string $assetPrefix): string {
     <div class="container position-relative d-flex align-items-center justify-content-between">
 
       <a href="../index.php" class="logo d-flex align-items-center me-auto me-xl-0">
-        <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner logo" style="height:44px;width:auto;margin-right:10px;">
-        <h1 class="sitename" style="font-size:1.6rem;">SmartMealPlanner</h1>
+        <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner" height="44">
+        <h1 class="sitename">SmartMealPlanner</h1>
       </a>
 
       <nav id="navmenu" class="navmenu">

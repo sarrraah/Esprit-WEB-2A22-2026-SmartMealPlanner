@@ -7,7 +7,7 @@
   <title>Smart Meal Planner</title>
   <meta name="description" content="Smart Meal Planner — browse meals or manage the back office.">
 
-  <link href="assets/img/favicon.png" rel="icon">
+  <link href="assets/img/favicon.jpg" rel="icon">
   <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
 
   <link href="https://fonts.googleapis.com" rel="preconnect">

@@ -229,7 +229,7 @@
 
     fetch(api.list, { method: 'GET', credentials: 'same-origin' })
       .then(function (r) {
-        if (!r.ok) return r.text().then(function(t) { throw new Error('HTTP ' + r.status + ': ' + t.substring(0, 120)); });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
       .then(function (data) {
@@ -237,11 +237,8 @@
         renderTable(data);
         applyRowFilter();
       })
-      .catch(function (err) {
-        if (loadError) {
-          loadError.classList.remove('d-none');
-          loadError.textContent = 'Could not load meals: ' + (err && err.message ? err.message : 'unknown error') + '. Check that PHP is running and meals_list.php is reachable.';
-        }
+      .catch(function () {
+        if (loadError) loadError.classList.remove('d-none');
         tableBody.innerHTML = '';
       });
   }

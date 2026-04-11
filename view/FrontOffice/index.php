@@ -5,12 +5,10 @@ require_once __DIR__ . '/../../controller/MealController.php';
 $meals = MealController::listMeals();
 $assetPrefix = '../assets/';
 
-function resolveImageUrl(string $image, string $assetPrefix): string {
-    $image = preg_replace('#^assets/#', '', $image);
-    return $assetPrefix . $image;
+function resolveImageUrl(string $image, string $prefix): string {
+    return $prefix . ltrim(preg_replace('#^assets/#', '', $image), '/');
 }
 
-// Pick up to 4 featured meals for the homepage preview
 $featured = array_slice($meals, 0, 4);
 
 ?>
@@ -23,7 +21,7 @@ $featured = array_slice($meals, 0, 4);
   <title>Smart Meal Planner</title>
   <meta name="description" content="Plan your meals with Smart Meal Planner.">
 
-  <link href="<?php echo $assetPrefix; ?>img/favicon.png" rel="icon">
+  <link href="<?php echo $assetPrefix; ?>img/favicon.jpg" rel="icon">
   <link href="<?php echo $assetPrefix; ?>img/apple-touch-icon.png" rel="apple-touch-icon">
 
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -45,8 +43,8 @@ $featured = array_slice($meals, 0, 4);
     <div class="container position-relative d-flex align-items-center justify-content-between">
 
       <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
-        <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner logo" style="height:44px;width:auto;margin-right:10px;">
-        <h1 class="sitename" style="font-size:1.6rem;">SmartMealPlanner</h1>
+        <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner" height="44">
+        <h1 class="sitename">SmartMealPlanner</h1>
       </a>
 
       <nav id="navmenu" class="navmenu">
