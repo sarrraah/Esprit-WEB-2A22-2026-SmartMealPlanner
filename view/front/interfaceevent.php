@@ -4,83 +4,100 @@ $ctrl       = new EvenementController();
 $evenements = $ctrl->listEvenements();
 
 $typeConfig = [
-    'Conférence'  => ['from' => '#dbe9fa', 'to' => '#B5D4F4', 'emoji' => '🎤'],
-    'Atelier'     => ['from' => '#e0f0c4', 'to' => '#C0DD97', 'emoji' => '🛠️'],
-    'Compétition' => ['from' => '#fbe0d4', 'to' => '#F5C4B3', 'emoji' => '🏆'],
-    'Forum'       => ['from' => '#e6e4fb', 'to' => '#CECBF6', 'emoji' => '💬'],
-    'Séminaire'   => ['from' => '#ccf0e4', 'to' => '#9FE1CB', 'emoji' => '📚'],
-    'Autre'       => ['from' => '#eceae2', 'to' => '#D3D1C7', 'emoji' => '📅'],
+    'Conférence'  => ['from' => '#fce8e8', 'to' => '#f7c1c1', 'emoji' => '🎤'],
+    'Atelier'     => ['from' => '#fde8e8', 'to' => '#f09595', 'emoji' => '🛠️'],
+    'Compétition' => ['from' => '#fce8e8', 'to' => '#e24b4a', 'emoji' => '🏆'],
+    'Forum'       => ['from' => '#fdf0f0', 'to' => '#f7c1c1', 'emoji' => '💬'],
+    'Séminaire'   => ['from' => '#fff5f5', 'to' => '#f09595', 'emoji' => '📚'],
+    'Autre'       => ['from' => '#fdf5f5', 'to' => '#e8d5d5', 'emoji' => '📅'],
 ];
+
 $total    = count($evenements);
-$actifs   = count(array_filter($evenements, fn($e) => $e->getStatut() === 'Actif'));
+$actifs   = count(array_filter($evenements, fn($e) => $e->getStatut() === 'actif'));
 $gratuits = count(array_filter($evenements, fn($e) => $e->getPrix() == 0));
 $types    = array_unique(array_map(fn($e) => $e->getType(), $evenements));
 sort($types);
+
+$statusLabels = [
+    'actif'   => 'Active',
+    'annulé'  => 'Cancelled',
+    'terminé' => 'Ended',
+];
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestion des Événements</title>
+<title>Event Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#f5f5f8;color:#1a1a2e;min-height:100vh}
-nav{background:#fff;border-bottom:1px solid #e8e8f0;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:600;color:#1a1a2e;text-decoration:none}
-.logo span{color:#7F77DD}
+body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
+
+nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}
+.logo span{color:#b91c1c}
 .nav-links{display:flex;gap:28px}
-.nav-links a{font-size:14px;color:#7a7a99;text-decoration:none;font-weight:500;transition:color .2s}
-.nav-links a:hover,.nav-links a.active{color:#1a1a2e}
+.nav-links a{font-size:14px;color:#9a3535;text-decoration:none;font-weight:500;transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:#b91c1c}
 .search-wrap{position:relative}
-.search-wrap input{padding:8px 14px 8px 36px;border:1px solid #e0e0ee;border-radius:8px;background:#f8f8fc;color:#1a1a2e;font-size:13px;width:220px;outline:none;font-family:inherit;transition:border-color .2s}
-.search-wrap input:focus{border-color:#7F77DD;background:#fff}
+.search-wrap input{padding:8px 14px 8px 36px;border:1px solid #f7c1c1;border-radius:8px;background:#fff5f5;color:#1a0505;font-size:13px;width:220px;outline:none;font-family:inherit;transition:border-color .2s}
+.search-wrap input:focus{border-color:#b91c1c;background:#fff}
 .search-wrap::before{content:'🔍';font-size:13px;position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none}
-.hero{background:linear-gradient(135deg,#1a1a2e 0%,#2d2b55 100%);padding:50px 32px;text-align:center;color:#fff}
-.hero-tag{display:inline-block;background:rgba(127,119,221,0.25);color:#AFA9EC;border:1px solid rgba(127,119,221,0.4);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+
+.hero{background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 100%);padding:50px 32px;text-align:center;color:#fff}
+.hero-tag{display:inline-block;background:rgba(255,255,255,0.15);color:#fecaca;border:1px solid rgba(255,255,255,0.3);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
 .hero h1{font-size:32px;font-weight:600;margin-bottom:10px;line-height:1.2}
-.hero h1 em{color:#7F77DD;font-style:normal}
-.hero p{color:rgba(255,255,255,0.55);font-size:15px;max-width:500px;margin:0 auto 28px;line-height:1.6}
+.hero h1 em{color:#fca5a5;font-style:normal}
+.hero p{color:rgba(255,255,255,0.6);font-size:15px;max-width:500px;margin:0 auto 28px;line-height:1.6}
 .hero-stats{display:flex;justify-content:center;gap:40px}
 .hs-val{font-size:24px;font-weight:600}
-.hs-lbl{font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px}
+.hs-lbl{font-size:12px;color:rgba(255,255,255,0.45);margin-top:3px}
+
 .main{max-width:1200px;margin:0 auto;padding:28px 32px}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.section-title{font-size:16px;font-weight:600}
-.section-count{font-size:13px;color:#9999b3}
+.section-title{font-size:16px;font-weight:600;color:#1a0505}
+.section-count{font-size:13px;color:#9a3535}
+
 .filters{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;align-items:center}
-.chip{padding:6px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #e0e0ee;background:#fff;color:#7a7a99;transition:all .15s;font-family:inherit}
-.chip:hover{border-color:#AFA9EC;color:#534AB7}
-.chip.on{background:#EEEDFE;border-color:#AFA9EC;color:#3C3489}
-.sort-sel{margin-left:auto;padding:7px 12px;border:1px solid #e0e0ee;border-radius:8px;background:#fff;color:#7a7a99;font-size:13px;cursor:pointer;outline:none;font-family:inherit}
-.sort-sel:focus{border-color:#7F77DD}
+.chip{padding:6px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #f7c1c1;background:#fff;color:#9a3535;transition:all .15s;font-family:inherit}
+.chip:hover{border-color:#f09595;color:#b91c1c}
+.chip.on{background:#fce8e8;border-color:#f09595;color:#7f1d1d}
+.sort-sel{margin-left:auto;padding:7px 12px;border:1px solid #f7c1c1;border-radius:8px;background:#fff;color:#9a3535;font-size:13px;cursor:pointer;outline:none;font-family:inherit}
+.sort-sel:focus{border-color:#b91c1c}
+
 .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
-.ecard{background:#fff;border:1px solid #e8e8f0;border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;text-decoration:none;color:inherit}
-.ecard:hover{box-shadow:0 6px 24px rgba(127,119,221,0.14);border-color:#d0ceee;transform:translateY(-2px)}
+.ecard{background:#fff;border:1px solid #fde8e8;border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;text-decoration:none;color:inherit}
+.ecard:hover{box-shadow:0 6px 24px rgba(185,28,28,0.12);border-color:#f7c1c1;transform:translateY(-2px)}
+
 .card-banner{height:150px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .cb-bg{position:absolute;inset:0}
 .cb-emoji{position:relative;z-index:1;font-size:48px;opacity:.22}
-.cb-type{position:absolute;top:10px;left:10px;z-index:2;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.92);color:#3a3a5c}
+.cb-type{position:absolute;top:10px;left:10px;z-index:2;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.92);color:#7f1d1d}
 .cb-status{position:absolute;top:10px;right:10px;z-index:2;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px}
-.s-actif{background:#e8f8ee;color:#1e7a42;border:1px solid #b8e8cc}
-.s-termine{background:#fce8e8;color:#a32d2d;border:1px solid #f0bbbb}
+.s-actif{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595}
+.s-termine{background:#f5e8e8;color:#501313;border:1px solid #e24b4a}
 .s-complet{background:#fef3e2;color:#8a5a00;border:1px solid #fad99a}
-.cb-price{position:absolute;bottom:10px;right:10px;z-index:2;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.95);color:#1a1a2e}
-.cb-price.free{background:#1e7a42;color:#fff}
+.cb-price{position:absolute;bottom:10px;right:10px;z-index:2;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.95);color:#7f1d1d}
+.cb-price.free{background:#b91c1c;color:#fff}
+
 .card-body{padding:16px;flex:1;display:flex;flex-direction:column}
-.card-title{font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:10px;line-height:1.4}
+.card-title{font-size:14px;font-weight:600;color:#1a0505;margin-bottom:10px;line-height:1.4}
 .card-meta{display:flex;flex-direction:column;gap:6px}
-.cm{display:flex;align-items:center;gap:7px;font-size:12px;color:#7a7a99}
+.cm{display:flex;align-items:center;gap:7px;font-size:12px;color:#9a3535}
 .cm-icon{font-size:12px;width:15px;text-align:center;flex-shrink:0}
-.card-cta{margin-top:14px;padding-top:12px;border-top:1px solid #f0f0f8;display:flex;align-items:center;justify-content:space-between}
-.places-left{font-size:12px;color:#9999b3}
-.places-left strong{color:#534AB7}
-.cta-link{font-size:12px;font-weight:500;color:#534AB7}
+.card-cta{margin-top:14px;padding-top:12px;border-top:1px solid #fce8e8;display:flex;align-items:center;justify-content:space-between}
+.places-left{font-size:12px;color:#9a3535}
+.places-left strong{color:#b91c1c}
+.cta-link{font-size:12px;font-weight:500;color:#b91c1c}
+
 .empty{text-align:center;padding:60px 20px;grid-column:1/-1}
 .empty-icon{font-size:40px;margin-bottom:12px}
-.empty-txt{font-size:14px;color:#9999b3}
-footer{background:#1a1a2e;color:rgba(255,255,255,.4);text-align:center;padding:24px;font-size:13px;margin-top:60px}
+.empty-txt{font-size:14px;color:#9a3535}
+
+footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:24px;font-size:13px;margin-top:60px}
+
 @media(max-width:768px){
   nav{padding:0 16px;flex-wrap:wrap;height:auto;gap:10px;padding:10px 16px}
   .nav-links{display:none}
@@ -93,36 +110,36 @@ footer{background:#1a1a2e;color:rgba(255,255,255,.4);text-align:center;padding:2
 <body>
 
 <nav>
-  <a href="interfaceevent.php" class="logo">Gestion des <span>Événements</span></a>
+  <a href="interfaceevent.php" class="logo">Event <span>Management</span></a>
   <div class="nav-links">
-    <a href="interfaceevent.php" class="active">Événements</a>
-    <a href="#about">À propos</a>
+    <a href="interfaceevent.php" class="active">Events</a>
+    <a href="#about">About</a>
     <a href="#contact">Contact</a>
   </div>
   <div class="search-wrap">
-    <input type="text" id="searchInput" placeholder="Rechercher..." oninput="filterAndRender()">
+    <input type="text" id="searchInput" placeholder="Search..." oninput="filterAndRender()">
   </div>
 </nav>
 
 <div class="hero">
-  <div class="hero-tag">Plateforme événementielle Esprit</div>
-  <h1>Découvrez des événements <em>exceptionnels</em></h1>
-  <p>Conférences, hackathons, ateliers — inscrivez-vous en quelques clics</p>
+  <div class="hero-tag">Esprit Event Platform</div>
+  <h1>Discover <em>exceptional</em> events</h1>
+  <p>Conferences, hackathons, workshops — register in just a few clicks</p>
   <div class="hero-stats">
-    <div><div class="hs-val"><?= $total ?></div><div class="hs-lbl">Événements</div></div>
-    <div><div class="hs-val"><?= $actifs ?></div><div class="hs-lbl">Actifs</div></div>
-    <div><div class="hs-val"><?= $gratuits ?></div><div class="hs-lbl">Gratuits</div></div>
+    <div><div class="hs-val"><?= $total ?></div><div class="hs-lbl">Events</div></div>
+    <div><div class="hs-val"><?= $actifs ?></div><div class="hs-lbl">Active</div></div>
+    <div><div class="hs-val"><?= $gratuits ?></div><div class="hs-lbl">Free</div></div>
   </div>
 </div>
 
 <div class="main">
   <div class="section-header">
-    <div class="section-title">Tous les événements</div>
-    <div class="section-count" id="countLabel"><?= $total ?> événement(s)</div>
+    <div class="section-title">All Events</div>
+    <div class="section-count" id="countLabel"><?= $total ?> event(s)</div>
   </div>
 
   <div class="filters">
-    <button class="chip on" onclick="setFilter('Tous',this)">Tous (<?= $total ?>)</button>
+    <button class="chip on" onclick="setFilter('All',this)">All (<?= $total ?>)</button>
     <?php foreach ($types as $type):
       $cnt = count(array_filter($evenements, fn($e) => $e->getType() === $type));
     ?>
@@ -131,10 +148,10 @@ footer{background:#1a1a2e;color:rgba(255,255,255,.4);text-align:center;padding:2
     </button>
     <?php endforeach; ?>
     <select class="sort-sel" id="sortSel" onchange="filterAndRender()">
-      <option value="date">Par date</option>
-      <option value="prix_asc">Prix croissant</option>
-      <option value="prix_desc">Prix décroissant</option>
-      <option value="titre">Alphabétique</option>
+      <option value="date">By date</option>
+      <option value="prix_asc">Price: low to high</option>
+      <option value="prix_desc">Price: high to low</option>
+      <option value="titre">Alphabetical</option>
     </select>
   </div>
 
@@ -142,19 +159,21 @@ footer{background:#1a1a2e;color:rgba(255,255,255,.4);text-align:center;padding:2
     <?php if (empty($evenements)): ?>
       <div class="empty">
         <div class="empty-icon">📅</div>
-        <div class="empty-txt">Aucun événement disponible pour le moment.</div>
+        <div class="empty-txt">No events available at the moment.</div>
       </div>
     <?php else: ?>
       <?php foreach ($evenements as $e):
         $tc = $typeConfig[$e->getType()] ?? $typeConfig['Autre'];
         $isFree = ($e->getPrix() == 0);
-        $badgeClass = match($e->getStatut()) {
-          'Actif'   => 's-actif',
-          'Terminé' => 's-termine',
-          default   => 's-complet'
+        $statut = strtolower($e->getStatut());
+        $badgeClass = match(true) {
+            str_contains($statut, 'actif')  => 's-actif',
+            str_contains($statut, 'termin') => 's-termine',
+            default                         => 's-complet',
         };
-        $dateDebut = date('d/m/Y', strtotime($e->getDateDebut()));
-        $dateFin   = date('d/m/Y', strtotime($e->getDateFin()));
+        $statusDisplay = $statusLabels[$statut] ?? ucfirst($statut);
+        $dateDebut = date('m/d/Y', strtotime($e->getDateDebut()));
+        $dateFin   = date('m/d/Y', strtotime($e->getDateFin()));
         $dateLabel = ($dateDebut === $dateFin) ? $dateDebut : "$dateDebut → $dateFin";
       ?>
       <a class="ecard"
@@ -169,9 +188,9 @@ footer{background:#1a1a2e;color:rgba(255,255,255,.4);text-align:center;padding:2
           <div class="cb-bg" style="background:linear-gradient(135deg,<?= $tc['from'] ?> 0%,<?= $tc['to'] ?> 100%)"></div>
           <span class="cb-emoji"><?= $tc['emoji'] ?></span>
           <span class="cb-type"><?= htmlspecialchars($e->getType()) ?></span>
-          <span class="cb-status <?= $badgeClass ?>"><?= htmlspecialchars($e->getStatut()) ?></span>
+          <span class="cb-status <?= $badgeClass ?>"><?= htmlspecialchars($statusDisplay) ?></span>
           <span class="cb-price <?= $isFree ? 'free' : '' ?>">
-            <?= $isFree ? '🎁 Gratuit' : number_format($e->getPrix(), 2) . ' DT' ?>
+            <?= $isFree ? '🎁 Free' : number_format($e->getPrix(), 2) . ' TND' ?>
           </span>
         </div>
 
@@ -180,17 +199,17 @@ footer{background:#1a1a2e;color:rgba(255,255,255,.4);text-align:center;padding:2
           <div class="card-meta">
             <div class="cm"><span class="cm-icon">📅</span><?= $dateLabel ?></div>
             <div class="cm"><span class="cm-icon">📍</span><?= htmlspecialchars($e->getLieu()) ?></div>
-            <div class="cm"><span class="cm-icon">👥</span><?= $e->getCapaciteMax() ?> places max</div>
+            <div class="cm"><span class="cm-icon">👥</span><?= $e->getCapaciteMax() ?> max seats</div>
           </div>
           <div class="card-cta">
             <div class="places-left">
-              <?php if ($e->getStatut() === 'Actif'): ?>
-                <strong><?= $e->getCapaciteMax() ?></strong> places disponibles
+              <?php if (str_contains(strtolower($e->getStatut()), 'actif')): ?>
+                <strong><?= $e->getCapaciteMax() ?></strong> seats available
               <?php else: ?>
-                Inscription fermée
+                Registration closed
               <?php endif; ?>
             </div>
-            <span class="cta-link">Voir les détails →</span>
+            <span class="cta-link">View details →</span>
           </div>
         </div>
       </a>
@@ -199,10 +218,10 @@ footer{background:#1a1a2e;color:rgba(255,255,255,.4);text-align:center;padding:2
   </div>
 </div>
 
-<footer>© 2025 Gestion des Événements – Tous droits réservés</footer>
+<footer>© 2025 Event Management – All rights reserved</footer>
 
 <script>
-let currentFilter = 'Tous';
+let currentFilter = 'All';
 
 function setFilter(type, el) {
   currentFilter = type;
@@ -212,13 +231,13 @@ function setFilter(type, el) {
 }
 
 function filterAndRender() {
-  const q    = document.getElementById('searchInput').value.toLowerCase().trim();
-  const sort = document.getElementById('sortSel').value;
+  const q     = document.getElementById('searchInput').value.toLowerCase().trim();
+  const sort  = document.getElementById('sortSel').value;
   const cards = Array.from(document.querySelectorAll('.ecard'));
   let visible = [];
 
   cards.forEach(card => {
-    const ok = (currentFilter === 'Tous' || card.dataset.type === currentFilter)
+    const ok = (currentFilter === 'All' || card.dataset.type === currentFilter)
             && (!q || card.dataset.titre.includes(q) || card.dataset.lieu.includes(q) || card.dataset.type.toLowerCase().includes(q));
     card.style.display = ok ? 'flex' : 'none';
     if (ok) visible.push(card);
@@ -234,14 +253,14 @@ function filterAndRender() {
   });
   visible.forEach(card => grid.appendChild(card));
 
-  document.getElementById('countLabel').textContent = visible.length + ' événement(s)';
+  document.getElementById('countLabel').textContent = visible.length + ' event(s)';
 
   let empty = document.querySelector('.empty');
   if (visible.length === 0) {
     if (!empty) {
       empty = document.createElement('div');
       empty.className = 'empty';
-      empty.innerHTML = '<div class="empty-icon">🔍</div><div class="empty-txt">Aucun résultat trouvé.</div>';
+      empty.innerHTML = '<div class="empty-icon">🔍</div><div class="empty-txt">No results found.</div>';
       grid.appendChild(empty);
     }
   } else if (empty) empty.remove();
