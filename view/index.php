@@ -41,7 +41,7 @@
   <header id="header" class="header d-flex align-items-center sticky-top">
     <div class="container position-relative d-flex align-items-center justify-content-between">
 
-      <a href="index.html" class="logo d-flex align-items-center me-auto me-xl-0">
+      <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
         <!-- Uncomment the line below if you also wish to use an image logo -->
         <!-- <img src="assets/img/logo.png" alt=""> -->
         <h1 class="sitename">Yummy</h1>
@@ -55,7 +55,9 @@
           <li><a href="#menu">Menu</a></li>
           <li><a href="#events">Events</a></li>
           <li><a href="#chefs">Chefs</a></li>
-          <li><a href="#gallery">Gallery</a></li>
+          <li><a href="back/index.php">Back Office</a></li>
+          <li><a href="recette.php">Repas</a></li>
+          <li><a href="add_recette.php">Ajouter un repas</a></li>
           <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
             <ul>
               <li><a href="#">Dropdown 1</a></li>
@@ -78,7 +80,7 @@
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
 
-      <a class="btn-getstarted" href="index.html#book-a-table">Book a Table</a>
+      <a class="btn-getstarted" href="index.php#book-a-table">Book a Table</a>
 
     </div>
   </header>
@@ -260,6 +262,10 @@
         <h2>Our Menu</h2>
         <p><span>Check Our</span> <span class="description-title">Yummy Menu</span></p>
       </div><!-- End Section Title -->
+
+      <div class="container text-center" data-aos="fade-up" data-aos-delay="50">
+        <a href="recette.php" class="btn btn-primary btn-lg">Gérer les Repas</a>
+      </div>
 
       <div class="container">
 
@@ -950,13 +956,13 @@
 
     </section><!-- /Book A Table Section -->
 
-    <!-- Gallery Section -->
-    <section id="gallery" class="gallery section light-background">
+    <!-- Repas Section -->
+    <section id="recette" class="recette section light-background">
 
       <!-- Section Title -->
       <div class="container section-title" data-aos="fade-up">
-        <h2>Gallery</h2>
-        <p><span>Check</span> <span class="description-title">Our Gallery</span></p>
+        <h2>Repas</h2>
+        <p><span>Check</span> <span class="description-title">Our Meals</span></p>
       </div><!-- End Section Title -->
 
       <div class="container" data-aos="fade-up" data-aos-delay="100">
@@ -993,21 +999,21 @@
             }
           </script>
           <div class="swiper-wrapper align-items-center">
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-1.jpg"><img src="assets/img/gallery/gallery-1.jpg" class="img-fluid" alt=""></a></div>
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-2.jpg"><img src="assets/img/gallery/gallery-2.jpg" class="img-fluid" alt=""></a></div>
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-3.jpg"><img src="assets/img/gallery/gallery-3.jpg" class="img-fluid" alt=""></a></div>
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-4.jpg"><img src="assets/img/gallery/gallery-4.jpg" class="img-fluid" alt=""></a></div>
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-5.jpg"><img src="assets/img/gallery/gallery-5.jpg" class="img-fluid" alt=""></a></div>
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-6.jpg"><img src="assets/img/gallery/gallery-6.jpg" class="img-fluid" alt=""></a></div>
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-7.jpg"><img src="assets/img/gallery/gallery-7.jpg" class="img-fluid" alt=""></a></div>
-            <div class="swiper-slide"><a class="glightbox" data-gallery="images-gallery" href="assets/img/gallery/gallery-8.jpg"><img src="assets/img/gallery/gallery-8.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-1.jpg"><img src="assets/img/recette/gallery-1.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-2.jpg"><img src="assets/img/recette/gallery-2.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-3.jpg"><img src="assets/img/recette/gallery-3.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-4.jpg"><img src="assets/img/recette/gallery-4.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-5.jpg"><img src="assets/img/recette/gallery-5.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-6.jpg"><img src="assets/img/recette/gallery-6.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-7.jpg"><img src="assets/img/recette/gallery-7.jpg" class="img-fluid" alt=""></a></div>
+            <div class="swiper-slide"><a class="glightbox" data-gallery="images-recette" href="assets/img/recette/gallery-8.jpg"><img src="assets/img/recette/gallery-8.jpg" class="img-fluid" alt=""></a></div>
           </div>
           <div class="swiper-pagination"></div>
         </div>
 
       </div>
 
-    </section><!-- /Gallery Section -->
+    </section><!-- /Recette Section -->
 
     <!-- Contact Section -->
     <section id="contact" class="contact section">

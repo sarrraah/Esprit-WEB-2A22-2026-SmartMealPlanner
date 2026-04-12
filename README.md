@@ -36,6 +36,15 @@ De nombreuses personnes rencontrent des difficultés à :
 - Tableau de bord avec statistiques
 - Gestion du contenu nutritionnel
 
+#### Catégories de Recettes
+Les recettes sont classées dans la table `categorie_repas` de la base de données afin de faciliter la recherche et la gestion.
+
+Catégories par défaut :
+- Entrée
+- Plat principal
+- Dessert
+- Boisson
+
 ## Tech Stack
 
 ### Frontend
@@ -85,7 +94,10 @@ cd Esprit-WEB-2A22-2025-2026-SmartMealPlanner
 ```
 
 ## Utilisation
-Les instructions d’utilisation seront définies après l’implémentation des fonctionnalités principales.
+1. Ouvrez `view/recette.php` pour afficher et supprimer les recettes côté utilisateur.
+2. Ouvrez `view/add_recette.php` pour ajouter un nouveau repas.
+3. Ouvrez `view/back/recette.php` pour gérer les recettes depuis le back office.
+4. Utilisez `controller/RecetteController.php` pour les opérations de création, mise à jour et suppression.
 
 
 ## Acknowledgments
