@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/MealJsonStore.php';
+require_once __DIR__ . '/MealDbStore.php';
 
 /**
  * Meal entity. Catalog from data/meals.json when present and non-empty; else built-in defaults.
@@ -64,6 +65,32 @@ class Meal
      */
     public static function all(): array
     {
+        // Prefer database if available.
+        if (MealDbStore::tableExists()) {
+            // Only do the legacy JSON → DB import when the DB is empty.
+            // Otherwise, DB is the source of truth (prevents re-importing "old versions" after edits).
+            if (MealDbStore::countMeals() === 0) {
+                if (MealJsonStore::exists()) {
+                    $rows = MealJsonStore::loadRows();
+                    if ($rows !== []) {
+                        MealDbStore::syncFromJsonRows($rows);
+                    }
+                }
+
+                // If still empty, seed from built-in defaults once.
+                if (MealDbStore::countMeals() === 0) {
+                    foreach (self::defaultCatalog() as $m) {
+                        MealDbStore::insert(new self(0, $m->name, $m->calories, $m->description, $m->image, $m->recipeUrl, $m->mealType));
+                    }
+                }
+            }
+
+            $dbMeals = MealDbStore::all();
+            if ($dbMeals !== []) {
+                return $dbMeals;
+            }
+        }
+
         if (!MealJsonStore::exists()) {
             return self::defaultCatalog();
         }
@@ -97,12 +124,12 @@ class Meal
     private static function defaultCatalog(): array
     {
         return [
-            new self(1, 'Atlantic Salmon with Quinoa & Seasonal Vegetables', 612, 'Atlantic salmon with quinoa, roasted vegetables, and lemon herb dressing. High in protein and omega-3.', 'assets/img/menu/menu-item-1.png', 'https://example.com/recipes/grilled-salmon-bowl', 'dinner'),
-            new self(2, 'Mediterranean Chickpea Salad with Feta & Herbs', 398, 'Chickpeas, cucumber, tomato, feta, and olive oil vinaigrette. Fresh and filling for lunch.', 'assets/img/menu/menu-item-2.png', 'https://example.com/recipes/chickpea-salad', 'lunch'),
-            new self(3, 'Ginger-Soy Turkey Stir-Fry with Market Vegetables', 524, 'Lean turkey strips with bell peppers, broccoli, and light soy-ginger sauce over brown rice.', 'assets/img/menu/menu-item-3.png', 'https://example.com/recipes/turkey-stir-fry', 'dinner'),
-            new self(4, 'Overnight Oats with Seasonal Berries & Chia', 356, 'Rolled oats soaked in almond milk with chia seeds, topped with mixed berries and a drizzle of honey.', 'assets/img/menu/menu-item-4.png', 'https://example.com/recipes/overnight-oats', 'breakfast'),
-            new self(5, 'Red Lentil Soup with Spinach & Aromatic Spices', 312, 'Hearty red lentil soup with spinach, carrots, and warm spices. Perfect for meal prep.', 'assets/img/menu/menu-item-5.png', 'https://example.com/recipes/lentil-soup', 'lunch'),
-            new self(6, 'Herb-Roasted Chicken with Caramelized Sweet Potato', 548, 'Herb-baked chicken thigh with roasted sweet potato wedges and steamed green beans.', 'assets/img/menu/menu-item-6.png', 'https://example.com/recipes/baked-chicken', 'dinner'),
+            new self(1, 'Atlantic Salmon with Quinoa & Seasonal Vegetables', 612, 'Atlantic salmon with quinoa, roasted vegetables, and lemon herb dressing. High in protein and omega-3.', 'assets/img/meals/meal-07.png', 'https://example.com/recipes/grilled-salmon-bowl', 'dinner'),
+            new self(2, 'Mediterranean Chickpea Salad with Feta & Herbs', 398, 'Chickpeas, cucumber, tomato, feta, and olive oil vinaigrette. Fresh and filling for lunch.', 'assets/img/meals/meal-08.png', 'https://example.com/recipes/chickpea-salad', 'lunch'),
+            new self(3, 'Ginger-Soy Turkey Stir-Fry with Market Vegetables', 524, 'Lean turkey strips with bell peppers, broccoli, and light soy-ginger sauce over brown rice.', 'assets/img/meals/meal-09.png', 'https://example.com/recipes/turkey-stir-fry', 'dinner'),
+            new self(4, 'Overnight Oats with Seasonal Berries & Chia', 356, 'Rolled oats soaked in almond milk with chia seeds, topped with mixed berries and a drizzle of honey.', 'assets/img/meals/meal-10.png', 'https://example.com/recipes/overnight-oats', 'breakfast'),
+            new self(5, 'Red Lentil Soup with Spinach & Aromatic Spices', 312, 'Hearty red lentil soup with spinach, carrots, and warm spices. Perfect for meal prep.', 'assets/img/meals/meal-11.png', 'https://example.com/recipes/lentil-soup', 'lunch'),
+            new self(6, 'Herb-Roasted Chicken with Caramelized Sweet Potato', 548, 'Herb-baked chicken thigh with roasted sweet potato wedges and steamed green beans.', 'assets/img/meals/meal-12.png', 'https://example.com/recipes/baked-chicken', 'dinner'),
             new self(7, 'Rustic Chicken & Potato Soup', 328, 'A warming bowl of chicken soup with tender potatoes and vegetables—ideal for cozy nights.', 'assets/img/meals/meal-07.png', 'https://example.com/recipes/chicken-potato-soup', 'lunch'),
             new self(8, 'Continental Breakfast Plate', 438, 'A relaxed morning plate inspired by a perfect home café—great with your favorite brew.', 'assets/img/meals/meal-08.png', 'https://example.com/recipes/cafe-breakfast', 'breakfast'),
             new self(9, 'Wok-Seared Beef Fried Rice with Scrambled Egg', 684, 'Classic savory fried rice with tender beef strips and fluffy scrambled eggs.', 'assets/img/meals/meal-09.png', 'https://example.com/recipes/beef-egg-fried-rice', 'dinner'),

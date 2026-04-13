@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com" rel="preconnect">
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
-  <link href="../assets/vendor/bootstrap/css/bootstrap.css" rel="stylesheet">
+  <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="../assets/css/main.css" rel="stylesheet">
   <link href="../assets/css/backoffice-meals.css" rel="stylesheet">
 </head>
@@ -152,8 +152,8 @@
       del:  'meals_delete.php'
     };
   </script>
-  <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.js"></script>
-  <script src="../assets/js/backoffice-meals.js"></script>
+  <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="backoffice-meals.js"></script>
 </body>
 
 </html>

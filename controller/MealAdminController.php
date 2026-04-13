@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../model/Meal.php';
 require_once __DIR__ . '/../model/MealValidator.php';
+require_once __DIR__ . '/../model/MealDbStore.php';
 
 /**
  * Back-office CRUD for meals (JSON file + uploads).
@@ -27,8 +28,14 @@ class MealAdminController
         if ($tmp === '' || !is_uploaded_file($tmp)) {
             return null;
         }
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($tmp);
+        $mime = null;
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($tmp) ?: null;
+        }
+        if ($mime === null && function_exists('mime_content_type')) {
+            $mime = mime_content_type($tmp) ?: null;
+        }
         $ext = match ($mime) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
@@ -77,13 +84,20 @@ class MealAdminController
         if ($id <= 0) {
             return ['ok' => false, 'errors' => ['Select a meal in the list before deleting.'], 'message' => ''];
         }
+
+        // If DB table is available, delete from DB. (UI can still show 1..N as "display id")
+        if (MealDbStore::tableExists()) {
+            MealDbStore::delete($id);
+            return ['ok' => true, 'errors' => [], 'message' => 'Meal deleted.'];
+        }
+
         $meals = Meal::all();
         $before = count($meals);
         $meals = array_values(array_filter($meals, fn (Meal $m) => $m->id !== $id));
         if (count($meals) === $before) {
             return ['ok' => false, 'errors' => ['Selected meal was not found.'], 'message' => ''];
         }
-        // Reassign IDs sequentially starting from 1
+        // Reassign IDs sequentially starting from 1 (JSON mode)
         foreach ($meals as $index => $m) {
             $meals[$index] = new Meal($index + 1, $m->name, $m->calories, $m->description, $m->image, $m->recipeUrl, $m->mealType);
         }
@@ -146,30 +160,41 @@ class MealAdminController
         }
 
         $calories = (int) $calRaw;
-        $meals = Meal::all();
 
         if ($editId > 0) {
-            $replaced = false;
-            $newList = [];
-            foreach ($meals as $m) {
-                if ($m->id === $editId) {
-                    $newList[] = new Meal($editId, $name, $calories, $desc, $imagePath, $recipe, $type);
-                    $replaced = true;
-                } else {
-                    $newList[] = $m;
+            if (MealDbStore::tableExists()) {
+                MealDbStore::update($editId, new Meal($editId, $name, $calories, $desc, $imagePath, $recipe, $type));
+                $msg = 'Meal updated.';
+            } else {
+                $meals = Meal::all();
+                $replaced = false;
+                $newList = [];
+                foreach ($meals as $m) {
+                    if ($m->id === $editId) {
+                        $newList[] = new Meal($editId, $name, $calories, $desc, $imagePath, $recipe, $type);
+                        $replaced = true;
+                    } else {
+                        $newList[] = $m;
+                    }
                 }
+                if (!$replaced) {
+                    return ['ok' => false, 'errors' => ['Meal to update was not found.'], 'message' => ''];
+                }
+                $meals = $newList;
+                MealJsonStore::saveRows(array_map(fn (Meal $m) => $m->toArray(), $meals));
+                $msg = 'Meal updated.';
             }
-            if (!$replaced) {
-                return ['ok' => false, 'errors' => ['Meal to update was not found.'], 'message' => ''];
-            }
-            $meals = $newList;
-            $msg = 'Meal updated.';
         } else {
-            $meals[] = new Meal(Meal::nextId($meals), $name, $calories, $desc, $imagePath, $recipe, $type);
-            $msg = 'Meal added.';
+            if (MealDbStore::tableExists()) {
+                MealDbStore::insert(new Meal(0, $name, $calories, $desc, $imagePath, $recipe, $type));
+                $msg = 'Meal added.';
+            } else {
+                $meals = Meal::all();
+                $meals[] = new Meal(Meal::nextId($meals), $name, $calories, $desc, $imagePath, $recipe, $type);
+                MealJsonStore::saveRows(array_map(fn (Meal $m) => $m->toArray(), $meals));
+                $msg = 'Meal added.';
+            }
         }
-
-        MealJsonStore::saveRows(array_map(fn (Meal $m) => $m->toArray(), $meals));
         return ['ok' => true, 'errors' => [], 'message' => $msg];
     }
 }

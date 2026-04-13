@@ -28,11 +28,11 @@ $featured = array_slice($meals, 0, 4);
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
 
-  <link href="<?php echo $assetPrefix; ?>vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="<?php echo $assetPrefix; ?>vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="<?php echo $assetPrefix; ?>vendor/aos/aos.css" rel="stylesheet">
-  <link href="<?php echo $assetPrefix; ?>vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
-  <link href="<?php echo $assetPrefix; ?>vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+  <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="../assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="../assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="../assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
   <link href="<?php echo $assetPrefix; ?>css/main.css" rel="stylesheet">
   <link href="<?php echo $assetPrefix; ?>css/meals.css" rel="stylesheet">
 </head>
@@ -122,6 +122,7 @@ $featured = array_slice($meals, 0, 4);
           <?php foreach ($featured as $meal) :
             $imgSrc = htmlspecialchars(resolveImageUrl($meal->image, $assetPrefix), ENT_QUOTES, 'UTF-8');
             $safeName = htmlspecialchars($meal->name, ENT_QUOTES, 'UTF-8');
+            $safeDesc = htmlspecialchars($meal->description, ENT_QUOTES, 'UTF-8');
             $safeTypeLabel = htmlspecialchars($meal->mealTypeLabel(), ENT_QUOTES, 'UTF-8');
           ?>
           <div class="col-lg-3 col-md-6">
@@ -131,6 +132,7 @@ $featured = array_slice($meals, 0, 4);
               </div>
               <div class="meal-card__body">
                 <h3 class="meal-card__name"><?php echo $safeName; ?></h3>
+                <p class="meal-card__desc"><?php echo $safeDesc; ?></p>
                 <p class="meal-card__calories"><strong><?php echo (int) $meal->calories; ?></strong> kcal &mdash; <?php echo $safeTypeLabel; ?></p>
               </div>
             </div>
@@ -209,11 +211,11 @@ $featured = array_slice($meals, 0, 4);
   <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
   <div id="preloader"></div>
 
-  <script src="<?php echo $assetPrefix; ?>vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="<?php echo $assetPrefix; ?>vendor/aos/aos.js"></script>
-  <script src="<?php echo $assetPrefix; ?>vendor/glightbox/js/glightbox.min.js"></script>
-  <script src="<?php echo $assetPrefix; ?>vendor/swiper/swiper-bundle.min.js"></script>
-  <script src="<?php echo $assetPrefix; ?>js/main.js"></script>
+  <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/vendor/aos/aos.js"></script>
+  <script src="../assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="../assets/vendor/swiper/swiper-bundle.min.js"></script>
+  <script src="main.js"></script>
 </body>
 
 </html>

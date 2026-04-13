@@ -100,6 +100,18 @@
   /** @type {Record<number, object>} */
   var mealsCache = {};
 
+  function renumberVisibleIds() {
+    if (!tableBody) return;
+    var n = 0;
+    tableBody.querySelectorAll('tr[data-meal-id]').forEach(function (tr) {
+      if (tr.style.display === 'none') return;
+      var td = tr.querySelector('.bo-display-id');
+      if (!td) return;
+      n += 1;
+      td.textContent = String(n);
+    });
+  }
+
   function wordCount(text) {
     text = (text || '').trim().replace(/\s+/g, ' ');
     if (!text) return 0;
@@ -170,7 +182,7 @@
       return;
     }
 
-    meals.forEach(function (m) {
+    meals.forEach(function (m, idx) {
       mealsCache[m.id] = m;
 
       var tr = document.createElement('tr');
@@ -188,13 +200,17 @@
       tdRadio.appendChild(radio);
 
       var tdId = document.createElement('td');
-      tdId.textContent = String(m.id);
+      tdId.className = 'bo-display-id';
+      // Will be renumbered after filtering / reload to always start at 1.
+      tdId.textContent = String(m.displayId || (idx + 1));
 
       var tdImg = document.createElement('td');
       var img = document.createElement('img');
       img.className = 'bo-thumb';
       img.alt = '';
-      img.src = '../' + (m.image || '');
+      // If DB row doesn't have an image path, show a safe placeholder.
+      img.src = m.image ? ('../' + m.image) : '../assets/img/meals/meal-24.png';
+      img.loading = 'lazy';
       tdImg.appendChild(img);
 
       var tdName = document.createElement('td');
@@ -221,6 +237,8 @@
 
       tableBody.appendChild(tr);
     });
+
+    renumberVisibleIds();
   }
 
   function loadMeals() {
@@ -262,6 +280,7 @@
       var matchType = !ft || type === ft;
       tr.style.display = matchSearch && matchType ? '' : 'none';
     });
+    renumberVisibleIds();
   }
 
   function highlightSelected() {
