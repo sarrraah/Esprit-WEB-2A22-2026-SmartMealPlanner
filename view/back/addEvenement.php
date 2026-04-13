@@ -1,45 +1,60 @@
 <?php
-require_once __DIR__ . '/../../controller/EvenementController.php';
+require '../../controller/EvenementController.php';
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $titre        = trim($_POST['titre'] ?? '');
-    $description  = trim($_POST['description'] ?? '');
-    $date_debut   = $_POST['date_debut'] ?? '';
-    $date_fin     = $_POST['date_fin'] ?? '';
-    $lieu         = trim($_POST['lieu'] ?? '');
-    $capacite_max = $_POST['capacite_max'] ?? '';
-    $prix         = $_POST['prix'] ?? '';
-    $statut       = $_POST['statut'] ?? '';
-    $type         = trim($_POST['type'] ?? '');
+    $titre        = trim($_POST['titre']);
+    $description  = trim($_POST['description']);
+    $date_debut   = $_POST['date_debut'];
+    $date_fin     = $_POST['date_fin'];
+    $lieu         = trim($_POST['lieu']);
+    $capacite_max = $_POST['capacite_max'];
+    $prix         = $_POST['prix'];
+    $statut       = $_POST['statut'];
+    $type         = trim($_POST['type']);
 
     if (strlen($titre) < 3)
-        $errors[] = "The title must be at least 3 characters long.";
+        $errors[] = "Le titre doit contenir au moins 3 caractères.";
+    if (empty($description))
+        $errors[] = "La description est obligatoire.";
     if (empty($date_debut))
-        $errors[] = "The start date is required.";
+        $errors[] = "La date de début est obligatoire.";
     if (empty($date_fin))
-        $errors[] = "The end date is required.";
+        $errors[] = "La date de fin est obligatoire.";
     if (!empty($date_debut) && !empty($date_fin) && $date_fin <= $date_debut)
-        $errors[] = "The end date must be after the start date.";
+        $errors[] = "La date de fin doit être postérieure à la date de début.";
+    if (empty($lieu))
+        $errors[] = "Le lieu est obligatoire.";
     if (!is_numeric($capacite_max) || (int)$capacite_max < 1)
-        $errors[] = "The maximum capacity must be a positive integer (≥ 1).";
+        $errors[] = "La capacité maximale doit être un entier positif (≥ 1).";
     if (!is_numeric($prix) || (float)$prix < 0)
-        $errors[] = "The price must be a positive number.";
+        $errors[] = "Le prix doit être un nombre positif.";
     if (!in_array($statut, ['actif', 'annulé', 'terminé']))
-        $errors[] = "Please choose a valid status.";
+        $errors[] = "Veuillez choisir un statut valide.";
+    if (empty($type))
+        $errors[] = "Le type est obligatoire.";
 
     if (empty($errors)) {
         $controller = new EvenementController();
         $evenement  = new Evenement(
-            $titre, $description, $date_debut, $date_fin,
-            $lieu, (int)$capacite_max, (float)$prix, $statut, $type
+            null,
+            $titre,
+            $description,
+            $date_debut,
+            $date_fin,
+            $lieu,
+            (int)$capacite_max,
+            (float)$prix,
+            $statut,
+            $type
         );
         $controller->addEvenement($evenement);
-        header('Location: listEvenements.php?msg=added');
+        header('Location: listEvenements.php');
         exit;
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>

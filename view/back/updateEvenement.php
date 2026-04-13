@@ -1,10 +1,10 @@
 <?php
-require_once __DIR__ . '/../../controller/EvenementController.php';
-$controller = new EvenementController();
-$errors     = [];
+require '../../controller/EvenementController.php';
+$errors = [];
 
-$id        = isset($_GET['id']) ? (int)$_GET['id'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
-$evenement = $controller->getEvenementById($id);
+$id         = isset($_GET['id']) ? $_GET['id'] : $_POST['id'];
+$controller = new EvenementController();
+$evenement  = $controller->getEvenementById($id);
 
 if (!$evenement) {
     header('Location: listEvenements.php');
@@ -12,30 +12,36 @@ if (!$evenement) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $titre        = trim($_POST['titre'] ?? '');
-    $description  = trim($_POST['description'] ?? '');
-    $date_debut   = $_POST['date_debut'] ?? '';
-    $date_fin     = $_POST['date_fin'] ?? '';
-    $lieu         = trim($_POST['lieu'] ?? '');
-    $capacite_max = $_POST['capacite_max'] ?? '';
-    $prix         = $_POST['prix'] ?? '';
-    $statut       = $_POST['statut'] ?? '';
-    $type         = trim($_POST['type'] ?? '');
+    $titre        = trim($_POST['titre']);
+    $description  = trim($_POST['description']);
+    $date_debut   = $_POST['date_debut'];
+    $date_fin     = $_POST['date_fin'];
+    $lieu         = trim($_POST['lieu']);
+    $capacite_max = $_POST['capacite_max'];
+    $prix         = $_POST['prix'];
+    $statut       = $_POST['statut'];
+    $type         = trim($_POST['type']);
 
     if (strlen($titre) < 3)
         $errors[] = "Le titre doit contenir au moins 3 caractères.";
+    if (empty($description))
+        $errors[] = "La description est obligatoire.";
     if (empty($date_debut))
         $errors[] = "La date de début est obligatoire.";
     if (empty($date_fin))
         $errors[] = "La date de fin est obligatoire.";
     if (!empty($date_debut) && !empty($date_fin) && $date_fin <= $date_debut)
         $errors[] = "La date de fin doit être postérieure à la date de début.";
+    if (empty($lieu))
+        $errors[] = "Le lieu est obligatoire.";
     if (!is_numeric($capacite_max) || (int)$capacite_max < 1)
         $errors[] = "La capacité maximale doit être un entier positif (≥ 1).";
     if (!is_numeric($prix) || (float)$prix < 0)
         $errors[] = "Le prix doit être un nombre positif.";
     if (!in_array($statut, ['actif', 'annulé', 'terminé']))
         $errors[] = "Veuillez choisir un statut valide.";
+    if (empty($type))
+        $errors[] = "Le type est obligatoire.";
 
     if (empty($errors)) {
         $evenement->setTitre($titre);
@@ -48,24 +54,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $evenement->setStatut($statut);
         $evenement->setType($type);
 
-        $controller->updateEvenement($evenement);
-        header('Location: listEvenements.php?msg=updated');
+        $controller->updateEvenement($evenement, $id);
+        header('Location: listEvenements.php');
         exit;
     }
 
-    $evenement->setTitre($_POST['titre']);
-    $evenement->setDescription($_POST['description']);
-    $evenement->setDateDebut($_POST['date_debut']);
-    $evenement->setDateFin($_POST['date_fin']);
-    $evenement->setLieu($_POST['lieu']);
-    $evenement->setCapaciteMax($_POST['capacite_max']);
-    $evenement->setPrix($_POST['prix']);
-    $evenement->setStatut($_POST['statut']);
-    $evenement->setType($_POST['type']);
+    // En cas d'erreur, on garde les valeurs saisies
+    $evenement->setTitre($titre);
+    $evenement->setDescription($description);
+    $evenement->setDateDebut($date_debut);
+    $evenement->setDateFin($date_fin);
+    $evenement->setLieu($lieu);
+    $evenement->setCapaciteMax($capacite_max);
+    $evenement->setPrix($prix);
+    $evenement->setStatut($statut);
+    $evenement->setType($type);
+}
+function formatDateForInput($dateStr) {
+    if (empty($dateStr)) return '';
+    try {
+        $dt = new DateTime($dateStr);
+        return $dt->format('Y-m-d\TH:i');
+    } catch (Exception $e) {
+        return '';
+    }
 }
 
-$dd = date('Y-m-d\TH:i', strtotime($evenement->getDateDebut()));
-$df = date('Y-m-d\TH:i', strtotime($evenement->getDateFin()));
+$dd = formatDateForInput($evenement->getDateDebut());
+$df = formatDateForInput($evenement->getDateFin());
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -188,10 +204,12 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       <div class="form-row">
         <div class="form-group">
           <label>Date de Début *</label>
+          <!-- ✅ $dd est maintenant correctement formaté en Y-m-d\TH:i -->
           <input type="datetime-local" name="date_debut" required value="<?= $dd ?>">
         </div>
         <div class="form-group">
           <label>Date de Fin *</label>
+          <!-- ✅ $df est maintenant correctement formaté en Y-m-d\TH:i -->
           <input type="datetime-local" name="date_fin" required value="<?= $df ?>">
         </div>
       </div>

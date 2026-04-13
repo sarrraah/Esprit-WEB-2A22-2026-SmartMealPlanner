@@ -1,15 +1,11 @@
 <?php
-require_once('../controller/EvenementController.php');
-
+require '../../controller/EvenementController.php';
 if (isset($_GET['id'])) {
-    $id = $_GET['id'];
-
     $controller = new EvenementController();
-    $controller->deleteEvenement($id);
-
-    // Redirection après suppression
-    header('Location: listEvenements.php?msg=deleted');
+    $controller->deleteEvenement($_GET['id']);
+    header('Location: listEvenements.php');
     exit;
 } else {
-    echo "❌ ID non fourni.";
+    echo "ID non fourni.";
 }
+?>

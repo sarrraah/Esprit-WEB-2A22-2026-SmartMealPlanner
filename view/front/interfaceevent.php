@@ -75,12 +75,7 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .cb-bg{position:absolute;inset:0}
 .cb-emoji{position:relative;z-index:1;font-size:48px;opacity:.22}
 .cb-type{position:absolute;top:10px;left:10px;z-index:2;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.92);color:#7f1d1d}
-.cb-status{position:absolute;top:10px;right:10px;z-index:2;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px}
-.s-actif{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595}
-.s-termine{background:#f5e8e8;color:#501313;border:1px solid #e24b4a}
-.s-complet{background:#fef3e2;color:#8a5a00;border:1px solid #fad99a}
-.cb-price{position:absolute;bottom:10px;right:10px;z-index:2;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.95);color:#7f1d1d}
-.cb-price.free{background:#b91c1c;color:#fff}
+
 
 .card-body{padding:16px;flex:1;display:flex;flex-direction:column}
 .card-title{font-size:14px;font-weight:600;color:#1a0505;margin-bottom:10px;line-height:1.4}
@@ -164,14 +159,7 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
     <?php else: ?>
       <?php foreach ($evenements as $e):
         $tc = $typeConfig[$e->getType()] ?? $typeConfig['Autre'];
-        $isFree = ($e->getPrix() == 0);
-        $statut = strtolower($e->getStatut());
-        $badgeClass = match(true) {
-            str_contains($statut, 'actif')  => 's-actif',
-            str_contains($statut, 'termin') => 's-termine',
-            default                         => 's-complet',
-        };
-        $statusDisplay = $statusLabels[$statut] ?? ucfirst($statut);
+        
         $dateDebut = date('m/d/Y', strtotime($e->getDateDebut()));
         $dateFin   = date('m/d/Y', strtotime($e->getDateFin()));
         $dateLabel = ($dateDebut === $dateFin) ? $dateDebut : "$dateDebut → $dateFin";
@@ -188,10 +176,7 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
           <div class="cb-bg" style="background:linear-gradient(135deg,<?= $tc['from'] ?> 0%,<?= $tc['to'] ?> 100%)"></div>
           <span class="cb-emoji"><?= $tc['emoji'] ?></span>
           <span class="cb-type"><?= htmlspecialchars($e->getType()) ?></span>
-          <span class="cb-status <?= $badgeClass ?>"><?= htmlspecialchars($statusDisplay) ?></span>
-          <span class="cb-price <?= $isFree ? 'free' : '' ?>">
-            <?= $isFree ? '🎁 Free' : number_format($e->getPrix(), 2) . ' TND' ?>
-          </span>
+
         </div>
 
         <div class="card-body">

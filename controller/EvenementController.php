@@ -1,28 +1,17 @@
 <?php
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../model/Evenement.php';
-
+require __DIR__ . '/../config.php';
+require __DIR__ . '/../model/Evenement.php';
 class EvenementController
 {
-    private $pdo;
-
-    public function __construct()
+    function listEvenements()
     {
-        $this->pdo = config::getConnexion();
-    }
-
-    public function showEvenement($evenement)
-    {
-        $evenement->show();
-    }
-
-    public function listEvenements()
-    {
-        $stmt = $this->pdo->query("SELECT * FROM evenement ORDER BY date_debut DESC");
-        $rows = $stmt->fetchAll();
+        $db = config::getConnexion();
+        $query = $db->query("SELECT * FROM evenement ORDER BY date_debut DESC");
+        $rows = $query->fetchAll();
         $evenements = [];
         foreach ($rows as $row) {
             $evenements[] = new Evenement(
+                $row['id_event'],
                 $row['titre'],
                 $row['description'],
                 $row['date_debut'],
@@ -31,57 +20,68 @@ class EvenementController
                 $row['capacite_max'],
                 $row['prix'],
                 $row['statut'],
-                $row['type'],
-                $row['id_event']
+                $row['type']
             );
         }
         return $evenements;
     }
 
-    public function getEvenementById($id)
+    function getEvenementById($id)
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM evenement WHERE id_event = :id");
-        $stmt->execute([':id' => $id]);
-        $row = $stmt->fetch();
-        if (!$row) return null;
-        return new Evenement(
-            $row['titre'],
-            $row['description'],
-            $row['date_debut'],
-            $row['date_fin'],
-            $row['lieu'],
-            $row['capacite_max'],
-            $row['prix'],
-            $row['statut'],
-            $row['type'],
-            $row['id_event']
-        );
+        $sql = "SELECT * FROM evenement WHERE id_event = :id";
+        $db = config::getConnexion();
+        $req = $db->prepare($sql);
+        $req->bindValue(':id', $id);
+        try {
+            $req->execute();
+            $row = $req->fetch();
+            if (!$row) return null;
+            return new Evenement(
+                $row['id_event'],
+                $row['titre'],
+                $row['description'],
+                $row['date_debut'],
+                $row['date_fin'],
+                $row['lieu'],
+                $row['capacite_max'],
+                $row['prix'],
+                $row['statut'],
+                $row['type']
+            );
+        } catch (Exception $e) {
+            die('Error: ' . $e->getMessage());
+        }
     }
 
-    public function addEvenement($evenement)
+    function addEvenement($evenement)
     {
         $sql = "INSERT INTO evenement
-                    (titre, description, date_debut, date_fin, lieu, capacite_max, prix, statut, type)
-                VALUES
-                    (:titre, :description, :date_debut, :date_fin, :lieu, :capacite_max, :prix, :statut, :type)";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':titre'        => $evenement->getTitre(),
-            ':description'  => $evenement->getDescription(),
-            ':date_debut'   => $evenement->getDateDebut(),
-            ':date_fin'     => $evenement->getDateFin(),
-            ':lieu'         => $evenement->getLieu(),
-            ':capacite_max' => $evenement->getCapaciteMax(),
-            ':prix'         => $evenement->getPrix(),
-            ':statut'       => $evenement->getStatut(),
-            ':type'         => $evenement->getType(),
-        ]);
-        return $this->pdo->lastInsertId();
+                VALUES (NULL, :titre, :description, :date_debut, :date_fin, :lieu, :capacite_max, :prix, :statut, :type)";
+        $db = config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([
+                'titre'        => $evenement->getTitre(),
+                'description'  => $evenement->getDescription(),
+                'date_debut'   => $evenement->getDateDebut(),
+                'date_fin'     => $evenement->getDateFin(),
+                'lieu'         => $evenement->getLieu(),
+                'capacite_max' => $evenement->getCapaciteMax(),
+                'prix'         => $evenement->getPrix(),
+                'statut'       => $evenement->getStatut(),
+                'type'         => $evenement->getType(),
+            ]);
+        } catch (Exception $e) {
+            echo 'Error: ' . $e->getMessage();
+        }
     }
 
-    public function updateEvenement($evenement)
+    function updateEvenement($evenement, $id)
     {
-        $sql = "UPDATE evenement SET
+        try {
+            $db = config::getConnexion();
+            $query = $db->prepare(
+                'UPDATE evenement SET
                     titre        = :titre,
                     description  = :description,
                     date_debut   = :date_debut,
@@ -91,26 +91,40 @@ class EvenementController
                     prix         = :prix,
                     statut       = :statut,
                     type         = :type
-                WHERE id_event   = :id";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':titre'        => $evenement->getTitre(),
-            ':description'  => $evenement->getDescription(),
-            ':date_debut'   => $evenement->getDateDebut(),
-            ':date_fin'     => $evenement->getDateFin(),
-            ':lieu'         => $evenement->getLieu(),
-            ':capacite_max' => $evenement->getCapaciteMax(),
-            ':prix'         => $evenement->getPrix(),
-            ':statut'       => $evenement->getStatut(),
-            ':type'         => $evenement->getType(),
-            ':id'           => $evenement->getIdEvent(),
-        ]);
+                WHERE id_event   = :id'
+            );
+
+            $query->execute([
+                'id'           => $id,
+                'titre'        => $evenement->getTitre(),
+                'description'  => $evenement->getDescription(),
+                'date_debut'   => $evenement->getDateDebut(),
+                'date_fin'     => $evenement->getDateFin(),
+                'lieu'         => $evenement->getLieu(),
+                'capacite_max' => $evenement->getCapaciteMax(),
+                'prix'         => $evenement->getPrix(),
+                'statut'       => $evenement->getStatut(),
+                'type'         => $evenement->getType(),
+            ]);
+
+            echo $query->rowCount() . " records UPDATED successfully <br>";
+        } catch (PDOException $e) {
+            $e->getMessage();
+        }
     }
 
-    public function deleteEvenement($id)
+    function deleteEvenement($ide)
     {
-        $stmt = $this->pdo->prepare("DELETE FROM evenement WHERE id_event = :id");
-        $stmt->execute([':id' => $id]);
+        $sql = "DELETE FROM evenement WHERE id_event = :id";
+        $db = config::getConnexion();
+        $req = $db->prepare($sql);
+        $req->bindValue(':id', $ide);
+
+        try {
+            $req->execute();
+        } catch (Exception $e) {
+            die('Error: ' . $e->getMessage());
+        }
     }
 }
 ?>
