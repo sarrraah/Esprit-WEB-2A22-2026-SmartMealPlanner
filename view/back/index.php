@@ -1,9 +1,5 @@
 <?php
-require_once '../../config.php';
-require_once '../../model/Recette.php';
-
-$recipeModel = new Recette();
-$totalRecipes = count($recipeModel->getAllRecettes());
+$totalRecipes = 0;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -43,12 +39,13 @@ $totalRecipes = count($recipeModel->getAllRecettes());
             <h4 class="mb-4">Back Office</h4>
             <ul class="list-unstyled">
                 <li class="mb-2"><a href="index.php" class="active">Tableau de Bord</a></li>
-                <li class="mb-2"><a href="recette.php">Gestion des Repas</a></li>
-                <li class="mb-2"><a href="categorie.php">Gestion des Catégories</a></li>
-                <li class="mb-2"><a href="#">Gestion des Utilisateurs</a></li>
-                <li class="mb-2"><a href="#">Aliments Durables</a></li>
-                <li class="mb-2"><a href="#">Statistiques</a></li>
-                <li class="mb-2"><a href="../index.php">Retour au Front Office</a></li>
+                <li class="mb-2"><a href="repas.php">Gestion des Repas</a></li>
+                <li class="mb-2"><a href="recette.php">Gestion des Recettes</a></li>
+                <li class="mb-2"><a href="utilisateurs.php">Gestion des Utilisateurs</a></li>
+                <li class="mb-2"><a href="aliments_durables.php">Aliments Durables</a></li>
+                <li class="mb-2"><a href="statistiques.php">Statistiques</a></li>
+                <li class="mb-2"><a href="contenu_nutritionnel.php">Contenu Nutritionnel</a></li>
+                <li class="mb-2"><a href="../../index.php">Retour au Front Office</a></li>
             </ul>
         </nav>
 
@@ -85,8 +82,9 @@ $totalRecipes = count($recipeModel->getAllRecettes());
 
             <div class="mt-4">
                 <h3>Actions Rapides</h3>
-                <a href="recette.php" class="btn btn-primary me-2">Gérer les Repas</a>
-                <a href="add_recette.php" class="btn btn-success">Ajouter un repas</a>
+                <a href="recette.php" class="btn btn-primary me-2">Gérer les Recettes</a>
+                <a href="add_recette.php" class="btn btn-success me-2">Ajouter une recette</a>
+                <a href="statistiques.php" class="btn btn-outline-dark">Voir les statistiques</a>
             </div>
         </div>
     </div>

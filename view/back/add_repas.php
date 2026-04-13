@@ -1,9 +1,9 @@
 <?php
-require_once '../../config.php';
-require_once '../../model/Recette.php';
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../model/Repas.php';
 
-$recipeModel = new Recette();
-$categories = $recipeModel->getCategories();
+$recipeModel = new Repas();
+$recettes = $recipeModel->getRecettes();
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $projectPath = str_replace('\\', '/', dirname(__DIR__, 2));
 $docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
@@ -48,18 +48,20 @@ $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
             <h4 class="mb-4">Back Office</h4>
             <ul class="list-unstyled">
                 <li class="mb-2"><a href="index.php">Tableau de Bord</a></li>
-                <li class="mb-2"><a href="recette.php">Gestion des Repas</a></li>
-                <li class="mb-2"><a href="#">Gestion des Utilisateurs</a></li>
-                <li class="mb-2"><a href="#">Aliments Durables</a></li>
-                <li class="mb-2"><a href="#">Statistiques</a></li>
-                <li class="mb-2"><a href="../index.php">Retour au Front Office</a></li>
+                <li class="mb-2"><a href="repas.php">Gestion des Repas</a></li>
+                <li class="mb-2"><a href="recette.php">Gestion des Recettes</a></li>
+                <li class="mb-2"><a href="utilisateurs.php">Gestion des Utilisateurs</a></li>
+                <li class="mb-2"><a href="aliments_durables.php">Aliments Durables</a></li>
+                <li class="mb-2"><a href="statistiques.php">Statistiques</a></li>
+                <li class="mb-2"><a href="contenu_nutritionnel.php">Contenu Nutritionnel</a></li>
+                <li class="mb-2"><a href="../../index.php">Retour au Front Office</a></li>
             </ul>
         </nav>
 
         <!-- Main Content -->
         <div class="main-content flex-grow-1 p-4">
             <h1 class="mb-4">Ajouter un Nouveau Repas</h1>
-            <form action="<?php echo htmlspecialchars($baseUrl . '/controller/RecetteController.php', ENT_QUOTES, 'UTF-8'); ?>" method="POST">
+            <form action="<?php echo htmlspecialchars($baseUrl . '/controller/RepasController.php', ENT_QUOTES, 'UTF-8'); ?>" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="from" value="back">
                 <div class="mb-3">
                     <label for="nom" class="form-label">Nom du repas</label>
@@ -74,23 +76,27 @@ $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
                     <input type="number" step="0.1" class="form-control" id="calories" name="calories">
                 </div>
                 <div class="mb-3">
-                    <label for="id_categorie" class="form-label">Catégorie</label>
-                    <?php if (empty($categories)): ?>
-                        <div class="alert alert-warning">Aucune catégorie trouvée. Ajoutez d'abord des catégories via le back office.</div>
-                        <select class="form-control" id="id_categorie" name="id_categorie" disabled>
-                            <option value="">Aucune catégorie disponible</option>
+                    <label for="id_recette" class="form-label">Recette</label>
+                    <?php if (empty($recettes)): ?>
+                        <div class="alert alert-warning">Aucune recette trouvée. Ajoutez d'abord des recettes via le back office.</div>
+                        <select class="form-control" id="id_recette" name="id_recette" disabled>
+                            <option value="">Aucune recette disponible</option>
                         </select>
                     <?php else: ?>
-                        <select class="form-control" id="id_categorie" name="id_categorie" required>
-                            <option value="">Sélectionnez une catégorie</option>
-                            <?php foreach ($categories as $cat): ?>
-                                <option value="<?php echo $cat['id_categorie']; ?>"><?php echo htmlspecialchars($cat['nom_categorie']); ?></option>
+                        <select class="form-control" id="id_recette" name="id_recette" required>
+                            <option value="">Sélectionnez une recette</option>
+                            <?php foreach ($recettes as $cat): ?>
+                                <option value="<?php echo $cat['id_recette']; ?>"><?php echo htmlspecialchars($cat['nom_recette']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     <?php endif; ?>
                 </div>
-                <button type="submit" class="btn btn-primary" <?php echo empty($categories) ? 'disabled' : ''; ?>>Ajouter le Repas</button>
-                <a href="recette.php" class="btn btn-secondary ms-2">Annuler</a>
+                <div class="mb-3">
+                    <label for="image_repas" class="form-label">Image du repas</label>
+                    <input type="file" class="form-control" id="image_repas" name="image_repas" accept="image/*">
+                </div>
+                <button type="submit" class="btn btn-primary" <?php echo empty($recettes) ? 'disabled' : ''; ?>>Ajouter le Repas</button>
+                <a href="repas.php" class="btn btn-secondary ms-2">Annuler</a>
             </form>
         </div>
     </div>

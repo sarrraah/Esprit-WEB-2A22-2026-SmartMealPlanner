@@ -1,13 +1,18 @@
 <?php
-require_once '../../config.php';
-require_once '../../model/Recette.php';
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../model/Repas.php';
 
-$recipeModel = new Recette();
-$recipes = $recipeModel->getAllRecettes();
-$categories = $recipeModel->getCategories();
-$categoriesMap = [];
-foreach ($categories as $cat) {
-    $categoriesMap[$cat['id_categorie']] = $cat['nom_categorie'];
+$recipeModel = new Repas();
+$recipes = $recipeModel->getAllRepas();
+$recettes = $recipeModel->getRecettes();
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$projectPath = str_replace('\\', '/', dirname(__DIR__, 2));
+$docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
+$relativeProject = str_replace($docRoot, '', $projectPath);
+$baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
+$recettesMap = [];
+foreach ($recettes as $cat) {
+    $recettesMap[$cat['id_recette']] = $cat['nom_recette'];
 }
 ?>
 <!DOCTYPE html>
@@ -48,11 +53,13 @@ foreach ($categories as $cat) {
             <h4 class="mb-4">Back Office</h4>
             <ul class="list-unstyled">
                 <li class="mb-2"><a href="index.php">Tableau de Bord</a></li>
-                <li class="mb-2"><a href="recette.php" class="active">Gestion des Repas</a></li>
-                <li class="mb-2"><a href="#">Gestion des Utilisateurs</a></li>
-                <li class="mb-2"><a href="#">Aliments Durables</a></li>
-                <li class="mb-2"><a href="#">Statistiques</a></li>
-                <li class="mb-2"><a href="../index.php">Retour au Front Office</a></li>
+                <li class="mb-2"><a href="repas.php" class="active">Gestion des Repas</a></li>
+                <li class="mb-2"><a href="recette.php">Gestion des Recettes</a></li>
+                <li class="mb-2"><a href="utilisateurs.php">Gestion des Utilisateurs</a></li>
+                <li class="mb-2"><a href="aliments_durables.php">Aliments Durables</a></li>
+                <li class="mb-2"><a href="statistiques.php">Statistiques</a></li>
+                <li class="mb-2"><a href="contenu_nutritionnel.php">Contenu Nutritionnel</a></li>
+                <li class="mb-2"><a href="../../index.php">Retour au Front Office</a></li>
             </ul>
         </nav>
 
@@ -60,7 +67,7 @@ foreach ($categories as $cat) {
         <div class="main-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>Gestion des Repas</h1>
-                <a href="add_recette.php" class="btn btn-success">Ajouter un repas</a>
+                <a href="add_recette.php" class="btn btn-success">Ajouter une recette</a>
             </div>
 
             <?php if (isset($_GET['success'])): ?>
@@ -75,10 +82,11 @@ foreach ($categories as $cat) {
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Image</th>
                                 <th>Nom</th>
                                 <th>Calories</th>
                                 <th>Ingrédients</th>
-                                <th>Catégorie</th>
+                                <th>Recette</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -86,13 +94,20 @@ foreach ($categories as $cat) {
                             <?php foreach ($recipes as $recipe): ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($recipe['id_repas']); ?></td>
+                                    <td>
+                                        <?php if (!empty($recipe['image_repas'])): ?>
+                                            <img src="<?php echo htmlspecialchars($baseUrl . '/' . $recipe['image_repas'], ENT_QUOTES, 'UTF-8'); ?>" alt="Image repas" style="width:70px;height:70px;object-fit:cover;border-radius:8px;">
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars($recipe['nom']); ?></td>
                                     <td><?php echo htmlspecialchars($recipe['calories'] ?? '-'); ?></td>
                                     <td><?php echo htmlspecialchars(substr($recipe['description'], 0, 50)) . (strlen($recipe['description']) > 50 ? '...' : ''); ?></td>
-                                    <td><?php echo htmlspecialchars($categoriesMap[$recipe['id_categorie']] ?? 'ID '.$recipe['id_categorie']); ?></td>
-                                    <td>
+                                    <td><?php echo htmlspecialchars($recettesMap[$recipe['id_recette']] ?? 'ID '.$recipe['id_recette']); ?></td>
+                                    <td class="text-center">
                                         <a href="edit_recette.php?id=<?php echo $recipe['id_repas']; ?>" class="btn btn-sm btn-warning">Modifier</a>
-                                        <a href="../../controller/RecetteController.php?action=delete&id=<?php echo $recipe['id_repas']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer ce repas ?');">Supprimer</a>
+                                        <a href="../../controller/RepasController.php?action=delete&id=<?php echo $recipe['id_repas']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce repas ?');">Supprimer</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

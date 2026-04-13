@@ -1,6 +1,6 @@
 <?php
-require_once '../../config.php';
-require_once '../../model/Recette.php';
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../model/Repas.php';
 
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $projectPath = str_replace('\\', '/', dirname(__DIR__, 2));
@@ -8,17 +8,17 @@ $docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
 $relativeProject = str_replace($docRoot, '', $projectPath);
 $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
 
-$recipeModel = new Recette();
+$recipeModel = new Repas();
 $recipe = null;
-$categories = $recipeModel->getCategories();
+$recettes = $recipeModel->getRecettes();
 
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
-    $recipe = $recipeModel->getRecetteById($id);
+    $recipe = $recipeModel->getRepasById($id);
 }
 
 if (!$recipe) {
-    header('Location: recette.php');
+    header('Location: repas.php');
     exit();
 }
 ?>
@@ -60,11 +60,13 @@ if (!$recipe) {
             <h4 class="mb-4">Back Office</h4>
             <ul class="list-unstyled">
                 <li class="mb-2"><a href="index.php">Tableau de Bord</a></li>
-                <li class="mb-2"><a href="recette.php">Gestion des Repas</a></li>
-                <li class="mb-2"><a href="#">Gestion des Utilisateurs</a></li>
-                <li class="mb-2"><a href="#">Aliments Durables</a></li>
-                <li class="mb-2"><a href="#">Statistiques</a></li>
-                <li class="mb-2"><a href="../index.php">Retour au Front Office</a></li>
+                <li class="mb-2"><a href="repas.php">Gestion des Repas</a></li>
+                <li class="mb-2"><a href="recette.php">Gestion des Recettes</a></li>
+                <li class="mb-2"><a href="utilisateurs.php">Gestion des Utilisateurs</a></li>
+                <li class="mb-2"><a href="aliments_durables.php">Aliments Durables</a></li>
+                <li class="mb-2"><a href="statistiques.php">Statistiques</a></li>
+                <li class="mb-2"><a href="contenu_nutritionnel.php">Contenu Nutritionnel</a></li>
+                <li class="mb-2"><a href="../../index.php">Retour au Front Office</a></li>
             </ul>
         </nav>
 
@@ -74,9 +76,10 @@ if (!$recipe) {
 <?php
 $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
 ?>
-            <form action="<?php echo htmlspecialchars($baseUrl . '/controller/RecetteController.php', ENT_QUOTES, 'UTF-8'); ?>" method="POST">
+            <form action="<?php echo htmlspecialchars($baseUrl . '/controller/RepasController.php', ENT_QUOTES, 'UTF-8'); ?>" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" name="id" value="<?php echo $recipe['id_repas']; ?>">
+                <input type="hidden" name="current_image" value="<?php echo htmlspecialchars($recipe['image_repas'] ?? ''); ?>">
                 <div class="mb-3">
                     <label for="nom" class="form-label">Nom du repas</label>
                     <input type="text" class="form-control" id="nom" name="nom" value="<?php echo htmlspecialchars($recipe['nom']); ?>" required>
@@ -90,16 +93,28 @@ $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
                     <input type="number" step="0.1" class="form-control" id="calories" name="calories" value="<?php echo htmlspecialchars($recipe['calories']); ?>">
                 </div>
                 <div class="mb-3">
-                    <label for="id_categorie" class="form-label">Catégorie</label>
-                    <select class="form-control" id="id_categorie" name="id_categorie" required>
-                        <option value="">Sélectionnez une catégorie</option>
-                        <?php foreach ($categories as $cat): ?>
-                            <option value="<?php echo $cat['id_categorie']; ?>" <?php echo $recipe['id_categorie'] == $cat['id_categorie'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($cat['nom_categorie']); ?></option>
+                    <label for="id_recette" class="form-label">Recette</label>
+                    <select class="form-control" id="id_recette" name="id_recette" required>
+                        <option value="">Sélectionnez une recette</option>
+                        <?php foreach ($recettes as $cat): ?>
+                            <option value="<?php echo $cat['id_recette']; ?>" <?php echo $recipe['id_recette'] == $cat['id_recette'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($cat['nom_recette']); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Image actuelle</label>
+                    <?php if (!empty($recipe['image_repas'])): ?>
+                        <div class="mb-2">
+                            <img src="<?php echo htmlspecialchars($baseUrl . '/' . $recipe['image_repas'], ENT_QUOTES, 'UTF-8'); ?>" alt="Image du repas" style="max-width: 200px; border-radius: 8px;">
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted mb-2">Aucune image.</p>
+                    <?php endif; ?>
+                    <input type="file" class="form-control" id="image_repas" name="image_repas" accept="image/*">
+                    <small class="text-muted">Laissez vide pour conserver l'image actuelle.</small>
+                </div>
                 <button type="submit" class="btn btn-primary">Mettre à Jour</button>
-                <a href="recette.php" class="btn btn-secondary ms-2">Annuler</a>
+                <a href="repas.php" class="btn btn-secondary ms-2">Annuler</a>
             </form>
         </div>
     </div>
