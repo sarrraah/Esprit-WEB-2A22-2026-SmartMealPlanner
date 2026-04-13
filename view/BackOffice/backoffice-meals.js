@@ -390,7 +390,12 @@
 
         fetch(api.del, { method: 'POST', body: fd, credentials: 'same-origin' })
           .then(function (res) {
-            return res.json();
+            if (!res.ok) {
+              throw new Error('HTTP ' + res.status + ': ' + res.statusText);
+            }
+            return res.json().catch(function () {
+              throw new Error('Invalid response format (expected JSON)');
+            });
           })
           .then(function (data) {
             if (data.ok) {
@@ -401,8 +406,9 @@
               showErrors(data.errors || ['Delete failed.']);
             }
           })
-          .catch(function () {
-            showErrors(['Network error while deleting.']);
+          .catch(function (err) {
+            console.error('Delete error:', err);
+            showErrors([err.message || 'Network error while deleting.']);
           });
       });
     });

@@ -381,12 +381,22 @@ final class MealDbStore
                 }
             }
 
-            // 4) Reset AUTO_INCREMENT
-            $pdo->exec("ALTER TABLE meal AUTO_INCREMENT = " . ((int) count($ids) + 1));
-
             $pdo->commit();
+            
+            // 4) Reset AUTO_INCREMENT (must be outside transaction since ALTER TABLE auto-commits in MySQL)
+            try {
+                $pdo->exec("ALTER TABLE meal AUTO_INCREMENT = " . ((int) count($ids) + 1));
+            } catch (Throwable) {
+                // Ignore AUTO_INCREMENT errors; they're not critical
+            }
         } catch (Throwable $e) {
-            $pdo->rollBack();
+            try {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+            } catch (Throwable) {
+                // Already rolled back or no transaction
+            }
             throw $e;
         }
     }
