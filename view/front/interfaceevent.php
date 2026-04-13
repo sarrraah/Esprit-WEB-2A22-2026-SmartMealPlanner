@@ -51,7 +51,6 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .hero h1{font-size:32px;font-weight:600;margin-bottom:10px;line-height:1.2}
 .hero h1 em{color:#fca5a5;font-style:normal}
 .hero p{color:rgba(255,255,255,0.6);font-size:15px;max-width:500px;margin:0 auto 28px;line-height:1.6}
-.hero-stats{display:flex;justify-content:center;gap:40px}
 .hs-val{font-size:24px;font-weight:600}
 .hs-lbl{font-size:12px;color:rgba(255,255,255,0.45);margin-top:3px}
 
@@ -120,12 +119,7 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
   <div class="hero-tag">Esprit Event Platform</div>
   <h1>Discover <em>exceptional</em> events</h1>
   <p>Conferences, hackathons, workshops — register in just a few clicks</p>
-  <div class="hero-stats">
-    <div><div class="hs-val"><?= $total ?></div><div class="hs-lbl">Events</div></div>
-    <div><div class="hs-val"><?= $actifs ?></div><div class="hs-lbl">Active</div></div>
-    <div><div class="hs-val"><?= $gratuits ?></div><div class="hs-lbl">Free</div></div>
-  </div>
-</div>
+
 
 <div class="main">
   <div class="section-header">
