@@ -2,7 +2,18 @@
 require '../../controller/EvenementController.php';
 $errors = [];
 
-$id         = isset($_GET['id']) ? $_GET['id'] : $_POST['id'];
+$id = null;
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+} elseif (isset($_POST['id'])) {
+    $id = $_POST['id'];
+}
+
+if (!$id) {
+    header('Location: listEvenements.php');
+    exit;
+}
+
 $controller = new EvenementController();
 $evenement  = $controller->getEvenementById($id);
 
@@ -59,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // En cas d'erreur, on garde les valeurs saisies
     $evenement->setTitre($titre);
     $evenement->setDescription($description);
     $evenement->setDateDebut($date_debut);
@@ -70,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $evenement->setStatut($statut);
     $evenement->setType($type);
 }
+
 function formatDateForInput($dateStr) {
     if (empty($dateStr)) return '';
     try {
@@ -176,9 +187,11 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
   <div class="card">
     <h2>Informations de l'événement</h2>
 
-    <?php foreach ($errors as $err): ?>
-      <div class="alert alert-danger">❌ <?= htmlspecialchars($err) ?></div>
-    <?php endforeach; ?>
+    <?php if (!empty($errors)): ?>
+      <?php foreach ($errors as $err): ?>
+        <div class="alert alert-danger">❌ <?= htmlspecialchars($err) ?></div>
+      <?php endforeach; ?>
+    <?php endif; ?>
 
     <form method="POST" action="">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -186,56 +199,59 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       <div class="form-row">
         <div class="form-group">
           <label>Titre *</label>
-          <input type="text" name="titre" required minlength="3"
+          <input type="text" name="titre" id="titre"
                  value="<?= htmlspecialchars($evenement->getTitre()) ?>">
         </div>
         <div class="form-group">
-          <label>Type</label>
-          <input type="text" name="type"
+          <label>Type *</label>
+          <input type="text" name="type" id="type"
                  value="<?= htmlspecialchars($evenement->getType()) ?>">
         </div>
       </div>
 
       <div class="form-group">
-        <label>Description</label>
-        <textarea name="description"><?= htmlspecialchars($evenement->getDescription()) ?></textarea>
+        <label>Description *</label>
+        <textarea name="description" id="description"><?= htmlspecialchars($evenement->getDescription()) ?></textarea>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>Date de Début *</label>
-          <!-- ✅ $dd est maintenant correctement formaté en Y-m-d\TH:i -->
-          <input type="datetime-local" name="date_debut" required value="<?= $dd ?>">
+          <input type="text" name="date_debut" id="date_debut"
+                 placeholder="YYYY-MM-DDTHH:MM"
+                 value="<?= $dd ?>">
         </div>
         <div class="form-group">
           <label>Date de Fin *</label>
-          <!-- ✅ $df est maintenant correctement formaté en Y-m-d\TH:i -->
-          <input type="datetime-local" name="date_fin" required value="<?= $df ?>">
+          <input type="text" name="date_fin" id="date_fin"
+                 placeholder="YYYY-MM-DDTHH:MM"
+                 value="<?= $df ?>">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Lieu</label>
-          <input type="text" name="lieu"
+          <label>Lieu *</label>
+          <input type="text" name="lieu" id="lieu"
                  value="<?= htmlspecialchars($evenement->getLieu()) ?>">
         </div>
         <div class="form-group">
           <label>Capacité Maximale *</label>
-          <input type="number" name="capacite_max" min="1"
-                 value="<?= htmlspecialchars($evenement->getCapaciteMax()) ?>" required>
+          <input type="text" name="capacite_max" id="capacite_max"
+                 value="<?= htmlspecialchars($evenement->getCapaciteMax()) ?>">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>Prix (TND) *</label>
-          <input type="number" name="prix" min="0" step="0.01"
-                 value="<?= htmlspecialchars($evenement->getPrix()) ?>" required>
+          <input type="text" name="prix" id="prix"
+                 value="<?= htmlspecialchars($evenement->getPrix()) ?>">
         </div>
         <div class="form-group">
           <label>Statut *</label>
-          <select name="statut" required>
+          <select name="statut" id="statut">
+            <option value="">-- Choisir --</option>
             <option value="actif"   <?= $evenement->getStatut() === 'actif'   ? 'selected' : '' ?>>Actif</option>
             <option value="annulé"  <?= $evenement->getStatut() === 'annulé'  ? 'selected' : '' ?>>Annulé</option>
             <option value="terminé" <?= $evenement->getStatut() === 'terminé' ? 'selected' : '' ?>>Terminé</option>
@@ -250,6 +266,76 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
     </form>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('form');
+
+    form.addEventListener('submit', function (e) {
+        const errors = [];
+
+        const titre       = document.getElementById('titre').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const date_debut  = document.getElementById('date_debut').value;
+        const date_fin    = document.getElementById('date_fin').value;
+        const lieu        = document.getElementById('lieu').value.trim();
+        const capacite    = document.getElementById('capacite_max').value;
+        const prix        = document.getElementById('prix').value;
+        const statut      = document.getElementById('statut').value;
+        const type        = document.getElementById('type').value.trim();
+
+        if (titre.length < 3)
+            errors.push("Le titre doit contenir au moins 3 caractères.");
+
+        if (description === '')
+            errors.push("La description est obligatoire.");
+
+        if (date_debut === '')
+            errors.push("La date de début est obligatoire.");
+
+        if (date_fin === '')
+            errors.push("La date de fin est obligatoire.");
+
+        if (date_debut !== '' && date_fin !== '' && date_fin <= date_debut)
+            errors.push("La date de fin doit être postérieure à la date de début.");
+
+        if (lieu === '')
+            errors.push("Le lieu est obligatoire.");
+
+        if (capacite === '' || isNaN(capacite) || !Number.isInteger(Number(capacite)) || parseInt(capacite) < 1)
+            errors.push("La capacité maximale doit être un entier positif (≥ 1).");
+
+        if (prix === '' || isNaN(prix) || parseFloat(prix) < 0)
+            errors.push("Le prix doit être un nombre positif.");
+
+        const statutsValides = ['actif', 'annulé', 'terminé'];
+        if (!statutsValides.includes(statut))
+            errors.push("Veuillez choisir un statut valide.");
+
+        if (type === '')
+            errors.push("Le type est obligatoire.");
+
+        let errorDiv = document.getElementById('js-errors');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.id = 'js-errors';
+            errorDiv.style.cssText = 'background:#fce8e8;border:1px solid #f09595;padding:12px 16px;margin-bottom:15px;border-radius:10px;color:#7f1d1d;font-size:14px;';
+            form.prepend(errorDiv);
+        }
+
+        if (errors.length > 0) {
+            e.preventDefault();
+            errorDiv.innerHTML = '<strong>Erreurs :</strong><ul style="margin:8px 0 0 16px">'
+                + errors.map(err => `<li>${err}</li>`).join('')
+                + '</ul>';
+            errorDiv.style.display = 'block';
+            window.scrollTo(0, 0);
+        } else {
+            errorDiv.style.display = 'none';
+        }
+    });
+});
+</script>
 
 </body>
 </html>

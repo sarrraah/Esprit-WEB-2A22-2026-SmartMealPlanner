@@ -54,7 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -114,6 +113,16 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .form-group textarea{resize:vertical;min-height:90px}
 .form-group select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a3535' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
 
+/* Champ invalide mis en évidence par JS */
+.form-group input.is-invalid,
+.form-group textarea.is-invalid,
+.form-group select.is-invalid{
+  border-color:#b91c1c;
+  box-shadow:0 0 0 3px rgba(185,28,28,0.15)
+}
+.field-error{font-size:12px;color:#b91c1c;margin-top:2px;display:none}
+.field-error.visible{display:block}
+
 .form-actions{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
 
 .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;border:none;text-decoration:none;transition:all .15s}
@@ -150,75 +159,90 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
   <div class="card">
     <h2>Event Information</h2>
 
+    <!-- Erreurs PHP (serveur) -->
     <?php foreach ($errors as $err): ?>
       <div class="alert alert-danger">❌ <?= htmlspecialchars($err) ?></div>
     <?php endforeach; ?>
 
-    <form method="POST" action="">
+    <!-- Conteneur des erreurs JS (côté client) -->
+    <div id="js-errors"></div>
+
+    <!-- IMPORTANT : novalidate désactive la validation HTML5 native du navigateur -->
+    <form method="POST" action="" id="eventForm" novalidate>
+
       <div class="form-row">
         <div class="form-group">
           <label>Title *</label>
-          <input type="text" name="titre"
+          <input type="text" name="titre" id="titre"
                  placeholder="Enter the event title"
-                 value="<?= htmlspecialchars($_POST['titre'] ?? '') ?>" required minlength="3">
+                 value="<?= htmlspecialchars($_POST['titre'] ?? '') ?>">
+          <span class="field-error" id="err-titre"></span>
         </div>
         <div class="form-group">
-          <label>Type</label>
-          <input type="text" name="type"
+          <label>Type *</label>
+          <input type="text" name="type" id="type"
                  placeholder="E.g: Conference, Concert, Workshop..."
                  value="<?= htmlspecialchars($_POST['type'] ?? '') ?>">
+          <span class="field-error" id="err-type"></span>
         </div>
       </div>
 
       <div class="form-group">
-        <label>Description</label>
-        <textarea name="description"
+        <label>Description *</label>
+        <textarea name="description" id="description"
                   placeholder="Describe the event..."><?= htmlspecialchars($_POST['description'] ?? '') ?></textarea>
+        <span class="field-error" id="err-description"></span>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>Start Date *</label>
-          <input type="datetime-local" name="date_debut"
-                 value="<?= htmlspecialchars($_POST['date_debut'] ?? '') ?>" required>
+          <input type="datetime-local" name="date_debut" id="date_debut"
+                 value="<?= htmlspecialchars($_POST['date_debut'] ?? '') ?>">
+          <span class="field-error" id="err-date_debut"></span>
         </div>
         <div class="form-group">
           <label>End Date *</label>
-          <input type="datetime-local" name="date_fin"
-                 value="<?= htmlspecialchars($_POST['date_fin'] ?? '') ?>" required>
+          <input type="datetime-local" name="date_fin" id="date_fin"
+                 value="<?= htmlspecialchars($_POST['date_fin'] ?? '') ?>">
+          <span class="field-error" id="err-date_fin"></span>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Location</label>
-          <input type="text" name="lieu"
+          <label>Location *</label>
+          <input type="text" name="lieu" id="lieu"
                  placeholder="E.g: Tunis, Horizon Hall..."
                  value="<?= htmlspecialchars($_POST['lieu'] ?? '') ?>">
+          <span class="field-error" id="err-lieu"></span>
         </div>
         <div class="form-group">
           <label>Maximum Capacity *</label>
-          <input type="number" name="capacite_max" min="1"
+          <input type="number" name="capacite_max" id="capacite_max"
                  placeholder="E.g: 200"
-                 value="<?= htmlspecialchars($_POST['capacite_max'] ?? '') ?>" required>
+                 value="<?= htmlspecialchars($_POST['capacite_max'] ?? '') ?>">
+          <span class="field-error" id="err-capacite_max"></span>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>Price (TND) *</label>
-          <input type="number" name="prix" min="0" step="0.01"
+          <input type="number" name="prix" id="prix"
                  placeholder="E.g: 25.00"
-                 value="<?= htmlspecialchars($_POST['prix'] ?? '') ?>" required>
+                 value="<?= htmlspecialchars($_POST['prix'] ?? '') ?>">
+          <span class="field-error" id="err-prix"></span>
         </div>
         <div class="form-group">
           <label>Status *</label>
-          <select name="statut" required>
+          <select name="statut" id="statut">
             <option value="">-- Choose a status --</option>
             <option value="actif"   <?= (($_POST['statut'] ?? '') === 'actif')   ? 'selected' : '' ?>>Active</option>
             <option value="annulé"  <?= (($_POST['statut'] ?? '') === 'annulé')  ? 'selected' : '' ?>>Cancelled</option>
             <option value="terminé" <?= (($_POST['statut'] ?? '') === 'terminé') ? 'selected' : '' ?>>Ended</option>
           </select>
+          <span class="field-error" id="err-statut"></span>
         </div>
       </div>
 
@@ -229,6 +253,91 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
     </form>
   </div>
 </div>
+
+<script>
+document.getElementById('eventForm').addEventListener('submit', function (e) {
+
+    /* ── 1. Lecture des valeurs ── */
+    var titre       = document.getElementById('titre').value.trim();
+    var description = document.getElementById('description').value.trim();
+    var date_debut  = document.getElementById('date_debut').value;
+    var date_fin    = document.getElementById('date_fin').value;
+    var lieu        = document.getElementById('lieu').value.trim();
+    var capacite    = document.getElementById('capacite_max').value;
+    var prix        = document.getElementById('prix').value;
+    var statut      = document.getElementById('statut').value;
+    var type        = document.getElementById('type').value.trim();
+
+    /* ── 2. Réinitialisation des erreurs précédentes ── */
+    var allErrors = document.querySelectorAll('.field-error');
+    for (var i = 0; i < allErrors.length; i++) {
+        allErrors[i].textContent = '';
+        allErrors[i].classList.remove('visible');
+    }
+    var allFields = document.querySelectorAll('.is-invalid');
+    for (var j = 0; j < allFields.length; j++) {
+        allFields[j].classList.remove('is-invalid');
+    }
+    document.getElementById('js-errors').innerHTML = '';
+
+    /* ── 3. Règles de validation ── */
+    var errors = [];
+
+    function addError(fieldId, message) {
+        errors.push(message);
+        var field = document.getElementById(fieldId);
+        var errSpan = document.getElementById('err-' + fieldId);
+        if (field)   field.classList.add('is-invalid');
+        if (errSpan) { errSpan.textContent = message; errSpan.classList.add('visible'); }
+    }
+
+    if (titre.length < 3)
+        addError('titre', 'Le titre doit contenir au moins 3 caractères.');
+
+    if (description === '')
+        addError('description', 'La description est obligatoire.');
+
+    if (date_debut === '')
+        addError('date_debut', 'La date de début est obligatoire.');
+
+    if (date_fin === '')
+        addError('date_fin', 'La date de fin est obligatoire.');
+
+    if (date_debut !== '' && date_fin !== '' && date_fin <= date_debut)
+        addError('date_fin', 'La date de fin doit être postérieure à la date de début.');
+
+    if (lieu === '')
+        addError('lieu', 'Le lieu est obligatoire.');
+
+    if (capacite === '' || isNaN(capacite) || parseInt(capacite, 10) < 1)
+        addError('capacite_max', 'La capacité maximale doit être un entier positif (≥ 1).');
+
+    if (prix === '' || isNaN(prix) || parseFloat(prix) < 0)
+        addError('prix', 'Le prix doit être un nombre positif.');
+
+    if (statut === '')
+        addError('statut', 'Veuillez choisir un statut valide.');
+
+    if (type === '')
+        addError('type', 'Le type est obligatoire.');
+
+    /* ── 4. Blocage ou envoi ── */
+    if (errors.length > 0) {
+        e.preventDefault();
+
+        /* Bloc d'erreurs récapitulatif en haut du formulaire */
+        var container = document.getElementById('js-errors');
+        var html = '';
+        for (var k = 0; k < errors.length; k++) {
+            html += '<div class="alert alert-danger">❌ ' + errors[k] + '</div>';
+        }
+        container.innerHTML = html;
+
+        /* Scroll vers les erreurs */
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+});
+</script>
 
 </body>
 </html>

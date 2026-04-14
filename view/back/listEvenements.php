@@ -352,8 +352,8 @@ td b{font-weight:600;color:#7f1d1d}
       </div>
     </div>
 
-  </div><!-- /content -->
-</div><!-- /main-wrap -->
+  </div>
+</div>
 
 <script>
 const allRows = Array.from(document.querySelectorAll('#eventsTable tbody tr'));
