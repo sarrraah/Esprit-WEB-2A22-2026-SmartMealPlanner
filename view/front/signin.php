@@ -26,6 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header("Location: index.php?id=" . urlencode($user['id']) . "&login=success");
                     exit();
                 }
+                if ($user['statut'] === 'pending') {
+                    $error = 'Your request is still under review by the admin team.';
+                } elseif ($user['statut'] === 'active') {
+                    header('Location: index.php?id=' . urlencode((string)$user['id']) . '&login=success');
+                    exit;
+                } else {
+                    $error = 'Your account is not available right now.';
+                }
             } else {
                 $error = "Invalid email or password.";
             }
@@ -361,12 +369,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <form method="POST" action="">
                     <div class="input-group">
                         <label for="email">Email address</label>
-                        <input type="text" id="email" name="email" placeholder="Enter your email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"autocomplete="off">
+                        <input type="text" id="email" name="email" placeholder="Enter your email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                     </div>
 
                     <div class="input-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="new-password">
+                        <input type="password" id="password" name="password" placeholder="Enter your password">
                     </div>
 
                     <div class="forgot-wrap">

@@ -15,11 +15,51 @@ $sexe = '';
 $date_naissance = '';
 $role = '';
 $statut = '';
+$experience = '';
+$speciality = '';
+$motivation = '';
+$reapplyError = '';
 
 try {
     $pdo = config::getConnexion();
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Reapply request form
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reapply_request'])) {
+        $requestedRole = strtolower(trim($_POST['requested_role'] ?? ''));
+        $newExperience = trim($_POST['new_experience'] ?? '');
+        $newSpeciality = trim($_POST['new_speciality'] ?? '');
+        $newMotivation = trim($_POST['new_motivation'] ?? '');
+
+        if (!in_array($requestedRole, ['coach', 'nutritionist'], true)) {
+            $reapplyError = 'Please select a valid role.';
+        } elseif ($newExperience === '' || $newSpeciality === '' || $newMotivation === '') {
+            $reapplyError = 'Please complete all request fields.';
+        } else {
+            $stmtReapply = $pdo->prepare("
+                UPDATE user
+                SET role = :role,
+                    statut = 'pending',
+                    experience = :experience,
+                    speciality = :speciality,
+                    motivation = :motivation
+                WHERE id = :id
+            ");
+
+            $stmtReapply->execute([
+                'role' => $requestedRole,
+                'experience' => $newExperience,
+                'speciality' => $newSpeciality,
+                'motivation' => $newMotivation,
+                'id' => $userId
+            ]);
+
+            header("Location: profile.php?id=" . urlencode($userId) . "&request=pending");
+            exit();
+        }
+    }
+
+    // Main profile update form
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['reapply_request'])) {
         $nom = trim($_POST['nom'] ?? '');
         $prenom = trim($_POST['prenom'] ?? '');
         $email = trim($_POST['email'] ?? '');
@@ -51,7 +91,7 @@ try {
     $sql = "SELECT * FROM user WHERE id = :id";
     $stmt = $pdo->prepare($sql);
     $stmt->execute(['id' => $userId]);
-    $user = $stmt->fetch();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
         $nom = $user['nom'];
@@ -61,14 +101,64 @@ try {
         $date_naissance = $user['date_naissance'];
         $role = $user['role'];
         $statut = $user['statut'];
+        $experience = $user['experience'] ?? '';
+        $speciality = $user['speciality'] ?? '';
+        $motivation = $user['motivation'] ?? '';
     } else {
         die("User not found.");
     }
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
-?>
 
+$showPendingRequestBanner =
+    isset($_GET['request']) &&
+    $_GET['request'] === 'pending' &&
+    strtolower(trim((string)$statut)) === 'pending';
+
+/* Handle denied state before building display logic */
+if (strtolower(trim((string)$statut)) === 'denied') {
+    $pdo->prepare("
+        UPDATE user
+        SET role = 'client', statut = 'active'
+        WHERE id = :id
+    ")->execute(['id' => $userId]);
+
+    $role = 'client';
+    $statut = 'active';
+}
+
+
+
+/* Handle denied state before building display logic */
+if (strtolower(trim((string)$statut)) === 'denied') {
+    $pdo->prepare("
+        UPDATE user
+        SET role = 'client', statut = 'active'
+        WHERE id = :id
+    ")->execute(['id' => $userId]);
+
+    $role = 'client';
+    $statut = 'active';
+}
+
+/* Force pending banner state if redirected after reapply */
+if ($showPendingRequestBanner) {
+    $statut = 'pending';
+}
+
+$normalizedRole = strtolower(trim((string)$role));
+$normalizedStatus = strtolower(trim((string)$statut));
+$showRequestSection = ($normalizedStatus === 'pending');
+
+$requestBoxClass = 'request-neutral';
+$requestTitle = 'Account Status';
+$requestText = 'Your account is active and ready to use.';
+
+$requestBoxClass = 'request-pending';
+$requestTitle = 'Professional Request Pending';
+$requestText = 'Your professional account request is currently being reviewed by the admin team. You will be able to access professional features once it has been approved.';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -160,6 +250,20 @@ try {
             box-shadow: 0 18px 45px rgba(206, 18, 18, 0.12);
         }
 
+        .request-banner {
+            padding: 16px 18px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+            font-weight: 600;
+            line-height: 1.7;
+        }
+
+        .request-banner-pending {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+        }
+
         .profile-top {
             text-align: center;
             margin-bottom: 35px;
@@ -198,6 +302,248 @@ try {
             background: rgba(206, 18, 18, 0.08);
             color: #ce1212;
             border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .request-status-box {
+            margin-top: 28px;
+            border-radius: 20px;
+            padding: 20px 22px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .request-status-box:hover {
+            transform: translateY(-2px);
+        }
+
+        .request-pending {
+            background: #fff8e8;
+            border-color: #fde3a7;
+        }
+
+        .request-neutral {
+            background: #f8f9fb;
+            border-color: #e9ecef;
+        }
+
+        .request-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .request-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+            color: #212529;
+        }
+
+        .request-badge {
+            display: inline-block;
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+
+        .request-badge.pending {
+            background: rgba(255, 193, 7, 0.16);
+            color: #b58100;
+        }
+
+        .request-badge.neutral {
+            background: rgba(108, 117, 125, 0.12);
+            color: #6c757d;
+        }
+
+        .request-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #5f6770;
+            margin-bottom: 0;
+        }
+
+        .request-details {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .request-detail-box {
+            background: rgba(255, 255, 255, 0.72);
+            border-radius: 16px;
+            padding: 15px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .request-detail-box.full {
+            grid-column: 1 / -1;
+        }
+
+        .request-detail-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #8a8f98;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 6px;
+        }
+
+        .request-detail-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #212529;
+            line-height: 1.65;
+            word-break: break-word;
+        }
+
+        .reapply-card {
+            margin-top: 26px;
+            background: #ffffff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            padding: 22px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        }
+
+        .reapply-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 8px;
+        }
+
+        .reapply-text {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
+
+        .reapply-toggle-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 600;
+            font-size: 14px;
+            background: #ce1212;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.25s ease;
+        }
+
+        .reapply-toggle-btn:hover {
+            background: #b51010;
+            transform: translateY(-1px);
+        }
+
+        .reapply-hidden {
+            display: none;
+            margin-top: 18px;
+        }
+
+        .reapply-visible {
+            display: block;
+            margin-top: 18px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .reapply-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .reapply-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .reapply-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .reapply-field label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 7px;
+        }
+
+        .reapply-field input,
+        .reapply-field select,
+        .reapply-field textarea {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 11px 12px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s ease;
+        }
+
+        .reapply-field input:focus,
+        .reapply-field select:focus,
+        .reapply-field textarea:focus {
+            border-color: #ce1212;
+            box-shadow: 0 0 0 0.15rem rgba(206, 18, 18, 0.12);
+        }
+
+        .reapply-field textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .reapply-actions {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .reapply-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 13px 22px;
+            font-weight: 600;
+            font-size: 15px;
+            background: #ce1212;
+            color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(206, 18, 18, 0.2);
+        }
+
+        .reapply-btn:hover {
+            background: #b51010;
+            transform: translateY(-2px);
+        }
+
+        .reapply-error {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 12px 14px;
+            border-radius: 12px;
+            margin-bottom: 16px;
             font-size: 14px;
             font-weight: 600;
         }
@@ -280,6 +626,11 @@ try {
             color: #6c757d;
         }
 
+        .status-pending {
+            background: rgba(255, 193, 7, 0.16);
+            color: #b58100;
+        }
+
         .profile-actions {
             margin-top: 35px;
             display: flex;
@@ -347,18 +698,65 @@ try {
                 padding: 28px 20px;
             }
 
-            .info-grid {
+            .request-details,
+            .info-grid,
+            .reapply-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .request-detail-box.full,
+            .reapply-field.full {
+                grid-column: auto;
             }
 
             .profile-actions {
                 flex-direction: column;
             }
 
-            .profile-btn {
+            .profile-btn,
+            .reapply-btn {
                 justify-content: center;
                 width: 100%;
             }
+
+            .reapply-actions {
+                justify-content: stretch;
+            }
+        }
+
+        .request-banner,
+        .alert-request {
+            display: block;
+            width: 100%;
+            padding: 18px 22px;
+            border-radius: 18px;
+            margin-bottom: 28px;
+            font-weight: 600;
+            font-size: 15px;
+            line-height: 1.7;
+            border: 1px solid transparent;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        }
+
+        .request-banner-pending {
+            background: linear-gradient(135deg, #fffaf0 0%, #fff7ed 100%) !important;
+            color: #c2410c !important;
+            border: 1px solid #fed7aa !important;
+            border-left: 5px solid #f59e0b !important;
+        }
+
+        .alert-accepted {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf3 100%) !important;
+            color: #15803d !important;
+            border: 1px solid #bbf7d0 !important;
+            border-left: 5px solid #22c55e !important;
+        }
+
+        .alert-denied {
+            background: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%) !important;
+            color: #b91c1c !important;
+            border: 1px solid #fecaca !important;
+            border-left: 5px solid #ef4444 !important;
         }
     </style>
 </head>
@@ -407,6 +805,40 @@ try {
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8" data-aos="zoom-in" data-aos-delay="100">
+
+                    <?php
+                    $requestStatus = $_GET['request'] ?? null;
+
+                    $showPendingRequestBanner = (
+                        $requestStatus === 'pending' &&
+                        $normalizedStatus === 'pending'
+                    );
+
+                    $showDeniedBanner = (
+                        $normalizedRole === 'client' &&
+                        $normalizedStatus === 'active' &&
+                        (
+                            trim((string)$experience) !== '' ||
+                            trim((string)$speciality) !== '' ||
+                            trim((string)$motivation) !== ''
+                        )
+                    );
+                    ?>
+
+                    <?php if ($showPendingRequestBanner): ?>
+                        <div class="request-banner request-banner-pending">
+                            Your professional request has been submitted successfully and is now pending admin review.
+                        </div>
+                    <?php elseif ($normalizedStatus === 'active' && ($normalizedRole === 'coach' || $normalizedRole === 'nutritionist')): ?>
+                        <div class="alert-request alert-accepted">
+                            Your professional request has been approved.
+                        </div>
+                    <?php elseif ($showDeniedBanner): ?>
+                        <div class="alert-request alert-denied">
+                            Your professional request was not approved. You can continue using your account as a client.
+                        </div>
+                    <?php endif; ?>
+
                     <div class="profile-card">
 
                         <div class="profile-top">
@@ -416,6 +848,59 @@ try {
                             <h2 class="profile-name"><?= htmlspecialchars($prenom . ' ' . $nom) ?></h2>
                             <span class="profile-role"><?= htmlspecialchars($role) ?></span>
                         </div>
+
+                        <?php if ($normalizedRole === 'client' && $normalizedStatus === 'active'): ?>
+                            <div class="reapply-card">
+                                <div class="reapply-title">Professional Account</div>
+                                <div class="reapply-text">
+                                    Want to join as a coach or nutritionist? Submit a request and the admin team will review it.
+                                </div>
+
+                                <button type="button" class="reapply-toggle-btn" id="toggleReapplyBtn">
+                                    Apply for Professional Account
+                                </button>
+
+                                <div id="reapplyFormWrapper" class="reapply-hidden">
+                                    <?php if ($reapplyError !== ''): ?>
+                                        <div class="reapply-error"><?= htmlspecialchars($reapplyError) ?></div>
+                                    <?php endif; ?>
+
+                                    <form method="POST" action="profile.php?id=<?= urlencode($userId) ?>">
+                                        <input type="hidden" name="reapply_request" value="1">
+
+                                        <div class="reapply-grid">
+                                            <div class="reapply-field">
+                                                <label for="requested_role">Requested Role</label>
+                                                <select name="requested_role" id="requested_role">
+                                                    <option value="">Select a role</option>
+                                                    <option value="coach">Coach</option>
+                                                    <option value="nutritionist">Nutritionist</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="reapply-field">
+                                                <label for="new_experience">Years of Experience</label>
+                                                <input type="text" name="new_experience" id="new_experience" placeholder="Enter your experience">
+                                            </div>
+
+                                            <div class="reapply-field">
+                                                <label for="new_speciality">Speciality</label>
+                                                <input type="text" name="new_speciality" id="new_speciality" placeholder="Enter your speciality">
+                                            </div>
+
+                                            <div class="reapply-field full">
+                                                <label for="new_motivation">Motivation</label>
+                                                <textarea name="new_motivation" id="new_motivation" placeholder="Tell us why you want to apply"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="reapply-actions">
+                                            <button type="submit" class="reapply-btn">Submit Request</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                         <form method="POST" action="profile.php?id=<?= urlencode($userId) ?>">
                             <div class="info-grid">
@@ -478,6 +963,20 @@ try {
                                     </div>
                                 </div>
 
+                                <div class="info-box">
+                                    <span class="info-label">Account Status</span>
+                                    <div class="info-value">
+                                        <?php
+                                        $displayStatus = in_array($normalizedStatus, ['active', 'pending', 'banned', 'deactivated'], true)
+                                            ? $normalizedStatus
+                                            : 'active';
+                                        ?>
+                                        <span class="status-badge status-<?= htmlspecialchars($displayStatus) ?>">
+                                            <?= htmlspecialchars(ucfirst($displayStatus)) ?>
+                                        </span>
+                                    </div>
+                                </div>
+
                             </div>
 
                             <div class="profile-actions">
@@ -527,6 +1026,26 @@ try {
             duration: 900,
             once: true
         });
+
+        const toggleBtn = document.getElementById('toggleReapplyBtn');
+        const formWrapper = document.getElementById('reapplyFormWrapper');
+
+        if (toggleBtn && formWrapper) {
+            toggleBtn.addEventListener('click', function() {
+                if (formWrapper.classList.contains('reapply-visible')) {
+                    formWrapper.classList.remove('reapply-visible');
+                    formWrapper.classList.add('reapply-hidden');
+                } else {
+                    formWrapper.classList.remove('reapply-hidden');
+                    formWrapper.classList.add('reapply-visible');
+                }
+            });
+        }
+
+        if (window.location.search.includes('request=')) {
+            const cleanUrl = window.location.pathname + '?id=<?= urlencode($userId) ?>';
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
     </script>
 
 </body>

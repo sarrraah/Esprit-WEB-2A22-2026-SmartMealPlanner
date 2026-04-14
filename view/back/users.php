@@ -7,13 +7,79 @@ require_once __DIR__ . '/../../controller/UserController.php';
 $controller = new UserController();
 $users = $controller->index();
 
+if (isset($_GET['filter']) && $_GET['filter'] === 'pending') {
+    $users = array_filter($users, function ($u) {
+        return strtolower(trim($u['statut'] ?? '')) === 'pending';
+    });
+}
+
+$search = trim($_GET['search'] ?? '');
+$sort = trim($_GET['sort'] ?? '');
+
+if ($search !== '') {
+    $users = array_filter($users, function ($u) use ($search) {
+        $searchLower = strtolower($search);
+
+        $fullName = strtolower(trim(($u['nom'] ?? '') . ' ' . ($u['prenom'] ?? '')));
+        $email = strtolower((string)($u['email'] ?? ''));
+        $role = strtolower((string)($u['role'] ?? ''));
+        $status = strtolower((string)($u['statut'] ?? ''));
+        $gender = strtolower((string)($u['sexe'] ?? ''));
+        $id = strtolower((string)($u['id'] ?? ''));
+
+        return strpos($fullName, $searchLower) !== false
+            || strpos($email, $searchLower) !== false
+            || strpos($role, $searchLower) !== false
+            || strpos($status, $searchLower) !== false
+            || strpos($gender, $searchLower) !== false
+            || strpos($id, $searchLower) !== false;
+    });
+}
+
+if ($sort !== '') {
+    usort($users, function ($a, $b) use ($sort) {
+        switch ($sort) {
+            case 'name_asc':
+                $valueA = strtolower(trim(($a['nom'] ?? '') . ' ' . ($a['prenom'] ?? '')));
+                $valueB = strtolower(trim(($b['nom'] ?? '') . ' ' . ($b['prenom'] ?? '')));
+                return strcmp($valueA, $valueB);
+
+            case 'name_desc':
+                $valueA = strtolower(trim(($a['nom'] ?? '') . ' ' . ($a['prenom'] ?? '')));
+                $valueB = strtolower(trim(($b['nom'] ?? '') . ' ' . ($b['prenom'] ?? '')));
+                return strcmp($valueB, $valueA);
+
+            case 'id_asc':
+                return (int)($a['id'] ?? 0) <=> (int)($b['id'] ?? 0);
+
+            case 'id_desc':
+                return (int)($b['id'] ?? 0) <=> (int)($a['id'] ?? 0);
+
+            case 'role_asc':
+                $valueA = strtolower(trim((string)($a['role'] ?? '')));
+                $valueB = strtolower(trim((string)($b['role'] ?? '')));
+                return strcmp($valueA, $valueB);
+
+            case 'status_asc':
+                $valueA = strtolower(trim((string)($a['statut'] ?? '')));
+                $valueB = strtolower(trim((string)($b['statut'] ?? '')));
+                return strcmp($valueA, $valueB);
+
+            default:
+                return 0;
+        }
+    });
+}
+
 $totalUsers = count($users);
 $clientCount = 0;
 $coachCount = 0;
 $nutritionistCount = 0;
+$pendingCount = 0;
 
 foreach ($users as $u) {
     $role = strtolower(trim($u['role'] ?? ''));
+    $status = strtolower(trim($u['statut'] ?? ''));
 
     if ($role === 'client') {
         $clientCount++;
@@ -21,6 +87,10 @@ foreach ($users as $u) {
         $coachCount++;
     } elseif ($role === 'nutritionist') {
         $nutritionistCount++;
+    }
+
+    if ($status === 'pending') {
+        $pendingCount++;
     }
 }
 ?>
@@ -126,7 +196,7 @@ foreach ($users as $u) {
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 14px;
         }
 
@@ -147,6 +217,15 @@ foreach ($users as $u) {
         .summary-box strong {
             font-size: 28px;
             color: #b91c1c;
+        }
+
+        .summary-box.pending-box {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+        }
+
+        .summary-box.pending-box strong {
+            color: #b45309;
         }
 
         .main-card {
@@ -185,6 +264,96 @@ foreach ($users as $u) {
             padding: 10px 14px;
             border-radius: 999px;
             border: 1px solid #fecaca;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            padding: 18px;
+            background: rgba(255, 250, 250, 0.95);
+            border: 1px solid #fee2e2;
+            border-radius: 20px;
+        }
+
+        .toolbar-form {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            align-items: end;
+            width: 100%;
+        }
+
+        .toolbar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 220px;
+            flex: 1;
+        }
+
+        .toolbar-group label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #7f1d1d;
+        }
+
+        .toolbar-input,
+        .toolbar-select {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #fecaca;
+            border-radius: 14px;
+            font-size: 14px;
+            color: #374151;
+            background: #ffffff;
+            outline: none;
+            transition: 0.2s ease;
+        }
+
+        .toolbar-input:focus,
+        .toolbar-select:focus {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.10);
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .toolbar-btn {
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            padding: 13px 18px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: 0.25s ease;
+            white-space: nowrap;
+        }
+
+        .toolbar-btn-primary {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: #ffffff;
+            box-shadow: 0 14px 28px rgba(185, 28, 28, 0.16);
+        }
+
+        .toolbar-btn-secondary {
+            background: #ffffff;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+
+        .toolbar-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.96;
         }
 
         .table-wrap {
@@ -293,9 +462,31 @@ foreach ($users as $u) {
             color: #dc2626;
         }
 
+        .badge-status-deactivated {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
         .badge-status-default {
             background: #f3f4f6;
             color: #374151;
+        }
+
+        .badge-status-pending {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #fef3c7;
+            color: #b45309;
+            font-weight: 600;
+        }
+
+        .badge-status-pending:hover {
+            opacity: 0.9;
+        }
+
+        .status-link {
+            text-decoration: none;
         }
 
         .gender-pill {
@@ -422,6 +613,30 @@ foreach ($users as $u) {
                 text-align: center;
             }
 
+            .toolbar {
+                padding: 16px;
+            }
+
+            .toolbar-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar-group {
+                width: 100%;
+                min-width: 100%;
+            }
+
+            .toolbar-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .toolbar-btn {
+                width: 100%;
+                text-align: center;
+            }
+
             .modal-actions {
                 flex-direction: column;
             }
@@ -470,6 +685,10 @@ foreach ($users as $u) {
                     <span>Nutritionists</span>
                     <strong><?= $nutritionistCount ?></strong>
                 </div>
+                <a href="pending_requests.php" class="summary-box" style="text-decoration:none;">
+                    <span>Pending Requests</span>
+                    <strong><?= $pendingCount ?></strong>
+                </a>
             </div>
         </div>
 
@@ -482,6 +701,31 @@ foreach ($users as $u) {
                 <div class="users-count-pill"><?= $totalUsers ?> user(s)</div>
             </div>
 
+            <div class="toolbar">
+                <div class="toolbar-form">
+                    <div class="toolbar-group">
+                        <label for="search">Search</label>
+                        <input
+                            type="text"
+                            id="search"
+                            class="toolbar-input"
+                            placeholder="Search by ID, name, email, role, status, or gender">
+                    </div>
+
+                    <div class="toolbar-group">
+                        <label for="sort">Sort By</label>
+                        <select id="sort" class="toolbar-select">
+                            <option value="">Default Order</option>
+                            <option value="id_asc">ID: Low to High</option>
+                            <option value="id_desc">ID: High to Low</option>
+                            <option value="name_asc">Name: A to Z</option>
+                            <option value="name_desc">Name: Z to A</option>
+                            <option value="role_asc">Role: A to Z</option>
+                            <option value="status_asc">Status: A to Z</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -520,6 +764,8 @@ foreach ($users as $u) {
                                     $statusClass = 'badge-status-banned';
                                 } elseif ($status === 'deactivated') {
                                     $statusClass = 'badge-status-deactivated';
+                                } elseif ($status === 'pending') {
+                                    $statusClass = 'badge-status-pending';
                                 }
 
                                 $normalizedGender = strtolower(trim($genderRaw));
@@ -534,7 +780,11 @@ foreach ($users as $u) {
                                 <tr
                                     class="user-row"
                                     data-id="<?= htmlspecialchars((string)$user['id']) ?>"
-                                    data-name="<?= htmlspecialchars(trim(($user['nom'] ?? '') . ' ' . ($user['prenom'] ?? ''))) ?>">
+                                    data-name="<?= htmlspecialchars(strtolower(trim(($user['nom'] ?? '') . ' ' . ($user['prenom'] ?? '')))) ?>"
+                                    data-email="<?= htmlspecialchars(strtolower((string)($user['email'] ?? ''))) ?>"
+                                    data-role="<?= htmlspecialchars(strtolower((string)($user['role'] ?? ''))) ?>"
+                                    data-status="<?= htmlspecialchars(strtolower((string)($user['statut'] ?? ''))) ?>"
+                                    data-gender="<?= htmlspecialchars(strtolower($genderDisplay)) ?>">
                                     <td><span class="id-pill">#<?= htmlspecialchars((string)($user['id'] ?? '')) ?></span></td>
                                     <td class="name-cell"><?= htmlspecialchars((string)($user['nom'] ?? '—')) ?></td>
                                     <td class="name-cell"><?= htmlspecialchars((string)($user['prenom'] ?? '—')) ?></td>
@@ -542,13 +792,19 @@ foreach ($users as $u) {
                                     <td class="email-cell"><?= htmlspecialchars((string)($user['email'] ?? '—')) ?></td>
                                     <td>
                                         <span class="badge <?= $roleClass ?>">
-                                            <?= htmlspecialchars($role !== '' ? $role : '—') ?>
+                                            <?= htmlspecialchars($role !== '' ? ucfirst($role) : '—') ?>
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge <?= $statusClass ?>">
-                                            <?= htmlspecialchars($status !== '' ? $status : '—') ?>
-                                        </span>
+                                        <?php if ($status === 'pending'): ?>
+                                            <a href="review_user_request.php?id=<?= urlencode((string)$user['id']) ?>" class="badge <?= $statusClass ?> status-link">
+                                                <?= htmlspecialchars(ucfirst($status)) ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="badge <?= $statusClass ?>">
+                                                <?= htmlspecialchars($status !== '' ? ucfirst($status) : '—') ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <span class="gender-pill"><?= htmlspecialchars($genderDisplay) ?></span>
@@ -585,13 +841,18 @@ foreach ($users as $u) {
     <script>
         let currentMode = null;
 
-        const rows = document.querySelectorAll('.user-row');
+        const tbody = document.querySelector('tbody');
+        const rows = Array.from(document.querySelectorAll('.user-row'));
+
         const editModeBtn = document.getElementById('editModeBtn');
         const deleteModeBtn = document.getElementById('deleteModeBtn');
         const deleteModal = document.getElementById('deleteModal');
         const modalDeleteUserId = document.getElementById('modalDeleteUserId');
         const deleteModalText = document.getElementById('deleteModalText');
         const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+        const searchInput = document.getElementById('search');
+        const sortSelect = document.getElementById('sort');
 
         function clearRowState() {
             rows.forEach(row => row.classList.remove('pending-row'));
@@ -619,6 +880,63 @@ foreach ($users as $u) {
             deleteModal.classList.remove('show');
         }
 
+        function getFilteredRows() {
+            const searchValue = searchInput.value.trim().toLowerCase();
+            const sortValue = sortSelect.value;
+
+            let filteredRows = rows.filter(row => {
+                const combined = (
+                    (row.dataset.id || '') + ' ' +
+                    (row.dataset.name || '') + ' ' +
+                    (row.dataset.email || '') + ' ' +
+                    (row.dataset.role || '') + ' ' +
+                    (row.dataset.status || '') + ' ' +
+                    (row.dataset.gender || '')
+                ).toLowerCase();
+
+                return combined.includes(searchValue);
+            });
+
+            filteredRows.sort((a, b) => {
+                if (sortValue === 'id_asc') return Number(a.dataset.id) - Number(b.dataset.id);
+                if (sortValue === 'id_desc') return Number(b.dataset.id) - Number(a.dataset.id);
+                if (sortValue === 'name_asc') return (a.dataset.name || '').localeCompare(b.dataset.name || '');
+                if (sortValue === 'name_desc') return (b.dataset.name || '').localeCompare(a.dataset.name || '');
+                if (sortValue === 'role_asc') return (a.dataset.role || '').localeCompare(b.dataset.role || '');
+                if (sortValue === 'status_asc') return (a.dataset.status || '').localeCompare(b.dataset.status || '');
+                return 0;
+            });
+
+            return filteredRows;
+        }
+
+        function renderRows(rowsToShow) {
+            tbody.innerHTML = '';
+
+            if (rowsToShow.length === 0) {
+                tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="empty-state">No users found.</td>
+                </tr>
+            `;
+                return;
+            }
+
+            rowsToShow.forEach(row => {
+                row.style.display = '';
+                tbody.appendChild(row);
+            });
+        }
+
+        function applyFilters() {
+            renderRows(getFilteredRows());
+        }
+
+        // LIVE filtering
+        searchInput.addEventListener('input', applyFilters);
+        sortSelect.addEventListener('change', applyFilters);
+
+        // Edit / Delete mode buttons
         editModeBtn.addEventListener('click', function() {
             setMode('edit');
             clearRowState();
@@ -629,10 +947,15 @@ foreach ($users as $u) {
             clearRowState();
         });
 
+        // Row click logic
         rows.forEach(row => {
-            row.addEventListener('click', function() {
+            row.addEventListener('click', function(e) {
                 const userId = this.dataset.id;
                 const userName = this.dataset.name || 'this user';
+
+                if (e.target.closest('.status-link')) {
+                    return;
+                }
 
                 clearRowState();
                 this.classList.add('pending-row');
@@ -647,12 +970,17 @@ foreach ($users as $u) {
                 }
             });
 
-            row.addEventListener('dblclick', function() {
+            row.addEventListener('dblclick', function(e) {
+                if (e.target.closest('.status-link')) {
+                    return;
+                }
+
                 const userId = this.dataset.id;
                 window.location.href = 'edit_user.php?id=' + encodeURIComponent(userId);
             });
         });
 
+        // Modal handling
         cancelDeleteBtn.addEventListener('click', function() {
             closeDeleteModal();
         });
@@ -662,6 +990,9 @@ foreach ($users as $u) {
                 closeDeleteModal();
             }
         });
+
+        // Initial render (IMPORTANT)
+        renderRows(rows);
     </script>
 
 </body>

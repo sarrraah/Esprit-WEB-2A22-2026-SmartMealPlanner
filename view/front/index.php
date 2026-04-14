@@ -111,7 +111,7 @@ if ($loggedInUserId !== '') {
                     <a href="profile.php?id=<?= urlencode((string)$loggedInUserId) ?>" class="btn-book-a-table text-start" style="line-height: 1.3;">
                         <div>
                             <strong>
-                                 <?= htmlspecialchars(trim($loggedInNom . ' ' . $loggedInPrenom) ?: 'User') ?>
+                                <?= htmlspecialchars(trim($loggedInNom . ' ' . $loggedInPrenom) ?: 'User') ?>
                             </strong><br>
                         </div>
                     </a>

@@ -20,7 +20,10 @@ class UserModel
                     email,
                     role,
                     statut,
-                    sexe
+                    sexe,
+                    experience,
+                    speciality,
+                    motivation
                 FROM `user`
                 ORDER BY id DESC";
         $stmt = $this->pdo->query($sql);
@@ -38,7 +41,10 @@ class UserModel
                     mot_de_passe,
                     role,
                     statut,
-                    sexe
+                    sexe,
+                    experience,
+                    speciality,
+                    motivation
                 FROM `user`
                 WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
@@ -72,24 +78,30 @@ class UserModel
         }
 
         $sql = "INSERT INTO `user` (
-                    nom,
-                    prenom,
-                    date_naissance,
-                    email,
-                    mot_de_passe,
-                    role,
-                    statut,
-                    sexe
-                ) VALUES (
-                    :nom,
-                    :prenom,
-                    :date_naissance,
-                    :email,
-                    :mot_de_passe,
-                    :role,
-                    :statut,
-                    :sexe
-                )";
+            nom,
+            prenom,
+            date_naissance,
+            email,
+            mot_de_passe,
+            role,
+            statut,
+            sexe,
+            experience,
+            speciality,
+            motivation
+        ) VALUES (
+            :nom,
+            :prenom,
+            :date_naissance,
+            :email,
+            :mot_de_passe,
+            :role,
+            :statut,
+            :sexe,
+            :experience,
+            :speciality,
+            :motivation
+        )";
 
         $stmt = $this->pdo->prepare($sql);
 
@@ -101,7 +113,10 @@ class UserModel
             ':mot_de_passe' => $data['mot_de_passe'],
             ':role' => $data['role'],
             ':statut' => $data['statut'],
-            ':sexe' => $data['sexe']
+            ':sexe' => $data['sexe'],
+            ':experience' => $data['experience'] ?? null,
+            ':speciality' => $data['speciality'] ?? null,
+            ':motivation' => $data['motivation'] ?? null
         ]);
     }
 
@@ -117,7 +132,7 @@ class UserModel
             throw new Exception("User not found.");
         }
 
-        $finalPassword = trim($data['mot_de_passe']) !== ''
+        $finalPassword = trim($data['mot_de_passe'] ?? '') !== ''
             ? $data['mot_de_passe']
             : $existingUser['mot_de_passe'];
 
@@ -129,7 +144,10 @@ class UserModel
                     mot_de_passe = :mot_de_passe,
                     role = :role,
                     statut = :statut,
-                    sexe = :sexe
+                    sexe = :sexe,
+                    experience = :experience,
+                    speciality = :speciality,
+                    motivation = :motivation
                 WHERE id = :id";
 
         $stmt = $this->pdo->prepare($sql);
@@ -143,6 +161,9 @@ class UserModel
             ':role' => $data['role'],
             ':statut' => $data['statut'],
             ':sexe' => $data['sexe'],
+            ':experience' => $data['experience'] ?? $existingUser['experience'],
+            ':speciality' => $data['speciality'] ?? $existingUser['speciality'],
+            ':motivation' => $data['motivation'] ?? $existingUser['motivation'],
             ':id' => $id
         ]);
     }
@@ -159,6 +180,7 @@ class UserModel
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([':id' => $id]);
     }
+
     public function getUserByEmail($email)
     {
         $sql = "SELECT * FROM `user` WHERE email = :email LIMIT 1";
@@ -170,8 +192,8 @@ class UserModel
     public function authenticateUser($email, $password)
     {
         $sql = "SELECT * FROM `user`
-            WHERE email = :email AND mot_de_passe = :mot_de_passe
-            LIMIT 1";
+                WHERE email = :email AND mot_de_passe = :mot_de_passe
+                LIMIT 1";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([

@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $mot_de_passe = trim($_POST['mot_de_passe'] ?? '');
     $role = trim($_POST['role'] ?? '');
-    $statut = trim($_POST['statut'] ?? '');
+    $statut = trim($_POST['statut'] ?? $user['statut']);
     $sexe = trim($_POST['sexe'] ?? '');
 
     if (
@@ -346,7 +346,7 @@ $currentSexe = $_POST['sexe'] ?? trim((string)($user['sexe'] ?? ''));
 
                     <div class="form-group">
                         <label for="date_naissance">Date of Birth</label>
-                        <input id="date_naissance" class="form-control" type="date" name="date_naissance" value="<?= htmlspecialchars($currentDate) ?>">
+                        <input id="date_naissance" class="form-control" type="text" name="date_naissance" value="<?= htmlspecialchars($currentDate) ?>">
                     </div>
 
                     <div class="form-group">
@@ -384,9 +384,10 @@ $currentSexe = $_POST['sexe'] ?? trim((string)($user['sexe'] ?? ''));
                         <label for="statut">Status</label>
                         <select id="statut" class="form-control" name="statut">
                             <option value="">Select status</option>
-                            <option value="active" <?= ($currentStatus === 'active') ? 'selected' : '' ?>>Active</option>
-                            <option value="banned" <?= ($currentStatus === 'banned') ? 'selected' : '' ?>>Banned</option>
-                            <option value="deactivated" <?= $user['statut'] == 'deactivated' ? 'selected' : '' ?>>Deactivated</option>
+                            <option value="active" <?= ($currentStatus === 'active') ? 'selected="selected"' : '' ?>>Active</option>
+                            <option value="banned" <?= ($currentStatus === 'banned') ? 'selected="selected"' : '' ?>>Banned</option>
+                            <option value="deactivated" <?= ($currentStatus === 'deactivated') ? 'selected="selected"' : '' ?>>Deactivated</option>
+                            <option value="pending" <?= ($currentStatus === 'pending') ? 'selected="selected"' : '' ?>>Pending</option>
                         </select>
                     </div>
                 </div>
