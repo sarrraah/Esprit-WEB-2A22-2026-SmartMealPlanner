@@ -442,9 +442,17 @@ unset($p);
                         <div class="card-product">
                             <!-- Image & Badge -->
                             <div class="product-img-container">
-                                <img src="<?= !empty($p['image']) && file_exists(UPLOAD_DIR . $p['image']) 
-                                    ? UPLOAD_URL . htmlspecialchars($p['image']) 
-                                    : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22 viewBox=%220 0 300 200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22sans-serif%22 font-size=%2224%22 fill=%22%23999%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EPas d%27image%3C/text%3E%3C/svg%3E' ?>" 
+                                <?php
+                                $imageSrc = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22 viewBox=%220 0 300 200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22sans-serif%22 font-size=%2224%22 fill=%22%23999%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EPas d%27image%3C/text%3E%3C/svg%3E';
+                                if (!empty($p['image'])) {
+                                    if (filter_var($p['image'], FILTER_VALIDATE_URL)) {
+                                        $imageSrc = htmlspecialchars($p['image']);
+                                    } elseif (file_exists(UPLOAD_DIR . $p['image'])) {
+                                        $imageSrc = UPLOAD_URL . htmlspecialchars($p['image']);
+                                    }
+                                }
+                            ?>
+                            <img src="<?= $imageSrc ?>" 
                                      class="product-img" alt="<?= htmlspecialchars($p['nom']) ?>">
                                 <span class="badge-statut <?= $badgeClass ?>">
                                     <?= $statut ?>
