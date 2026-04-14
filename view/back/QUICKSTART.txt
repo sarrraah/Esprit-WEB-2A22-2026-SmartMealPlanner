@@ -1,0 +1,210 @@
+📱 QUICK START - Smart Meal Planner
+═══════════════════════════════════════════════════════════
+
+✅ FICHIERS CRÉÉS & STRUCTURE
+───────────────────────────────
+view/back/
+├── ✅ config.php                 → Connexion PDO MySQL + uploads
+├── ✅ afficherProduit.php        → Grille responsive + filtres + recherche
+├── ✅ ajouterProduit.php         → Formulaire ajout avec upload image
+├── ✅ modifierProduit.php        → Formulaire modification + aperçu photo
+├── ✅ supprimerProduit.php       → Suppression avec confirmation
+├── ✅ schema.sql                 → Script création table produit
+├── ✅ README.md                  → Documentation complète
+├── ✅ uploads/                   → Dossier images (créé automatiquement)
+└── ✅ QUICKSTART.txt             → Ce fichier
+
+═══════════════════════════════════════════════════════════
+
+🚀 ÉTAPE 1 : IMPORTER LA TABLE MYSQL
+───────────────────────────────────
+
+1. Ouvrir PhpMyAdmin :
+   → http://localhost/phpmyadmin
+
+2. Sélectionner base de données :
+   → smart_meal_planner
+
+3. Cliquer onglet "SQL"
+
+4. Copier-coller le contenu de :
+   → c:\xampp\htdocs\ryhem\view\back\schema.sql
+
+5. Cliquer "Exécuter"
+
+✅ La table "produit" est créée avec données d'exemple !
+
+═══════════════════════════════════════════════════════════
+
+🌐 ÉTAPE 2 : ACCÉDER À L'APPLICATION
+───────────────────────────────────
+
+AFFICHAGE PRODUITS (avec filtres) :
+→ http://localhost/ryhem/view/back/afficherProduit.php
+
+AJOUTER PRODUIT :
+→ http://localhost/ryhem/view/back/ajouterProduit.php
+
+═══════════════════════════════════════════════════════════
+
+🎨 FONCTIONNALITÉS INCLUSES
+───────────────────────────────────
+
+afficherProduit.php :
+  ✅ Grille 3 colonnes (responsive mobile)
+  ✅ Filtres : Tous / Disponible / Rupture / Épuisé
+  ✅ Barre de recherche temps réel
+  ✅ Cartes avec image + statut auto calculé
+  ✅ Boutons Modifier + Supprimer
+  ✅ Dégradé violet avec animations
+  ✅ Design moderne avec ombres
+
+ajouterProduit.php :
+  ✅ Formulaire complet (nom, prix, stock, etc)
+  ✅ Upload image (JPG, PNG, GIF, WEBP)
+  ✅ Prévisualisation avant upload
+  ✅ Validation & messages erreurs
+  ✅ Redirection automatique
+
+modifierProduit.php :
+  ✅ Formulaire pré-rempli
+  ✅ Aperçu photo actuelle
+  ✅ Upload nouvelle image
+  ✅ Remplace ancienne photo
+  ✅ Sauvegarde BD
+
+supprimerProduit.php :
+  ✅ Confirmation avant suppression
+  ✅ Affiche détails produit
+  ✅ Supprime photo du serveur
+  ✅ Message confirmation
+
+═══════════════════════════════════════════════════════════
+
+🔧 CONFIGURATION (config.php)
+───────────────────────────────────
+
+Base de données MySQL :
+  HOST : localhost
+  USER : root
+  PASS : (vide)
+  BASE : smart_meal_planner
+
+Uploads :
+  Dossier : /view/back/uploads/
+  Max taille : 5 MB
+  Formats : jpg, jpeg, png, gif, webp
+
+═══════════════════════════════════════════════════════════
+
+📊 STRUCTURE TABLE PRODUIT
+───────────────────────────────────
+
+id                 → INT PRIMARY KEY AUTO_INCREMENT
+nom                → VARCHAR(255) NOT NULL
+description        → TEXT
+prix               → DECIMAL(10,2) NOT NULL
+quantiteStock      → INT DEFAULT 0
+dateExpiration     → DATE NOT NULL
+estDurable         → TINYINT(1) DEFAULT 0
+image              → VARCHAR(255)
+statut             → VARCHAR(50) AUTO CALCULÉ
+id_categorie       → INT DEFAULT 1
+created_at         → TIMESTAMP AUTO
+updated_at         → TIMESTAMP AUTO
+
+═══════════════════════════════════════════════════════════
+
+🤖 STATUT AUTO-CALCULÉ
+───────────────────────────────────
+
+La fonction determinerStatut() recalcule le statut automatiquement :
+
+✅ DISPONIBLE  (vert)    → stock > 0 ET date ok
+  ⚠️  RUPTURE    (orange)  → stock = 0 ET date ok
+❌ ÉPUISÉ      (rouge)   → date dépassée
+
+═══════════════════════════════════════════════════════════
+
+🔐 SÉCURITÉ IMPLÉMENTÉE
+───────────────────────────────────
+
+✅ PDO Prepared Statements (anti-injection SQL)
+✅ htmlspecialchars() partout (XSS protection)
+✅ Validation fichiers (extension + taille)
+✅ Noms fichiers uniques (timestamp + uniqid)
+✅ Suppression ancienne image lors modification
+
+═══════════════════════════════════════════════════════════
+
+📱 RESPONSIVE DESIGN
+───────────────────────────────────
+
+Desktop (1200px+) :
+  → 3 colonnes grille
+  → Filtres horizontaux
+
+Tablet (768px) :
+  → 2 colonnes grille
+  → Ajustement padding
+
+Mobile (< 768px) :
+  → 1 colonne plein écran
+  → Filtres empilés
+  → Boutons pleins
+
+═══════════════════════════════════════════════════════════
+
+🎯 COULEURS & STYLE
+───────────────────────────────────
+
+Dégradé Principal :
+  → #667eea (violet clair)
+  → #764ba2 (violet foncé)
+
+Statuts :
+  ✅ Disponible → #10b981 (vert)
+  ⚠️  Rupture    → #f59e0b (orange)
+  ❌ Épuisé      → #ef4444 (rouge)
+
+Font Awesome 6.4.0 pour icônes
+Bootstrap 5.3.0 pour grille
+
+═══════════════════════════════════════════════════════════
+
+❓ DÉPANNAGE
+───────────────────────────────────
+
+Q: Erreur "Table 'produit' doesn't exist"
+A: Exécuter schema.sql via PhpMyAdmin
+
+Q: Images non affichées
+A: Vérifier dossier uploads/ existe et permissions 755
+
+Q: Erreur upload "Permission denied"
+A: chmod 755 uploads/
+
+Q: Statut ne s'update pas
+A: Normal ! Statut recalculé à chaque affichage
+
+═══════════════════════════════════════════════════════════
+
+✨ TOUT EST PRÊT !
+
+Données d'exemple dans schema.sql :
+  ✓ Pommes Fraîches
+  ✓ Tomates Bio
+  ✓ Oeufs Fermiers
+  ✓ Riz Complet (rupture)
+  ✓ Lait Frais (épuisé)
+
+COMMENCER :
+  1. Importer schema.sql
+  2. Aller http://localhost/ryhem/view/back/afficherProduit.php
+  3. Cliquer "Ajouter un produit" et tester !
+
+═══════════════════════════════════════════════════════════
+
+Créé le : 14/04/2026
+Version : 1.0
+Status : ✅ PRODUCTION READY

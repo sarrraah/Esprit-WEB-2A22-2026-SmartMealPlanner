@@ -2,14 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=interfaceclient.php">
-  <title>Redirection vers Smart Meal Planner</title>
-</head>
-<body>
-  <p>Redirection vers la page principale…</p>
-  <p>Si la redirection ne fonctionne pas, utilisez <a href="interfaceclient.php">interfaceclient.php</a>.</p>
-</body>
-</html>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Meal Planner - Planifiez vos repas sainement</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
    * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Poppins', sans-serif; background: #f8f9fa; }
     
@@ -444,69 +442,44 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Données des produits avec tous les attributs
-  let products = [
-    {
-      id_produit: 1,
-      nom_produit: "Pommes Bio",
-      description: "Pommes fraîches issues de l'agriculture biologique, croquantes et juteuses.",
-      prix: 12.90,
-      quantiteStock: 50,
-      dateExpiration: "2024-12-31",
-      image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300",
-      statut: "disponible"
-    },
-    {
-      id_produit: 2,
-      nom_produit: "Bananes",
-      description: "Bananes mûres à point, riches en potassium.",
-      prix: 8.50,
-      quantiteStock: 30,
-      dateExpiration: "2024-11-15",
-      image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=300",
-      statut: "disponible"
-    },
-    {
-      id_produit: 3,
-      nom_produit: "Fraises Gariguette",
-      description: "Fraises parfumées et sucrées, idéales pour vos desserts.",
-      prix: 24.90,
-      quantiteStock: 0,
-      dateExpiration: "2024-10-30",
-      image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300",
-      statut: "rupture"
-    },
-    {
-      id_produit: 4,
-      nom_produit: "Avocats",
-      description: "Avocats crémeux, parfaits pour les salades et guacamole.",
-      prix: 15.50,
-      quantiteStock: 20,
-      dateExpiration: "2024-11-20",
-      image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300",
-      statut: "disponible"
-    },
-    {
-      id_produit: 5,
-      nom_produit: "Oranges",
-      description: "Oranges juteuses, pleines de vitamine C.",
-      prix: 9.90,
-      quantiteStock: 0,
-      dateExpiration: "2024-10-25",
-      image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=300",
-      statut: "epuise"
-    },
-    {
-      id_produit: 6,
-      nom_produit: "Raisins Rouges",
-      description: "Raisins sucrés et croquants, parfaits pour les goûters.",
-      prix: 18.90,
-      quantiteStock: 15,
-      dateExpiration: "2024-11-10",
-      image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=300",
-      statut: "disponible"
+<?php
+require_once __DIR__ . '/../../config.php';
+
+$stmt = $pdo->prepare("SELECT id, nom, description, prix, quantiteStock, dateExpiration, image, statut FROM produit ORDER BY id DESC");
+$stmt->execute();
+$produits = $stmt->fetchAll();
+
+foreach ($produits as &$p) {
+    $p['id_produit'] = $p['id'];
+    $p['nom_produit'] = $p['nom'];
+
+    if (empty($p['image']) || filter_var($p['image'], FILTER_VALIDATE_URL) === false) {
+        $uploadPath = '../back/uploads/' . rawurlencode($p['image']);
+        if (!empty($p['image']) && file_exists(__DIR__ . '/../back/uploads/' . $p['image'])) {
+            $p['image'] = $uploadPath;
+        } else {
+            $p['image'] = 'https://via.placeholder.com/300x200?text=Image+non+disponible';
+        }
     }
-  ];
+
+    $statut = mb_strtolower($p['statut'] ?? '');
+    $statut = str_replace(['é', 'è', 'ê', 'É', 'È', 'Ê'], 'e', $statut);
+    if ($statut === 'disponible') {
+        $p['statut'] = 'disponible';
+    } elseif ($statut === 'rupture') {
+        $p['statut'] = 'rupture';
+    } elseif ($statut === 'epuise' || $statut === 'epuise') {
+        $p['statut'] = 'epuise';
+    } else {
+        $p['statut'] = 'disponible';
+    }
+
+    $p['quantiteStock'] = (int) $p['quantiteStock'];
+    $p['prix'] = (float) $p['prix'];
+}
+unset($p);
+?>
+  let products = <?= json_encode($produits, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS); ?>;
   
   let cart = [];
   let currentFilter = "all";

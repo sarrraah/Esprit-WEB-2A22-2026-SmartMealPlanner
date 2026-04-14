@@ -1,92 +1,69 @@
 <?php
-// admin/create.php - Ajouter un nouveau produit
-require_once 'config.php';
+require_once __DIR__ . '/../../config.php';
 
-$error = '';
-$success = '';
+$erreur = '';
+$succes = '';
 
-// Fonction pour uploader l'image
-function uploadImage($file) {
-    $target_dir = "uploads/";
-    
-    // Créer le dossier s'il n'existe pas
-    if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-    
-    $file_extension = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
-    $allowed_extensions = array("jpg", "jpeg", "png", "gif", "webp");
-    
-    if (!in_array($file_extension, $allowed_extensions)) {
-        return false;
-    }
-    
-    // Générer un nom unique
-    $new_filename = uniqid() . '.' . $file_extension;
-    $target_file = $target_dir . $new_filename;
-    
-    if (move_uploaded_file($file["tmp_name"], $target_file)) {
-        return $target_file;
-    }
-    
-    return false;
-}
-
+// Traiter le formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom_produit = trim($_POST['nom_produit'] ?? '');
+    $nom = trim($_POST['nom'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $prix = floatval($_POST['prix'] ?? 0);
     $quantiteStock = intval($_POST['quantiteStock'] ?? 0);
-    $dateExpiration = $_POST['dateExpiration'] ?? '';
-    $categorie = $_POST['categorie'] ?? 'fruits';
+    $dateExpiration = trim($_POST['dateExpiration'] ?? '');
+    $categorie = trim($_POST['categorie'] ?? '');
+    $estDurable = isset($_POST['estDurable']) ? 1 : 0;
     $image = '';
-    $statut = $_POST['statut'] ?? 'disponible';
-    
-    // Gestion de l'upload d'image
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        $uploaded_image = uploadImage($_FILES['image']);
-        if ($uploaded_image) {
-            $image = $uploaded_image;
+
+    if (empty($categorie)) {
+        $categorie = 'Autre';
+    }
+
+    // Validation
+    if (empty($nom)) {
+        $erreur = "Le nom du produit est requis";
+    } elseif ($prix <= 0) {
+        $erreur = "Le prix doit être supérieur à 0";
+    } elseif (empty($dateExpiration)) {
+        $erreur = "La date d'expiration est requise";
+    }
+
+    // Traiter l'upload image
+    if ($_FILES['image']['size'] > 0 && empty($erreur)) {
+        $file = $_FILES['image'];
+        $fileName = basename($file['name']);
+        $fileSize = $file['size'];
+        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+        // Validation fichier
+        if ($fileSize > $maxFileSize) {
+            $erreur = "La taille du fichier dépasse 5 MB";
+        } elseif (!in_array($fileExt, $allowedExtensions)) {
+            $erreur = "Format de fichier non autorisé. Formats acceptés: " . implode(', ', $allowedExtensions);
         } else {
-            $error = "Format d'image non supporté. Utilisez JPG, PNG, GIF ou WEBP.";
+            // Générer un nom unique
+            $newFileName = time() . '_' . uniqid() . '.' . $fileExt;
+
+            if (move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $newFileName)) {
+                $image = $newFileName;
+            } else {
+                $erreur = "Erreur lors du téléchargement du fichier";
+            }
         }
     }
-    
-    // Validation
-    if (empty($nom_produit) || empty($description) || $prix <= 0) {
-        $error = "Veuillez remplir tous les champs obligatoires";
-    } elseif (empty($error)) {
+
+    // Insérer dans la base de données
+    if (empty($erreur)) {
         try {
-            // Déterminer le statut en fonction du stock
-            if ($quantiteStock <= 0) {
-                $statut = 'epuise';
-            } elseif ($quantiteStock < 5) {
-                $statut = 'rupture';
-            } else {
-                $statut = 'disponible';
-            }
-            
-            $sql = "INSERT INTO produits (nom_produit, description, prix, quantiteStock, dateExpiration, categorie, image, statut) 
-                    VALUES (:nom_produit, :description, :prix, :quantiteStock, :dateExpiration, :categorie, :image, :statut)";
-            
+            $sql = "INSERT INTO produit (nom, description, prix, quantiteStock, dateExpiration, estDurable, image, categorie, statut) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Disponible')";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':nom_produit' => $nom_produit,
-                ':description' => $description,
-                ':prix' => $prix,
-                ':quantiteStock' => $quantiteStock,
-                ':dateExpiration' => $dateExpiration,
-                ':categorie' => $categorie,
-                ':image' => $image,
-                ':statut' => $statut
-            ]);
+            $stmt->execute([$nom, $description, $prix, $quantiteStock, $dateExpiration, $estDurable, $image, $categorie]);
             
-            $_SESSION['success_message'] = "Produit ajouté avec succès !";
-            header("Location: read.php");
-            exit();
-            
-        } catch(PDOException $e) {
-            $error = "Erreur: " . $e->getMessage();
+            $succes = "Produit ajouté avec succès ! Redirection...";
+            header("refresh:2;url=afficherProduit.php");
+        } catch (Exception $e) {
+            $erreur = "Erreur lors de l'ajout: " . $e->getMessage();
         }
     }
 }
@@ -97,129 +74,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ajouter un produit - Smart Meal Planner</title>
+    <title>Ajouter Produit - Smart Meal Planner</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #e0e0e0 0%, #e0e0e0 100%);
-            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(180deg, #fff2f5 0%, #f6f3f8 35%, #ffffff 100%);
             min-height: 100vh;
+            padding: 30px 0;
         }
 
-        /* Navbar */
-        .navbar {
-            background: white;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-            padding: 1rem 2rem;
+        .navbar-custom {
+            background: white !important;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
         }
 
         .navbar-brand {
+            color: #ff4444 !important;
             font-weight: 700;
             font-size: 1.5rem;
-            color: #ff4444 !important;
         }
 
         .navbar-brand i {
-            margin-right: 10px;
-        }
-
-        .nav-link {
-            color: #333 !important;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border-radius: 25px;
-            padding: 8px 20px !important;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background: #ff4444;
-            color: white !important;
-        }
-
-        /* Container principal */
-        .main-container {
-            padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        .page-header {
-            background: white;
-            border-radius: 20px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #333;
-            margin: 0;
-        }
-
-        .page-header h1 i {
-            color: #ff4444;
-            margin-right: 10px;
-        }
-
-        .btn-back {
-            background: #6c757d;
-            color: white;
-            border-radius: 25px;
-            padding: 10px 25px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-back:hover {
-            background: #5a6268;
-            color: white;
-            transform: translateX(-5px);
-        }
-
-        /* Formulaire */
-        .form-wrapper {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-label i {
             color: #ff4444;
             margin-right: 8px;
         }
 
-        .required::after {
-            content: " *";
-            color: #ff4444;
+        .form-container {
+            max-width: 980px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 30px;
+            padding: 45px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-title {
+            color: #e63946;
+            font-weight: 800;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 2rem;
+        }
+
+        .form-title i {
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
         }
 
         .form-control, .form-select {
             border: 2px solid #e0e0e0;
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 12px 15px;
-            transition: all 0.3s ease;
+            transition: 0.3s;
+            font-size: 0.95rem;
         }
 
         .form-control:focus, .form-select:focus {
-            border-color: #ff4444;
-            box-shadow: 0 0 0 0.2rem rgba(255,68,68,0.25);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
         }
 
         textarea.form-control {
@@ -227,359 +158,291 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-height: 100px;
         }
 
-        /* Upload d'image */
-        .upload-container {
-            border: 2px dashed #ff4444;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            background: #fff5f5;
-            transition: all 0.3s ease;
-            cursor: pointer;
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
         }
 
-        .upload-container:hover {
-            background: #ffe0e0;
-            border-color: #cc0000;
-        }
-
-        .upload-icon {
-            font-size: 48px;
-            color: #ff4444;
-            margin-bottom: 10px;
-        }
-
-        .upload-text {
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .upload-button {
-            background: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            padding: 8px 20px;
-            font-size: 14px;
-            cursor: pointer;
-            display: inline-block;
+        .checkbox-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-top: 10px;
         }
 
-        .upload-button:hover {
-            background: #cc0000;
+        .checkbox-section input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-section label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        /* Image Preview */
+        .image-section {
+            background: #f8f4f7;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(230, 57, 70, 0.12);
+            display: grid;
+            gap: 20px;
+            align-items: center;
+            justify-items: center;
         }
 
         .image-preview {
-            margin-top: 15px;
-            text-align: center;
-            display: none;
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 360px;
+            margin-bottom: 15px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #f1f3f8;
+            box-shadow: inset 0 0 0 1px rgba(229, 57, 70, 0.1);
         }
 
         .image-preview img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 10px;
-            border: 2px solid #ff4444;
-            padding: 5px;
-        }
-
-        .remove-image {
-            background: #dc3545;
-            color: white;
-            border: none;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             border-radius: 20px;
-            padding: 5px 15px;
-            margin-top: 10px;
-            cursor: pointer;
-            font-size: 12px;
+            transition: transform 0.4s ease;
         }
 
-        .remove-image:hover {
-            background: #c82333;
+        .image-preview img:hover {
+            transform: scale(1.03);
         }
 
-        /* Bouton submit */
-        .btn-submit {
-            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        .image-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .btn-upload {
+            background: linear-gradient(135deg, #e63946, #f15b6c);
             color: white;
+            padding: 12px 24px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 700;
+            display: inline-block;
+            transition: 0.3s;
             border: none;
-            border-radius: 25px;
-            padding: 12px 40px;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(230, 57, 70, 0.18);
         }
 
-        .btn-submit:hover {
+        .btn-upload:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255,68,68,0.3);
+            box-shadow: 0 15px 35px rgba(230, 57, 70, 0.22);
         }
 
-        /* Alertes */
+        .file-name {
+            font-size: 0.9rem;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        /* Buttons */
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn-custom {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-ajouter {
+            background: linear-gradient(135deg, #e63946, #f15b6c);
+            color: white;
+            flex: 1;
+            box-shadow: 0 10px 25px rgba(230, 57, 70, 0.2);
+        }
+
+        .btn-ajouter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(230, 57, 70, 0.28);
+            color: white;
+        }
+
+        .btn-annuler {
+            background: #e0e0e0;
+            color: #333;
+            flex: 1;
+        }
+
+        .btn-annuler:hover {
+            background: #d0d0d0;
+            color: #333;
+        }
+
+        /* Alerts */
         .alert {
-            border-radius: 12px;
+            border-radius: 10px;
             border: none;
             margin-bottom: 20px;
         }
 
-        /* Responsive */
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         @media (max-width: 768px) {
-            .main-container {
-                padding: 1rem;
+            .form-container {
+                padding: 20px;
             }
-            
-            .form-wrapper {
-                padding: 1.5rem;
+
+            .form-row {
+                grid-template-columns: 1fr;
             }
-            
-            .page-header {
-                padding: 1rem 1.5rem;
-            }
-            
-            .page-header h1 {
-                font-size: 1.4rem;
+
+            .form-actions {
+                flex-direction: column;
             }
         }
     </style>
 </head>
+
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid">
-            <a class="navbar-brand" href="read.php">
-                <i class="fas fa-utensils"></i>
-                Smart Meal Planner
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="read.php">
-                            <i class="fas fa-box me-1"></i> Produits
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="create.php">
-                            <i class="fas fa-plus me-1"></i> Ajouter
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            <span class="navbar-brand">
+                <i class="fas fa-utensils"></i> Smart Meal Planner
+            </span>
         </div>
     </nav>
 
-    <div class="main-container">
-        <!-- Header -->
-        <div class="page-header d-flex justify-content-between align-items-center">
-            <h1>
+    <!-- Form -->
+    <div class="container-lg">
+        <div class="form-container">
+            <h1 class="form-title">
                 <i class="fas fa-plus-circle"></i>
-                Ajouter un nouveau produit
+                Ajouter un Produit
             </h1>
-            <a href="read.php" class="btn-back btn">
-                <i class="fas fa-arrow-left me-2"></i>Retour
-            </a>
-        </div>
 
-        <!-- Messages -->
-        <?php if($error): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                <?= htmlspecialchars($error) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
+            <!-- Messages -->
+            <?php if ($succes): ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> <?= $succes ?>
+                </div>
+            <?php endif; ?>
 
-        <!-- Formulaire -->
-        <div class="form-wrapper">
-            <form method="POST" action="" enctype="multipart/form-data" id="productForm">
-                <div class="row">
-                    <div class="col-md-6 mb-4">
-                        <label class="form-label required">
-                            <i class="fas fa-tag"></i>Nom du produit
-                        </label>
-                        <input type="text" name="nom_produit" class="form-control" 
-                               placeholder="Ex: Pommes Bio" required>
+            <?php if ($erreur): ?>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> <?= $erreur ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" enctype="multipart/form-data">
+                <!-- Image Section -->
+                <div class="image-section">
+                    <p style="font-weight: 600; margin-bottom: 15px;">Photo du produit</p>
+                    
+                    <div class="image-preview">
+                        <img id="imagePreview" 
+                             src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22 viewBox=%220 0 150 150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22150%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23999%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EPas d%27image%3C/text%3E%3C/svg%3E" 
+                             alt="Aperçu">
                     </div>
 
-                    <div class="col-md-3 mb-4">
-                        <label class="form-label required">
-                            <i class="fas fa-money-bill-wave"></i>Prix (DT)
+                    <div class="image-input-wrapper">
+                        <label for="imageInput" class="btn-upload">
+                            <i class="fas fa-image"></i> Ajouter une image
                         </label>
-                        <input type="number" step="0.01" name="prix" class="form-control" 
-                               placeholder="0.00" required>
+                        <input type="file" id="imageInput" name="image" accept="image/*">
+                    </div>
+                    <p class="file-name">Format: JPG, PNG, GIF, WEBP - Max 5 MB</p>
+                </div>
+
+                <!-- Form Fields -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nom">Nom du produit *</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required>
                     </div>
 
-                    <div class="col-md-3 mb-4">
-                        <label class="form-label">
-                            <i class="fas fa-layer-group"></i>Catégorie
-                        </label>
-                        <select name="categorie" class="form-select">
-                            <option value="fruits">🍎 Fruits</option>
-                            <option value="legumes">🥕 Légumes</option>
-                            <option value="viandes">🥩 Viandes</option>
-                            <option value="poissons">🐟 Poissons</option>
-                            <option value="produits_laitiers">🥛 Produits laitiers</option>
-                            <option value="epicerie">🥫 Épicerie</option>
-                        </select>
+                    <div class="form-group">
+                        <label for="prix">Prix (DT) *</label>
+                        <input type="number" class="form-control" id="prix" name="prix" step="0.01" min="0" required>
                     </div>
 
-                    <div class="col-md-6 mb-4">
-                        <label class="form-label">
-                            <i class="fas fa-boxes"></i>Quantité en stock
-                        </label>
-                        <input type="number" name="quantiteStock" class="form-control" 
-                               placeholder="0" value="0">
-                        <small class="text-muted">Le statut sera mis à jour automatiquement</small>
+                    <div class="form-group">
+                        <label for="quantiteStock">Quantité en stock *</label>
+                        <input type="number" class="form-control" id="quantiteStock" name="quantiteStock" min="0" required>
                     </div>
 
-                    <div class="col-md-6 mb-4">
-                        <label class="form-label">
-                            <i class="fas fa-calendar-alt"></i>Date d'expiration
-                        </label>
-                        <input type="date" name="dateExpiration" class="form-control">
+                    <div class="form-group">
+                        <label for="dateExpiration">Date d'expiration *</label>
+                        <input type="date" class="form-control" id="dateExpiration" name="dateExpiration" required>
                     </div>
 
-                    <div class="col-12 mb-4">
-                        <label class="form-label">
-                            <i class="fas fa-image"></i>Photo du produit
-                        </label>
-                        <div class="upload-container" id="uploadContainer">
-                            <div class="upload-icon">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                            </div>
-                            <div class="upload-text">
-                                Cliquez ou glissez-déposez une image ici
-                            </div>
-                            <div class="upload-text small text-muted">
-                                Formats supportés: JPG, PNG, GIF, WEBP (Max 5MB)
-                            </div>
-                            <button type="button" class="upload-button" onclick="document.getElementById('imageFile').click()">
-                                <i class="fas fa-folder-open"></i> Parcourir
-                            </button>
-                            <input type="file" name="image" id="imageFile" accept="image/*" style="display: none;">
-                        </div>
-                        <div class="image-preview" id="imagePreview">
-                            <img id="previewImg" alt="Aperçu">
-                            <br>
-                            <button type="button" class="remove-image" id="removeImage">
-                                <i class="fas fa-trash-alt"></i> Supprimer
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="col-12 mb-4">
-                        <label class="form-label required">
-                            <i class="fas fa-align-left"></i>Description
-                        </label>
-                        <textarea name="description" class="form-control" 
-                                  placeholder="Décrivez votre produit..." required></textarea>
+                    <div class="form-group">
+                        <label for="categorie">Catégorie</label>
+                        <input type="text" class="form-control" id="categorie" name="categorie" 
+                               value="<?= htmlspecialchars($_POST['categorie'] ?? '') ?>" 
+                               placeholder="Ex: Fruits, Légumes, Protéines">
                     </div>
                 </div>
 
-                <div class="text-center">
-                    <button type="submit" class="btn-submit">
-                        <i class="fas fa-save me-2"></i>Enregistrer le produit
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea class="form-control" id="description" name="description"><?= htmlspecialchars($_POST['description'] ?? '') ?></textarea>
+                </div>
+
+                <div class="checkbox-section">
+                    <input type="checkbox" id="estDurable" name="estDurable">
+                    <label for="estDurable">Produit durable</label>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-custom btn-ajouter">
+                        <i class="fas fa-save"></i> Ajouter le produit
                     </button>
+                    <a href="afficherProduit.php" class="btn-custom btn-annuler">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Upload d'image depuis le PC
-        const uploadContainer = document.getElementById('uploadContainer');
-        const imageFile = document.getElementById('imageFile');
-        const imagePreview = document.getElementById('imagePreview');
-        const previewImg = document.getElementById('previewImg');
-        const removeImageBtn = document.getElementById('removeImage');
-
-        // Click sur le container pour ouvrir le dialogue
-        uploadContainer.addEventListener('click', function(e) {
-            if (e.target !== removeImageBtn && !e.target.classList.contains('remove-image')) {
-                imageFile.click();
-            }
-        });
-
-        // Glisser-déposer
-        uploadContainer.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            uploadContainer.style.background = '#ffe0e0';
-            uploadContainer.style.borderColor = '#cc0000';
-        });
-
-        uploadContainer.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            uploadContainer.style.background = '#fff5f5';
-            uploadContainer.style.borderColor = '#ff4444';
-        });
-
-        uploadContainer.addEventListener('drop', function(e) {
-            e.preventDefault();
-            uploadContainer.style.background = '#fff5f5';
-            uploadContainer.style.borderColor = '#ff4444';
-            
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.match('image.*')) {
-                handleImageFile(file);
-            } else {
-                alert('Veuillez déposer une image valide');
-            }
-        });
-
-        // Quand un fichier est sélectionné
-        imageFile.addEventListener('change', function(e) {
-            if (e.target.files && e.target.files[0]) {
-                handleImageFile(e.target.files[0]);
-            }
-        });
-
-        // Gérer le fichier image
-        function handleImageFile(file) {
-            // Vérifier le type de fichier
-            if (!file.type.match('image.*')) {
-                alert('Veuillez sélectionner une image valide');
-                return;
-            }
-            
-            // Vérifier la taille (5MB max)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('L\'image ne doit pas dépasser 5MB');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImg.src = e.target.result;
-                imagePreview.style.display = 'block';
-                uploadContainer.style.display = 'none';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Supprimer l'image
-        removeImageBtn.addEventListener('click', function() {
-            imagePreview.style.display = 'none';
-            uploadContainer.style.display = 'block';
-            imageFile.value = '';
-            previewImg.src = '';
-        });
-
-        // Validation du formulaire
-        document.getElementById('productForm').addEventListener('submit', function(e) {
-            const nom = document.querySelector('[name="nom_produit"]').value.trim();
-            const description = document.querySelector('[name="description"]').value.trim();
-            const prix = parseFloat(document.querySelector('[name="prix"]').value);
-            
-            if (!nom || !description || isNaN(prix) || prix <= 0) {
-                e.preventDefault();
-                alert('Veuillez remplir tous les champs obligatoires correctement');
+        // Prévisualiser l'image avant upload
+        document.getElementById('imageInput')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('imagePreview').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             }
         });
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
