@@ -1,123 +1,143 @@
 <?php
-require_once __DIR__ . '/../../config.php';
+defined('APP_ROOT') || require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../model/Repas.php';
+require_once __DIR__ . '/../../model/Recette.php';
 
-$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$projectPath = str_replace('\\', '/', dirname(__DIR__, 2));
+$repasModel   = new Repas();
+$recetteModel = new Recette();
+$id    = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$repas = $id > 0 ? $repasModel->getRepasById($id) : null;
+if (!$repas) { header('Location: repas.php'); exit; }
+$recettes = $recetteModel->getAllRecettes();
+
+$scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$project = str_replace('\\', '/', dirname(__DIR__, 2));
 $docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
-$relativeProject = str_replace($docRoot, '', $projectPath);
-$baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
+$baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . str_replace($docRoot, '', $project);
 
-$recipeModel = new Repas();
-$recipe = null;
-$recettes = $recipeModel->getRecettes();
-
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    $recipe = $recipeModel->getRepasById($id);
-}
-
-if (!$recipe) {
-    header('Location: repas.php');
-    exit();
-}
+$pageTitle = 'Modifier le Repas - SmartMeal Admin';
+require_once __DIR__ . '/partials/head.php';
+require_once __DIR__ . '/partials/sidebar.php';
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modifier un Repas - Back Office</title>
-    <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../assets/css/main.css" rel="stylesheet">
-    <style>
-        .sidebar {
-            min-height: 100vh;
-            background-color: #343a40;
-            color: white;
-        }
-        .sidebar a {
-            color: white;
-            text-decoration: none;
-        }
-        .sidebar a:hover {
-            color: #ffc107;
-        }
-        .main-content {
-            margin-left: 250px;
-        }
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="d-flex">
-        <!-- Sidebar -->
-        <nav class="sidebar p-3" style="width: 250px;">
-            <h4 class="mb-4">Back Office</h4>
-            <ul class="list-unstyled">
-                <li class="mb-2"><a href="index.php">Tableau de Bord</a></li>
-                <li class="mb-2"><a href="repas.php">Gestion des Repas</a></li>
-                <li class="mb-2"><a href="recette.php">Gestion des Recettes</a></li>
-                <li class="mb-2"><a href="utilisateurs.php">Gestion des Utilisateurs</a></li>
-                <li class="mb-2"><a href="aliments_durables.php">Aliments Durables</a></li>
-                <li class="mb-2"><a href="statistiques.php">Statistiques</a></li>
-                <li class="mb-2"><a href="contenu_nutritionnel.php">Contenu Nutritionnel</a></li>
-                <li class="mb-2"><a href="../../index.php">Retour au Front Office</a></li>
-            </ul>
-        </nav>
-
-        <!-- Main Content -->
-        <div class="main-content flex-grow-1 p-4">
-            <h1 class="mb-4">Modifier le Repas</h1>
-<?php
-$baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $relativeProject;
-?>
-            <form action="<?php echo htmlspecialchars($baseUrl . '/controller/RepasController.php', ENT_QUOTES, 'UTF-8'); ?>" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="update">
-                <input type="hidden" name="id" value="<?php echo $recipe['id_repas']; ?>">
-                <input type="hidden" name="current_image" value="<?php echo htmlspecialchars($recipe['image_repas'] ?? ''); ?>">
-                <div class="mb-3">
-                    <label for="nom" class="form-label">Nom du repas</label>
-                    <input type="text" class="form-control" id="nom" name="nom" value="<?php echo htmlspecialchars($recipe['nom']); ?>" required>
+<div class="admin-main">
+    <div class="admin-topbar">
+        <h5><i class="bi bi-pencil me-2" style="color:var(--accent)"></i>Modifier le Repas</h5>
+        <a href="repas.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour</a>
+    </div>
+    <div class="admin-content">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <div class="admin-card card">
+                    <div class="card-body p-4">
+                        <form action="<?= htmlspecialchars($baseUrl.'/controller/RepasController.php') ?>" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="id" value="<?= $repas['id_repas'] ?>">
+                            <input type="hidden" name="current_image" value="<?= htmlspecialchars($repas['image_repas'] ?? '') ?>">
+                            <input type="hidden" name="from" value="back">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Nom du repas <span class="text-danger">*</span></label>
+                                    <input type="text" name="nom" class="form-control" value="<?= htmlspecialchars($repas['nom']) ?>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Type de repas</label>
+                                    <select name="type_repas" class="form-select">
+                                        <?php foreach (['Petit-dejeuner'=>'Petit-déjeuner','Dejeuner'=>'Déjeuner','Diner'=>'Dîner','Collation'=>'Collation'] as $v=>$l): ?>
+                                            <option value="<?= $v ?>" <?= ($repas['type_repas']??'')===$v?'selected':'' ?>><?= $l ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Recette <span class="text-danger">*</span></label>
+                                    <select name="id_recette" class="form-select" required>
+                                        <?php foreach ($recettes as $rec): ?>
+                                            <option value="<?= $rec['id_recette'] ?>" <?= ($repas['id_recette']??0)==$rec['id_recette']?'selected':'' ?>><?= htmlspecialchars($rec['nom_recette']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Calories (kcal)</label>
+                                    <input type="number" step="0.1" min="0" name="calories" class="form-control" value="<?= htmlspecialchars($repas['calories']??'') ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">Protéines (g)</label>
+                                    <input type="number" step="0.1" min="0" name="proteines" class="form-control" value="<?= htmlspecialchars($repas['proteines']??'') ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">Glucides (g)</label>
+                                    <input type="number" step="0.1" min="0" name="glucides" class="form-control" value="<?= htmlspecialchars($repas['glucides']??'') ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">Lipides (g)</label>
+                                    <input type="number" step="0.1" min="0" name="lipides" class="form-control" value="<?= htmlspecialchars($repas['lipides']??'') ?>">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-medium">Notes / Description</label>
+                                    <textarea name="description" class="form-control" rows="3"><?= htmlspecialchars($repas['description']??'') ?></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-medium">Image du repas</label>
+                                    <?php if (!empty($repas['image_repas'])): ?>
+                                        <div class="mb-2"><img src="<?= htmlspecialchars($baseUrl.'/'.$repas['image_repas']) ?>" style="max-height:140px;border-radius:10px;object-fit:cover;"><p class="text-muted small mt-1">Laissez vide pour conserver.</p></div>
+                                    <?php endif; ?>
+                                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('image_repas').click()"
+                                         ondragover="event.preventDefault();this.style.background='#fde8e8'"
+                                         ondragleave="this.style.background='#fff8f8'"
+                                         ondrop="handleDrop(event)">
+                                        <div id="dropContent">
+                                            <i class="bi bi-cloud-arrow-up" style="font-size:2rem;color:var(--accent);"></i>
+                                            <p class="mb-1 fw-medium mt-2">Nouvelle image</p>
+                                            <p class="text-muted small mb-0">Glissez ou cliquez</p>
+                                        </div>
+                                        <div id="prev1" class="d-none">
+                                            <img id="previewImg1" src="" style="max-height:140px;max-width:100%;border-radius:10px;object-fit:cover;">
+                                            <p class="text-muted small mt-2 mb-0" id="fileName1"></p>
+                                            <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="event.stopPropagation();clearImage()"><i class="bi bi-x-circle me-1"></i>Supprimer</button>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="image_repas" name="image_repas" accept="image/*" class="d-none" onchange="previewImg(this)">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-yummy"><i class="bi bi-save me-1"></i>Enregistrer</button>
+                                <a href="repas.php" class="btn btn-outline-secondary">Annuler</a>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">Ingrédients</label>
-                    <textarea class="form-control" id="description" name="description" rows="4"><?php echo htmlspecialchars($recipe['description']); ?></textarea>
-                </div>
-                <div class="mb-3">
-                    <label for="calories" class="form-label">Calories</label>
-                    <input type="number" step="0.1" class="form-control" id="calories" name="calories" value="<?php echo htmlspecialchars($recipe['calories']); ?>">
-                </div>
-                <div class="mb-3">
-                    <label for="id_recette" class="form-label">Recette</label>
-                    <select class="form-control" id="id_recette" name="id_recette" required>
-                        <option value="">Sélectionnez une recette</option>
-                        <?php foreach ($recettes as $cat): ?>
-                            <option value="<?php echo $cat['id_recette']; ?>" <?php echo $recipe['id_recette'] == $cat['id_recette'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($cat['nom_recette']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Image actuelle</label>
-                    <?php if (!empty($recipe['image_repas'])): ?>
-                        <div class="mb-2">
-                            <img src="<?php echo htmlspecialchars($baseUrl . '/' . $recipe['image_repas'], ENT_QUOTES, 'UTF-8'); ?>" alt="Image du repas" style="max-width: 200px; border-radius: 8px;">
-                        </div>
-                    <?php else: ?>
-                        <p class="text-muted mb-2">Aucune image.</p>
-                    <?php endif; ?>
-                    <input type="file" class="form-control" id="image_repas" name="image_repas" accept="image/*">
-                    <small class="text-muted">Laissez vide pour conserver l'image actuelle.</small>
-                </div>
-                <button type="submit" class="btn btn-primary">Mettre à Jour</button>
-                <a href="repas.php" class="btn btn-secondary ms-2">Annuler</a>
-            </form>
+            </div>
         </div>
     </div>
-    <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+<?php
+$extraJs = <<<JS
+<script>
+function previewImg(input) {
+    if (!input.files||!input.files[0]) return;
+    const file=input.files[0], reader=new FileReader();
+    reader.onload=e=>{
+        document.getElementById('dropContent').classList.add('d-none');
+        document.getElementById('prev1').classList.remove('d-none');
+        document.getElementById('previewImg1').src=e.target.result;
+        document.getElementById('fileName1').textContent=file.name+' ('+(file.size/1024).toFixed(1)+' KB)';
+    };
+    reader.readAsDataURL(file);
+}
+function handleDrop(e){
+    e.preventDefault();
+    document.getElementById('dropZone').style.background='#fff8f8';
+    const file=e.dataTransfer.files[0];
+    if(!file||!file.type.startsWith('image/')) return;
+    const dt=new DataTransfer(); dt.items.add(file);
+    document.getElementById('image_repas').files=dt.files;
+    previewImg(document.getElementById('image_repas'));
+}
+function clearImage(){
+    document.getElementById('image_repas').value='';
+    document.getElementById('prev1').classList.add('d-none');
+    document.getElementById('dropContent').classList.remove('d-none');
+}
+</script>
+JS;
+require_once __DIR__ . '/partials/foot.php';
+?>

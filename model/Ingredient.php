@@ -10,6 +10,16 @@ class Ingredient
         $this->pdo = config::getConnexion();
     }
 
+    /** Get all ingredients for a recette */
+    public function getByRecette(int $idRecette): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM ingredient WHERE id_recette = ? ORDER BY id_ingredient"
+        );
+        $stmt->execute([$idRecette]);
+        return $stmt->fetchAll();
+    }
+
     /** Get all ingredients for a repas */
     public function getByRepas(int $idRepas): array
     {
@@ -26,6 +36,15 @@ class Ingredient
         $stmt = $this->pdo->prepare("SELECT * FROM ingredient WHERE id_ingredient = ?");
         $stmt->execute([$id]);
         return $stmt->fetch();
+    }
+
+    /** Add ingredient to a recette */
+    public function addIngredientToRecette(string $nom, ?float $quantite, string $unite, int $idRecette): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO ingredient (nom_ingredient, quantite, unite, id_recette) VALUES (?, ?, ?, ?)"
+        );
+        return $stmt->execute([$nom, $quantite, $unite, $idRecette]);
     }
 
     /** Add ingredient to a repas */

@@ -67,7 +67,9 @@ require_once __DIR__ . '/partials/head.php';
             <div class="card border-0 shadow-sm" style="border-radius:14px;">
                 <div class="card-header bg-white py-3 border-0">
                     <h6 class="mb-0 fw-semibold">
-                        <?= $editIngredient ? '<i class="bi bi-pencil me-2 text-warning"></i>Modifier l\'ingrédient' : '<i class="bi bi-plus-circle me-2 text-danger"></i>Ajouter un ingrédient' ?>
+                        <?= $editIngredient
+                            ? '<i class="bi bi-pencil me-2 text-warning"></i>Modifier l\'ingrédient'
+                            : '<i class="bi bi-basket me-2" style="color:#ce1212"></i>Ajouter un ingrédient à ce repas' ?>
                     </h6>
                 </div>
                 <div class="card-body pt-0">
@@ -80,29 +82,36 @@ require_once __DIR__ . '/partials/head.php';
                         <?php endif; ?>
 
                         <div class="mb-3">
-                            <label class="form-label fw-medium">Nom de l'ingrédient <span class="text-danger">*</span></label>
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-dot text-danger"></i>Nom de l'ingrédient <span class="text-danger">*</span>
+                            </label>
                             <input type="text" name="nom_ingredient" class="form-control"
-                                   placeholder="Ex: Poulet, Tomate, Farine..."
+                                   placeholder="Ex: Poulet, Tomate, Farine, Huile d'olive..."
                                    value="<?= htmlspecialchars($editIngredient['nom_ingredient'] ?? '') ?>"
                                    required autofocus>
+                            <small class="text-muted">Soyez précis : "Poulet" plutôt que "viande".</small>
                         </div>
 
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-medium">Quantité</label>
+                                <label class="form-label fw-medium">
+                                    <i class="bi bi-123 me-1 text-primary"></i>Quantité
+                                </label>
                                 <input type="number" step="0.01" min="0" name="quantite" class="form-control"
                                        placeholder="Ex: 200"
                                        value="<?= htmlspecialchars($editIngredient['quantite'] ?? '') ?>">
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-medium">Unité</label>
+                                <label class="form-label fw-medium">
+                                    <i class="bi bi-rulers me-1 text-success"></i>Unité de mesure
+                                </label>
                                 <select name="unite" class="form-select">
                                     <?php
-                                    $unites = ['g','kg','ml','L','pièce','cuillère à soupe','cuillère à café','tasse','pincée','tranche'];
+                                    $unites = ['g'=>'g — grammes','kg'=>'kg — kilogrammes','ml'=>'ml — millilitres','L'=>'L — litres','pièce'=>'pièce(s)','cuillère à soupe'=>'cuillère à soupe','cuillère à café'=>'cuillère à café','tasse'=>'tasse','pincée'=>'pincée','tranche'=>'tranche(s)'];
                                     $currentUnite = $editIngredient['unite'] ?? 'g';
-                                    foreach ($unites as $u):
+                                    foreach ($unites as $v => $l):
                                     ?>
-                                        <option value="<?= $u ?>" <?= $currentUnite === $u ? 'selected' : '' ?>><?= $u ?></option>
+                                        <option value="<?= $v ?>" <?= $currentUnite === $v ? 'selected' : '' ?>><?= $l ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -111,7 +120,7 @@ require_once __DIR__ . '/partials/head.php';
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-yummy <?= $editIngredient ? '' : 'flex-fill' ?>">
                                 <i class="bi bi-<?= $editIngredient ? 'save' : 'plus-circle' ?> me-1"></i>
-                                <?= $editIngredient ? 'Enregistrer' : 'Ajouter' ?>
+                                <?= $editIngredient ? 'Enregistrer les modifications' : 'Ajouter l\'ingrédient' ?>
                             </button>
                             <?php if ($editIngredient): ?>
                                 <a href="ingredients.php?id_repas=<?= $idRepas ?>"

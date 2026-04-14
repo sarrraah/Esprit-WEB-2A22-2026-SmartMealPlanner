@@ -1,37 +1,28 @@
 <?php
-require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../model/Repas.php';
-$repasModel = new Repas();
-$totalRepas = count($repasModel->getAllRepas());
+$pageTitle = 'Utilisateurs - SmartMeal Admin';
+require_once __DIR__ . '/partials/head.php';
+require_once __DIR__ . '/partials/sidebar.php';
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Utilisateurs - Back Office</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<div class="container py-4">
-    <h1 class="mb-4">Gestion des Utilisateurs</h1>
-    <div class="mb-3 d-flex gap-2 flex-wrap">
-        <a class="btn btn-outline-dark" href="index.php">Dashboard</a>
-        <a class="btn btn-outline-dark" href="recette.php">Recettes</a>
-        <a class="btn btn-outline-dark" href="aliments_durables.php">Aliments Durables</a>
-        <a class="btn btn-outline-dark" href="statistiques.php">Statistiques</a>
-        <a class="btn btn-outline-dark" href="contenu_nutritionnel.php">Contenu Nutritionnel</a>
+<div class="admin-main">
+    <div class="admin-topbar"><h5><i class="bi bi-people me-2" style="color:var(--accent)"></i>Gestion des Utilisateurs</h5></div>
+    <div class="admin-content">
+        <div class="admin-card card">
+            <div class="card-header"><i class="bi bi-person-badge me-2" style="color:var(--accent)"></i>Liste des Utilisateurs</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table admin-table mb-0">
+                        <thead><tr><th>#</th><th>Nom</th><th>Email</th><th>Rôle</th><th class="text-center">Actions</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td><td class="fw-medium">Admin</td><td>admin@smartmealplanner.tn</td>
+                                <td><span class="badge" style="background:var(--accent)">Administrateur</span></td>
+                                <td class="text-center"><button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-pencil"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="alert alert-info">
-        Module conforme au README: gestion des utilisateurs (interface prête).<br>
-        Nombre de repas en base: <strong><?php echo $totalRepas; ?></strong>
-    </div>
-    <table class="table table-bordered bg-white">
-        <thead><tr><th>ID</th><th>Nom</th><th>Email</th><th>Rôle</th></tr></thead>
-        <tbody>
-            <tr><td>1</td><td>Admin</td><td>admin@smartmealplanner.tn</td><td>Administrateur</td></tr>
-        </tbody>
-    </table>
 </div>
-</body>
-</html>
+<?php require_once __DIR__ . '/partials/foot.php'; ?>

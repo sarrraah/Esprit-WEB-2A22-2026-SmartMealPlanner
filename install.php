@@ -110,13 +110,22 @@ try {
         nom_ingredient  VARCHAR(150)  NOT NULL,
         unite           VARCHAR(50)   NULL,
         quantite        DECIMAL(8,2)  NULL,
-        id_repas        INT           NOT NULL,
-        PRIMARY KEY (id_ingredient),
-        CONSTRAINT fk_ingredient_repas FOREIGN KEY (id_repas)
-            REFERENCES repas(id_repas)
-            ON DELETE CASCADE ON UPDATE CASCADE
+        id_repas        INT           NULL,
+        id_recette      INT           NULL,
+        PRIMARY KEY (id_ingredient)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     $steps[] = [1, "Table <b>ingredient</b> créée."];
+
+    // Add id_recette column if missing
+    $ingCols = $pdo->query("SHOW COLUMNS FROM ingredient")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('id_recette', $ingCols)) {
+        $pdo->exec("ALTER TABLE ingredient ADD COLUMN id_recette INT NULL");
+        $steps[] = [1, "Colonne <b>id_recette</b> ajoutée à ingredient."];
+    }
+    if (!in_array('id_repas', $ingCols)) {
+        $pdo->exec("ALTER TABLE ingredient ADD COLUMN id_repas INT NULL");
+        $steps[] = [1, "Colonne <b>id_repas</b> ajoutée à ingredient."];
+    }
 
 } catch (PDOException $e) {
     $steps[] = [0, "Erreur : " . htmlspecialchars($e->getMessage())];

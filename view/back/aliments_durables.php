@@ -1,34 +1,27 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aliments Durables - Back Office</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<div class="container py-4">
-    <h1 class="mb-4">Gestion des Aliments Durables</h1>
-    <div class="mb-3 d-flex gap-2 flex-wrap">
-        <a class="btn btn-outline-dark" href="index.php">Dashboard</a>
-        <a class="btn btn-outline-dark" href="recette.php">Recettes</a>
-        <a class="btn btn-outline-dark" href="utilisateurs.php">Utilisateurs</a>
-        <a class="btn btn-outline-dark" href="statistiques.php">Statistiques</a>
-        <a class="btn btn-outline-dark" href="contenu_nutritionnel.php">Contenu Nutritionnel</a>
-    </div>
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Ajouter un aliment durable</h5>
-            <form>
-                <div class="row g-3">
-                    <div class="col-md-4"><input class="form-control" placeholder="Nom de l'aliment"></div>
-                    <div class="col-md-4"><input class="form-control" placeholder="Origine"></div>
-                    <div class="col-md-4"><input class="form-control" placeholder="Score écologique"></div>
+<?php
+$pageTitle = 'Aliments Durables - SmartMeal Admin';
+require_once __DIR__ . '/partials/head.php';
+require_once __DIR__ . '/partials/sidebar.php';
+?>
+<div class="admin-main">
+    <div class="admin-topbar"><h5><i class="bi bi-leaf me-2" style="color:#198754"></i>Aliments Durables</h5></div>
+    <div class="admin-content">
+        <div class="row justify-content-center"><div class="col-lg-8">
+            <div class="admin-card card mb-4">
+                <div class="card-header"><i class="bi bi-plus-circle me-2" style="color:var(--accent)"></i>Ajouter un aliment durable</div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label fw-medium">Nom</label><input class="form-control" placeholder="Ex: Lentilles"></div>
+                        <div class="col-md-4"><label class="form-label fw-medium">Origine</label><input class="form-control" placeholder="Ex: Tunisie"></div>
+                        <div class="col-md-4"><label class="form-label fw-medium">Score écologique</label><input type="number" min="0" max="10" step="0.1" class="form-control" placeholder="Ex: 8.5"></div>
+                    </div>
+                    <button class="btn btn-yummy mt-3"><i class="bi bi-plus-circle me-1"></i>Ajouter</button>
                 </div>
-                <button class="btn btn-success mt-3" type="button">Ajouter</button>
-            </form>
-        </div>
+            </div>
+            <div class="admin-card card"><div class="card-body p-5 text-center text-muted">
+                <i class="bi bi-leaf fs-1 d-block mb-2" style="color:#198754;opacity:.4;"></i>Aucun aliment durable enregistré.
+            </div></div>
+        </div></div>
     </div>
 </div>
-</body>
-</html>
+<?php require_once __DIR__ . '/partials/foot.php'; ?>
