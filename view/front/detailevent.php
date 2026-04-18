@@ -5,10 +5,7 @@ $ctrl = new EvenementController();
 $id   = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $e    = $ctrl->getEvenementById($id);
 
-if (!$e) {
-    header('Location: interfaceevent.php');
-    exit;
-}
+if (!$e) { header('Location: interfaceevent.php'); exit; }
 
 $typeConfig = [
     'Conférence'  => ['from' => '#fce8e8', 'to' => '#f7c1c1', 'emoji' => '🎤'],
@@ -19,11 +16,7 @@ $typeConfig = [
     'Autre'       => ['from' => '#fdf5f5', 'to' => '#e8d5d5', 'emoji' => '📅'],
 ];
 
-$statusLabels = [
-    'actif'   => 'Active',
-    'annulé'  => 'Cancelled',
-    'terminé' => 'Ended',
-];
+$statusLabels = ['actif' => 'Active', 'annulé' => 'Cancelled', 'terminé' => 'Ended'];
 
 $tc            = $typeConfig[$e->getType()] ?? $typeConfig['Autre'];
 $isFree        = ($e->getPrix() == 0);
@@ -41,6 +34,7 @@ $badgeClass    = match(true) {
     str_contains($statut, 'termin') => 's-termine',
     default                         => 's-complet',
 };
+$imgPath = $e->getImage() ? '../../../uploads/evenements/' . $e->getImage() : null;
 
 $tous     = $ctrl->listEvenements();
 $suggests = array_filter($tous, fn($ev) => $ev->getType() === $e->getType() && $ev->getIdEvent() !== $e->getIdEvent());
@@ -58,21 +52,25 @@ $suggests = array_slice($suggests, 0, 3);
 body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
 
 nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}
-.logo span{color:#b91c1c}
+.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}.logo span{color:#b91c1c}
 .nav-links{display:flex;gap:28px}
 .nav-links a{font-size:14px;color:#9a3535;text-decoration:none;font-weight:500;transition:color .2s}
 .nav-links a:hover{color:#b91c1c}
-.back-link{display:flex;align-items:center;gap:6px;font-size:13px;color:#9a3535;text-decoration:none;font-weight:500;transition:color .2s}
+.back-link{display:flex;align-items:center;gap:6px;font-size:13px;color:#9a3535;text-decoration:none;font-weight:500}
 .back-link:hover{color:#b91c1c}
 
-.hero{height:280px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* Hero avec image ou gradient */
+.hero{height:320px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hero-img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,<?= $tc['from'] ?> 0%,<?= $tc['to'] ?> 100%)}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)}
 .hero-emoji{position:relative;z-index:1;font-size:80px;opacity:.25}
+.hero-bottom{position:absolute;bottom:20px;left:32px;z-index:2;color:#fff}
+.hero-bottom-title{font-size:22px;font-weight:600;line-height:1.3;text-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.hero-bottom-sub{font-size:13px;opacity:.8;margin-top:4px}
 
 .breadcrumb{max-width:1100px;margin:0 auto;padding:16px 32px;display:flex;align-items:center;gap:8px;font-size:13px;color:#9a3535}
-.breadcrumb a{color:#9a3535;text-decoration:none}
-.breadcrumb a:hover{color:#b91c1c}
+.breadcrumb a{color:#9a3535;text-decoration:none}.breadcrumb a:hover{color:#b91c1c}
 .breadcrumb span{color:#1a0505;font-weight:500}
 
 .layout{max-width:1100px;margin:0 auto;padding:0 32px 60px;display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:start}
@@ -101,14 +99,14 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .prog-row span:last-child{font-weight:600;color:#1a0505}
 .prog-track{height:8px;background:#fce8e8;border-radius:8px;overflow:hidden;margin-bottom:8px}
 .prog-fill{height:100%;border-radius:8px;background:#b91c1c;transition:width .4s}
-.prog-fill.warn{background:#e8a020}
-.prog-fill.full{background:#7f1d1d}
+.prog-fill.warn{background:#e8a020}.prog-fill.full{background:#7f1d1d}
 .prog-sub{font-size:12px;color:#9a3535}
 
 .suggests-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .scard{background:#fff;border:1px solid #fde8e8;border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:all .2s}
 .scard:hover{border-color:#f7c1c1;transform:translateY(-2px);box-shadow:0 4px 16px rgba(185,28,28,.1)}
 .scard-banner{height:90px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.scard-banner img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .scard-emoji{position:relative;z-index:1;font-size:30px;opacity:.25}
 .scard-body{padding:12px}
 .scard-title{font-size:13px;font-weight:500;color:#1a0505;margin-bottom:6px;line-height:1.3}
@@ -118,19 +116,14 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .reg-price-wrap{margin-bottom:16px}
 .reg-price{font-size:28px;font-weight:600;color:#1a0505}
 .reg-price-sub{font-size:13px;color:#9a3535;margin-top:3px}
-
 .reg-btn{width:100%;background:#b91c1c;color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;margin-bottom:14px;display:block;text-align:center;text-decoration:none}
 .reg-btn:hover{background:#991b1b}
 .reg-btn.disabled{background:#fce8e8;color:#9a3535;cursor:default;pointer-events:none}
-.reg-btn.waiting{background:#e8a020;color:#fff}
-.reg-btn.waiting:hover{background:#c97a10}
-
+.reg-btn.waiting{background:#e8a020;color:#fff}.reg-btn.waiting:hover{background:#c97a10}
 .reg-divider{border:none;border-top:1px solid #fce8e8;margin:14px 0}
 .reg-details{display:flex;flex-direction:column;gap:10px}
 .reg-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.reg-row-label{color:#9a3535}
-.reg-row-val{font-weight:500;color:#1a0505}
-
+.reg-row-label{color:#9a3535}.reg-row-val{font-weight:500;color:#1a0505}
 .share-section{margin-top:16px;padding-top:16px;border-top:1px solid #fce8e8}
 .share-label{font-size:12px;color:#9a3535;margin-bottom:8px}
 .share-btns{display:flex;gap:8px}
@@ -139,11 +132,10 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 
 @media(max-width:900px){
   .layout{grid-template-columns:1fr;padding:0 16px 40px}
-  .sidebar-col{order:-1}
-  .reg-card{position:static}
+  .sidebar-col{order:-1}.reg-card{position:static}
   .info-boxes{grid-template-columns:1fr}
-  nav{padding:0 16px}
-  .breadcrumb{padding:12px 16px}
+  nav{padding:0 16px}.breadcrumb{padding:12px 16px}
+  .hero-bottom{left:16px}
 }
 </style>
 </head>
@@ -159,9 +151,19 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
   <a href="interfaceevent.php" class="back-link">← Back to events</a>
 </nav>
 
+<!-- HERO avec image ou gradient -->
 <div class="hero">
-  <div class="hero-bg"></div>
-  <span class="hero-emoji"><?= $tc['emoji'] ?></span>
+  <?php if ($imgPath): ?>
+    <img class="hero-img" src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($e->getTitre()) ?>">
+    <div class="hero-overlay"></div>
+    <div class="hero-bottom">
+      <div class="hero-bottom-title"><?= htmlspecialchars($e->getTitre()) ?></div>
+      <div class="hero-bottom-sub"><?= htmlspecialchars($e->getLieu()) ?> · <?= $dateLabel ?></div>
+    </div>
+  <?php else: ?>
+    <div class="hero-bg"></div>
+    <span class="hero-emoji"><?= $tc['emoji'] ?></span>
+  <?php endif; ?>
 </div>
 
 <div class="breadcrumb">
@@ -171,7 +173,6 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 </div>
 
 <div class="layout">
-
   <div class="main-col">
 
     <div class="d-badges">
@@ -184,62 +185,38 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
     <div class="info-boxes">
       <div class="info-box">
         <div class="info-box-icon">📅</div>
-        <div>
-          <div class="info-box-label">Date</div>
-          <div class="info-box-val"><?= $dateLabel ?></div>
-        </div>
+        <div><div class="info-box-label">Date</div><div class="info-box-val"><?= $dateLabel ?></div></div>
       </div>
       <div class="info-box">
         <div class="info-box-icon">🕐</div>
-        <div>
-          <div class="info-box-label">Time</div>
-          <div class="info-box-val"><?= $heureDebut ?> → <?= $heureFin ?></div>
-        </div>
+        <div><div class="info-box-label">Time</div><div class="info-box-val"><?= $heureDebut ?> → <?= $heureFin ?></div></div>
       </div>
       <div class="info-box">
         <div class="info-box-icon">📍</div>
-        <div>
-          <div class="info-box-label">Location</div>
-          <div class="info-box-val"><?= htmlspecialchars($e->getLieu()) ?></div>
-        </div>
+        <div><div class="info-box-label">Location</div><div class="info-box-val"><?= htmlspecialchars($e->getLieu()) ?></div></div>
       </div>
       <div class="info-box">
         <div class="info-box-icon">👥</div>
-        <div>
-          <div class="info-box-label">Capacity</div>
-          <div class="info-box-val"><?= $e->getCapaciteMax() ?> participants max</div>
-        </div>
+        <div><div class="info-box-label">Capacity</div><div class="info-box-val"><?= $e->getCapaciteMax() ?> participants max</div></div>
       </div>
     </div>
 
     <div class="section-block">
       <h2>About this event</h2>
       <div class="desc-text">
-        <?= nl2br(htmlspecialchars($e->getDescription() ?: 'No description available for this event.')) ?>
+        <?= nl2br(htmlspecialchars($e->getDescription() ?: 'No description available.')) ?>
       </div>
     </div>
 
     <div class="section-block">
       <h2>Available seats</h2>
-      <?php
-        $pct = 75;
-        $fillClass = $pct >= 100 ? 'full' : ($pct >= 80 ? 'warn' : '');
-      ?>
-      <div class="prog-row">
-        <span>Reserved seats</span>
-        <span><?= $e->getCapaciteMax() ?> max</span>
-      </div>
-      <div class="prog-track">
-        <div class="prog-fill <?= $fillClass ?>" style="width: <?= $pct ?>%"></div>
-      </div>
+      <?php $pct = 75; $fillClass = $pct >= 100 ? 'full' : ($pct >= 80 ? 'warn' : ''); ?>
+      <div class="prog-row"><span>Reserved seats</span><span><?= $e->getCapaciteMax() ?> max</span></div>
+      <div class="prog-track"><div class="prog-fill <?= $fillClass ?>" style="width:<?= $pct ?>%"></div></div>
       <div class="prog-sub">
-        <?php if ($pct >= 100): ?>
-          Fully booked — no seats remaining
-        <?php elseif ($pct >= 80): ?>
-          ⚡ Hurry up, only a few seats left!
-        <?php else: ?>
-          Seats are still available
-        <?php endif; ?>
+        <?php if ($pct >= 100): ?>Fully booked — no seats remaining
+        <?php elseif ($pct >= 80): ?>⚡ Hurry up, only a few seats left!
+        <?php else: ?>Seats are still available<?php endif; ?>
       </div>
     </div>
 
@@ -248,12 +225,17 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       <h2>Similar events</h2>
       <div class="suggests-grid">
         <?php foreach ($suggests as $s):
-          $stc = $typeConfig[$s->getType()] ?? $typeConfig['Autre'];
-          $sd  = date('m/d/Y', strtotime($s->getDateDebut()));
+          $stc     = $typeConfig[$s->getType()] ?? $typeConfig['Autre'];
+          $sd      = date('m/d/Y', strtotime($s->getDateDebut()));
+          $sImgPath= $s->getImage() ? '../../../uploads/evenements/' . $s->getImage() : null;
         ?>
         <a class="scard" href="detailEvent.php?id=<?= $s->getIdEvent() ?>">
           <div class="scard-banner" style="background:linear-gradient(135deg,<?= $stc['from'] ?>,<?= $stc['to'] ?>)">
-            <span class="scard-emoji"><?= $stc['emoji'] ?></span>
+            <?php if ($sImgPath): ?>
+              <img src="<?= htmlspecialchars($sImgPath) ?>" alt="">
+            <?php else: ?>
+              <span class="scard-emoji"><?= $stc['emoji'] ?></span>
+            <?php endif; ?>
           </div>
           <div class="scard-body">
             <div class="scard-title"><?= htmlspecialchars($s->getTitre()) ?></div>
@@ -269,47 +251,27 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 
   <div class="sidebar-col">
     <div class="reg-card">
-
       <div class="reg-price-wrap">
         <div class="reg-price"><?= $isFree ? 'Free' : number_format($e->getPrix(), 2) . ' TND' ?></div>
         <div class="reg-price-sub"><?= $isFree ? 'Completely free entry' : 'Per participant' ?></div>
       </div>
 
       <?php if ($isActif): ?>
-        <a href="register.php?id=<?= $e->getIdEvent() ?>" class="reg-btn">Register for this event</a>
+        <a href="../back/addParticipation.php?id_event=<?= $e->getIdEvent() ?>" class="reg-btn">Register for this event</a>
       <?php elseif ($isComplet): ?>
-        <a href="register.php?id=<?= $e->getIdEvent() ?>" class="reg-btn waiting">Join waiting list</a>
+        <a href="../back/addParticipation.php?id_event=<?= $e->getIdEvent() ?>" class="reg-btn waiting">Join waiting list</a>
       <?php else: ?>
         <span class="reg-btn disabled">Registration closed</span>
       <?php endif; ?>
 
       <hr class="reg-divider">
-
       <div class="reg-details">
-        <div class="reg-row">
-          <span class="reg-row-label">Date</span>
-          <span class="reg-row-val"><?= $dateLabel ?></span>
-        </div>
-        <div class="reg-row">
-          <span class="reg-row-label">Time</span>
-          <span class="reg-row-val"><?= $heureDebut ?> – <?= $heureFin ?></span>
-        </div>
-        <div class="reg-row">
-          <span class="reg-row-label">Location</span>
-          <span class="reg-row-val"><?= htmlspecialchars($e->getLieu()) ?></span>
-        </div>
-        <div class="reg-row">
-          <span class="reg-row-label">Capacity</span>
-          <span class="reg-row-val"><?= $e->getCapaciteMax() ?> seats</span>
-        </div>
-        <div class="reg-row">
-          <span class="reg-row-label">Type</span>
-          <span class="reg-row-val"><?= htmlspecialchars($e->getType()) ?></span>
-        </div>
-        <div class="reg-row">
-          <span class="reg-row-label">Status</span>
-          <span class="reg-row-val"><?= htmlspecialchars($statusDisplay) ?></span>
-        </div>
+        <div class="reg-row"><span class="reg-row-label">Date</span><span class="reg-row-val"><?= $dateLabel ?></span></div>
+        <div class="reg-row"><span class="reg-row-label">Time</span><span class="reg-row-val"><?= $heureDebut ?> – <?= $heureFin ?></span></div>
+        <div class="reg-row"><span class="reg-row-label">Location</span><span class="reg-row-val"><?= htmlspecialchars($e->getLieu()) ?></span></div>
+        <div class="reg-row"><span class="reg-row-label">Capacity</span><span class="reg-row-val"><?= $e->getCapaciteMax() ?> seats</span></div>
+        <div class="reg-row"><span class="reg-row-label">Type</span><span class="reg-row-val"><?= htmlspecialchars($e->getType()) ?></span></div>
+        <div class="reg-row"><span class="reg-row-label">Status</span><span class="reg-row-val"><?= htmlspecialchars($statusDisplay) ?></span></div>
       </div>
 
       <div class="share-section">
@@ -320,10 +282,8 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
           <button class="share-btn">💬 WhatsApp</button>
         </div>
       </div>
-
     </div>
   </div>
-
 </div>
 
 </body>

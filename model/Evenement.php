@@ -11,9 +11,21 @@ class Evenement
     private ?float  $prix         = null;
     private ?string $statut       = null;
     private ?string $type         = null;
+    private ?string $image        = null;
 
-    public function __construct($id = null, $t, $d, $dd, $df, $l, $cm, $p, $s, $ty)
-    {
+    public function __construct(
+        $id   = null,
+        $t    = null,
+        $d    = null,
+        $dd   = null,
+        $df   = null,
+        $l    = null,
+        $cm   = null,
+        $p    = null,
+        $s    = null,
+        $ty   = null,
+        $img  = null
+    ) {
         $this->id_event     = $id;
         $this->titre        = $t;
         $this->description  = $d;
@@ -24,119 +36,39 @@ class Evenement
         $this->prix         = $p;
         $this->statut       = $s;
         $this->type         = $ty;
+        $this->image        = $img;
     }
 
-    public function getIdEvent()
-    {
-        return $this->id_event;
-    }
+    public function getIdEvent()   { return $this->id_event; }
 
-    public function getTitre()
-    {
-        return $this->titre;
-    }
+    public function getTitre()     { return $this->titre; }
+    public function setTitre($t)   { $this->titre = $t; return $this; }
 
-    public function setTitre($t)
-    {
-        $this->titre = $t;
+    public function getDescription()    { return $this->description; }
+    public function setDescription($d)  { $this->description = $d; return $this; }
 
-        return $this;
-    }
+    public function getDateDebut()      { return $this->date_debut; }
+    public function setDateDebut($dd)   { $this->date_debut = $dd; return $this; }
 
-    public function getDescription()
-    {
-        return $this->description;
-    }
+    public function getDateFin()        { return $this->date_fin; }
+    public function setDateFin($df)     { $this->date_fin = $df; return $this; }
 
-    public function setDescription($d)
-    {
-        $this->description = $d;
+    public function getLieu()           { return $this->lieu; }
+    public function setLieu($l)         { $this->lieu = $l; return $this; }
 
-        return $this;
-    }
+    public function getCapaciteMax()    { return $this->capacite_max; }
+    public function setCapaciteMax($cm) { $this->capacite_max = $cm; return $this; }
 
-    public function getDateDebut()
-    {
-        return $this->date_debut;
-    }
+    public function getPrix()           { return $this->prix; }
+    public function setPrix($p)         { $this->prix = $p; return $this; }
 
-    public function setDateDebut($dd)
-    {
-        $this->date_debut = $dd;
+    public function getStatut()         { return $this->statut; }
+    public function setStatut($s)       { $this->statut = $s; return $this; }
 
-        return $this;
-    }
+    public function getType()           { return $this->type; }
+    public function setType($ty)        { $this->type = $ty; return $this; }
 
-    public function getDateFin()
-    {
-        return $this->date_fin;
-    }
-
-    public function setDateFin($df)
-    {
-        $this->date_fin = $df;
-
-        return $this;
-    }
-
-    public function getLieu()
-    {
-        return $this->lieu;
-    }
-
-    public function setLieu($l)
-    {
-        $this->lieu = $l;
-
-        return $this;
-    }
-
-    public function getCapaciteMax()
-    {
-        return $this->capacite_max;
-    }
-
-    public function setCapaciteMax($cm)
-    {
-        $this->capacite_max = $cm;
-
-        return $this;
-    }
-
-    public function getPrix()
-    {
-        return $this->prix;
-    }
-
-    public function setPrix($p)
-    {
-        $this->prix = $p;
-
-        return $this;
-    }
-
-    public function getStatut()
-    {
-        return $this->statut;
-    }
-
-    public function setStatut($s)
-    {
-        $this->statut = $s;
-
-        return $this;
-    }
-
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    public function setType($ty)
-    {
-        $this->type = $ty;
-
-        return $this;
-    }
+    public function getImage()          { return $this->image; }
+    public function setImage($img)      { $this->image = $img; return $this; }
 }
 ?>

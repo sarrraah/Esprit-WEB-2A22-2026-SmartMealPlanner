@@ -36,8 +36,7 @@ $statusLabels = [
 body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
 
 nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}
-.logo span{color:#b91c1c}
+.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}.logo span{color:#b91c1c}
 .nav-links{display:flex;gap:28px}
 .nav-links a{font-size:14px;color:#9a3535;text-decoration:none;font-weight:500;transition:color .2s}
 .nav-links a:hover,.nav-links a.active{color:#b91c1c}
@@ -51,8 +50,6 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .hero h1{font-size:32px;font-weight:600;margin-bottom:10px;line-height:1.2}
 .hero h1 em{color:#fca5a5;font-style:normal}
 .hero p{color:rgba(255,255,255,0.6);font-size:15px;max-width:500px;margin:0 auto 28px;line-height:1.6}
-.hs-val{font-size:24px;font-weight:600}
-.hs-lbl{font-size:12px;color:rgba(255,255,255,0.45);margin-top:3px}
 
 .main{max-width:1200px;margin:0 auto;padding:28px 32px}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -64,17 +61,19 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .chip:hover{border-color:#f09595;color:#b91c1c}
 .chip.on{background:#fce8e8;border-color:#f09595;color:#7f1d1d}
 .sort-sel{margin-left:auto;padding:7px 12px;border:1px solid #f7c1c1;border-radius:8px;background:#fff;color:#9a3535;font-size:13px;cursor:pointer;outline:none;font-family:inherit}
-.sort-sel:focus{border-color:#b91c1c}
 
 .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
 .ecard{background:#fff;border:1px solid #fde8e8;border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;text-decoration:none;color:inherit}
 .ecard:hover{box-shadow:0 6px 24px rgba(185,28,28,0.12);border-color:#f7c1c1;transform:translateY(-2px)}
 
-.card-banner{height:150px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* Banner avec image réelle ou gradient */
+.card-banner{height:180px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-banner img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .cb-bg{position:absolute;inset:0}
+.cb-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.15)}
 .cb-emoji{position:relative;z-index:1;font-size:48px;opacity:.22}
 .cb-type{position:absolute;top:10px;left:10px;z-index:2;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.92);color:#7f1d1d}
-
+.cb-price{position:absolute;top:10px;right:10px;z-index:2;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(127,29,29,0.85);color:#fff}
 
 .card-body{padding:16px;flex:1;display:flex;flex-direction:column}
 .card-title{font-size:14px;font-weight:600;color:#1a0505;margin-bottom:10px;line-height:1.4}
@@ -95,8 +94,7 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
 @media(max-width:768px){
   nav{padding:0 16px;flex-wrap:wrap;height:auto;gap:10px;padding:10px 16px}
   .nav-links{display:none}
-  .hero{padding:32px 16px}
-  .hero h1{font-size:24px}
+  .hero{padding:32px 16px}.hero h1{font-size:24px}
   .main{padding:20px 16px}
 }
 </style>
@@ -119,7 +117,7 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
   <div class="hero-tag">Esprit Event Platform</div>
   <h1>Discover <em>exceptional</em> events</h1>
   <p>Conferences, hackathons, workshops — register in just a few clicks</p>
-
+</div>
 
 <div class="main">
   <div class="section-header">
@@ -152,11 +150,13 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
       </div>
     <?php else: ?>
       <?php foreach ($evenements as $e):
-        $tc = $typeConfig[$e->getType()] ?? $typeConfig['Autre'];
-        
+        $tc        = $typeConfig[$e->getType()] ?? $typeConfig['Autre'];
         $dateDebut = date('m/d/Y', strtotime($e->getDateDebut()));
         $dateFin   = date('m/d/Y', strtotime($e->getDateFin()));
         $dateLabel = ($dateDebut === $dateFin) ? $dateDebut : "$dateDebut → $dateFin";
+        $isFree    = ($e->getPrix() == 0);
+        $priceLabel= $isFree ? 'Free' : number_format($e->getPrix(), 2) . ' TND';
+        $imgPath   = $e->getImage() ? '../../../uploads/evenements/' . $e->getImage() : null;
       ?>
       <a class="ecard"
          href="detailEvent.php?id=<?= $e->getIdEvent() ?>"
@@ -167,10 +167,15 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
          data-prix="<?= $e->getPrix() ?>">
 
         <div class="card-banner">
-          <div class="cb-bg" style="background:linear-gradient(135deg,<?= $tc['from'] ?> 0%,<?= $tc['to'] ?> 100%)"></div>
-          <span class="cb-emoji"><?= $tc['emoji'] ?></span>
+          <?php if ($imgPath): ?>
+            <img src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($e->getTitre()) ?>">
+            <div class="cb-overlay"></div>
+          <?php else: ?>
+            <div class="cb-bg" style="background:linear-gradient(135deg,<?= $tc['from'] ?> 0%,<?= $tc['to'] ?> 100%)"></div>
+            <span class="cb-emoji"><?= $tc['emoji'] ?></span>
+          <?php endif; ?>
           <span class="cb-type"><?= htmlspecialchars($e->getType()) ?></span>
-
+          <span class="cb-price"><?= $priceLabel ?></span>
         </div>
 
         <div class="card-body">
@@ -201,27 +206,23 @@ footer{background:#7f1d1d;color:rgba(255,255,255,.45);text-align:center;padding:
 
 <script>
 let currentFilter = 'All';
-
 function setFilter(type, el) {
   currentFilter = type;
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
   filterAndRender();
 }
-
 function filterAndRender() {
   const q     = document.getElementById('searchInput').value.toLowerCase().trim();
   const sort  = document.getElementById('sortSel').value;
   const cards = Array.from(document.querySelectorAll('.ecard'));
   let visible = [];
-
   cards.forEach(card => {
     const ok = (currentFilter === 'All' || card.dataset.type === currentFilter)
             && (!q || card.dataset.titre.includes(q) || card.dataset.lieu.includes(q) || card.dataset.type.toLowerCase().includes(q));
     card.style.display = ok ? 'flex' : 'none';
     if (ok) visible.push(card);
   });
-
   const grid = document.getElementById('eventsGrid');
   visible.sort((a, b) => {
     if (sort === 'date')      return a.dataset.date.localeCompare(b.dataset.date);
@@ -231,9 +232,7 @@ function filterAndRender() {
     return 0;
   });
   visible.forEach(card => grid.appendChild(card));
-
   document.getElementById('countLabel').textContent = visible.length + ' event(s)';
-
   let empty = document.querySelector('.empty');
   if (visible.length === 0) {
     if (!empty) {

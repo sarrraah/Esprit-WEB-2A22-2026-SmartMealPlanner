@@ -1,13 +1,14 @@
 <?php
-require __DIR__ . '/../config.php';
-require __DIR__ . '/../model/Evenement.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../model/Evenement.php';
+
 class EvenementController
 {
     function listEvenements()
     {
-        $db = config::getConnexion();
+        $db    = config::getConnexion();
         $query = $db->query("SELECT * FROM evenement ORDER BY date_debut DESC");
-        $rows = $query->fetchAll();
+        $rows  = $query->fetchAll();
         $evenements = [];
         foreach ($rows as $row) {
             $evenements[] = new Evenement(
@@ -20,7 +21,8 @@ class EvenementController
                 $row['capacite_max'],
                 $row['prix'],
                 $row['statut'],
-                $row['type']
+                $row['type'],
+                $row['image'] ?? null
             );
         }
         return $evenements;
@@ -29,7 +31,7 @@ class EvenementController
     function getEvenementById($id)
     {
         $sql = "SELECT * FROM evenement WHERE id_event = :id";
-        $db = config::getConnexion();
+        $db  = config::getConnexion();
         $req = $db->prepare($sql);
         $req->bindValue(':id', $id);
         try {
@@ -46,7 +48,8 @@ class EvenementController
                 $row['capacite_max'],
                 $row['prix'],
                 $row['statut'],
-                $row['type']
+                $row['type'],
+                $row['image'] ?? null
             );
         } catch (Exception $e) {
             die('Error: ' . $e->getMessage());
@@ -56,7 +59,7 @@ class EvenementController
     function addEvenement($evenement)
     {
         $sql = "INSERT INTO evenement
-                VALUES (NULL, :titre, :description, :date_debut, :date_fin, :lieu, :capacite_max, :prix, :statut, :type)";
+                VALUES (NULL, :titre, :description, :date_debut, :date_fin, :lieu, :capacite_max, :prix, :statut, :type, :image)";
         $db = config::getConnexion();
         try {
             $query = $db->prepare($sql);
@@ -70,6 +73,7 @@ class EvenementController
                 'prix'         => $evenement->getPrix(),
                 'statut'       => $evenement->getStatut(),
                 'type'         => $evenement->getType(),
+                'image'        => $evenement->getImage(),
             ]);
         } catch (Exception $e) {
             echo 'Error: ' . $e->getMessage();
@@ -79,7 +83,7 @@ class EvenementController
     function updateEvenement($evenement, $id)
     {
         try {
-            $db = config::getConnexion();
+            $db    = config::getConnexion();
             $query = $db->prepare(
                 'UPDATE evenement SET
                     titre        = :titre,
@@ -90,10 +94,10 @@ class EvenementController
                     capacite_max = :capacite_max,
                     prix         = :prix,
                     statut       = :statut,
-                    type         = :type
+                    type         = :type,
+                    image        = :image
                 WHERE id_event   = :id'
             );
-
             $query->execute([
                 'id'           => $id,
                 'titre'        => $evenement->getTitre(),
@@ -105,26 +109,53 @@ class EvenementController
                 'prix'         => $evenement->getPrix(),
                 'statut'       => $evenement->getStatut(),
                 'type'         => $evenement->getType(),
+                'image'        => $evenement->getImage(),
             ]);
-
-            echo $query->rowCount() . " records UPDATED successfully <br>";
         } catch (PDOException $e) {
-            $e->getMessage();
+            echo $e->getMessage();
         }
     }
 
     function deleteEvenement($ide)
     {
         $sql = "DELETE FROM evenement WHERE id_event = :id";
-        $db = config::getConnexion();
+        $db  = config::getConnexion();
         $req = $db->prepare($sql);
         $req->bindValue(':id', $ide);
-
         try {
             $req->execute();
         } catch (Exception $e) {
             die('Error: ' . $e->getMessage());
         }
+    }
+
+    // ── Utilitaire upload image ──────────────────────────────────────────
+    function uploadImage($file, $oldImage = null)
+    {
+        $uploadDir     = __DIR__ . '/../uploads/evenements/';
+        $allowedTypes  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $maxSize       = 5 * 1024 * 1024; // 5 MB
+
+        if ($file['error'] !== UPLOAD_ERR_OK)  return ['error' => "Erreur lors de l'upload."];
+        if (!in_array($file['type'], $allowedTypes)) return ['error' => "Format non autorisé (jpg, png, gif, webp)."];
+        if ($file['size'] > $maxSize)           return ['error' => "Image trop lourde (max 5 Mo)."];
+
+        // Crée le dossier si besoin
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+        $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = uniqid('event_', true) . '.' . $ext;
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            return ['error' => "Impossible de déplacer le fichier."];
+        }
+
+        // Supprime l'ancienne image si elle existe
+        if ($oldImage && file_exists($uploadDir . $oldImage)) {
+            unlink($uploadDir . $oldImage);
+        }
+
+        return ['success' => $filename];
     }
 }
 ?>
