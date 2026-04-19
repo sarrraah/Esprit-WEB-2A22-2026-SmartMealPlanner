@@ -1,8 +1,11 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../config.php';
 
 $erreur = '';
 $succes = '';
+
+$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+$maxFileSize = 5 * 1024 * 1024; // 5 MB
 
 // Traiter le formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -29,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Traiter l'upload image
-    if ($_FILES['image']['size'] > 0 && empty($erreur)) {
+    if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE && empty($erreur)) {
         $file = $_FILES['image'];
         $fileName = basename($file['name']);
         $fileSize = $file['size'];
@@ -41,9 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!in_array($fileExt, $allowedExtensions)) {
             $erreur = "Format de fichier non autorisé. Formats acceptés: " . implode(', ', $allowedExtensions);
         } else {
-            // Générer un nom unique
             $newFileName = time() . '_' . uniqid() . '.' . $fileExt;
-
             if (move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $newFileName)) {
                 $image = $newFileName;
             } else {
@@ -55,11 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Insérer dans la base de données
     if (empty($erreur)) {
         try {
-            $sql = "INSERT INTO produit (nom, description, prix, quantiteStock, dateExpiration, estDurable, image, categorie, statut) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Disponible')";
+            $sql = "INSERT INTO produit (nom, description, prix, quantiteStock, dateExpiration, estDurable, image, categorie, statut) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Disponible')";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$nom, $description, $prix, $quantiteStock, $dateExpiration, $estDurable, $image, $categorie]);
-            
+
             $succes = "Produit ajouté avec succès ! Redirection...";
             header("refresh:2;url=afficherProduit.php");
         } catch (Exception $e) {
@@ -74,354 +74,225 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ajouter Produit - Smart Meal Planner</title>
-    
+    <title>Ajouter Produit - Administration</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            font-family: 'Poppins', sans-serif;
-        }
-
         body {
-            background: linear-gradient(180deg, #fff2f5 0%, #f6f3f8 35%, #ffffff 100%);
-            min-height: 100vh;
-            padding: 30px 0;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: #f4f6f9;
         }
-
-        .navbar-custom {
-            background: white !important;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        .sidebar {
+            height: 100vh;
+            width: 250px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #343a40;
+            padding-top: 20px;
         }
-
-        .navbar-brand {
-            color: #ff4444 !important;
+        .sidebar h4 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 1.5rem;
             font-weight: 700;
-            font-size: 1.5rem;
         }
-
-        .navbar-brand i {
-            color: #ff4444;
-            margin-right: 8px;
+        .sidebar a {
+            color: #ffffff;
+            display: block;
+            padding: 12px 20px;
+            text-decoration: none;
+            transition: background 0.2s ease;
         }
-
+        .sidebar a:hover,
+        .sidebar a.active {
+            background-color: #495057;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 30px 35px;
+        }
         .form-container {
-            max-width: 980px;
-            margin: 40px auto;
             background: #ffffff;
-            border-radius: 30px;
-            padding: 45px;
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.08);
+            border-radius: 20px;
+            padding: 30px 35px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
         }
-
         .form-title {
-            color: #e63946;
-            font-weight: 800;
-            margin-bottom: 30px;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 25px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            font-size: 2rem;
+            gap: 12px;
         }
-
-        .form-title i {
-            font-size: 2rem;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
+        .form-group label {
             font-weight: 600;
             color: #333;
-            margin-bottom: 8px;
         }
-
-        .form-control, .form-select {
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 12px 15px;
-            transition: 0.3s;
+        .form-control,
+        .form-select {
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+            padding: 12px 14px;
             font-size: 0.95rem;
         }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
             outline: none;
         }
-
-        textarea.form-control {
-            resize: vertical;
-            min-height: 100px;
+        .image-section {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 25px;
         }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .checkbox-section {
+        .image-preview {
+            width: 100%;
+            max-width: 360px;
+            height: 260px;
+            background: #edf2f7;
+            border-radius: 18px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .checkbox-section input {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .checkbox-section label {
-            margin: 0;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        /* Image Preview */
-        .image-section {
-            background: #f8f4f7;
-            padding: 25px;
-            border-radius: 20px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(230, 57, 70, 0.12);
-            display: grid;
-            gap: 20px;
-            align-items: center;
-            justify-items: center;
-        }
-
-        .image-preview {
-            position: relative;
-            width: 100%;
-            max-width: 420px;
-            height: 360px;
-            margin-bottom: 15px;
-            border-radius: 20px;
+            justify-content: center;
             overflow: hidden;
-            background: #f1f3f8;
-            box-shadow: inset 0 0 0 1px rgba(229, 57, 70, 0.1);
+            margin-bottom: 16px;
         }
-
         .image-preview img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            border-radius: 20px;
-            transition: transform 0.4s ease;
+            object-fit: contain;
         }
-
-        .image-preview img:hover {
-            transform: scale(1.03);
-        }
-
-        .image-input-wrapper input[type="file"] {
-            display: none;
-        }
-
         .btn-upload {
-            background: linear-gradient(135deg, #e63946, #f15b6c);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 14px;
-            cursor: pointer;
-            font-weight: 700;
-            display: inline-block;
-            transition: 0.3s;
-            border: none;
-            box-shadow: 0 10px 30px rgba(230, 57, 70, 0.18);
-        }
-
-        .btn-upload:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(230, 57, 70, 0.22);
-        }
-
-        .file-name {
-            font-size: 0.9rem;
-            color: #999;
-            margin-top: 8px;
-        }
-
-        /* Buttons */
-        .form-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .btn-custom {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .btn-ajouter {
-            background: linear-gradient(135deg, #e63946, #f15b6c);
+            background: #2563eb;
             color: white;
-            flex: 1;
-            box-shadow: 0 10px 25px rgba(230, 57, 70, 0.2);
-        }
-
-        .btn-ajouter:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(230, 57, 70, 0.28);
-            color: white;
-        }
-
-        .btn-annuler {
-            background: #e0e0e0;
-            color: #333;
-            flex: 1;
-        }
-
-        .btn-annuler:hover {
-            background: #d0d0d0;
-            color: #333;
-        }
-
-        /* Alerts */
-        .alert {
-            border-radius: 10px;
+            padding: 10px 18px;
+            border-radius: 12px;
             border: none;
-            margin-bottom: 20px;
+            cursor: pointer;
+            font-weight: 600;
         }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
+        .btn-upload:hover {
+            background: #1d4ed8;
         }
-
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
+        .btn-custom {
+            min-width: 150px;
+            border-radius: 12px;
+            font-weight: 600;
         }
-
-        @media (max-width: 768px) {
-            .form-container {
+        .btn-submit {
+            background: #10b981;
+            color: white;
+            border: none;
+        }
+        .btn-submit:hover {
+            background: #059669;
+        }
+        .btn-cancel {
+            background: #e5e7eb;
+            color: #111827;
+            border: none;
+        }
+        .btn-cancel:hover {
+            background: #d1d5db;
+        }
+        .alert {
+            border-radius: 14px;
+            padding: 16px 18px;
+        }
+        @media (max-width: 992px) {
+            .main-content {
+                margin-left: 0;
                 padding: 20px;
             }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .form-actions {
-                flex-direction: column;
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
             }
         }
     </style>
 </head>
-
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <span class="navbar-brand">
-                <i class="fas fa-utensils"></i> Smart Meal Planner
-            </span>
-        </div>
-    </nav>
+    <div class="sidebar">
+        <h4>Administration</h4>
+        <a href="#"><i class="fas fa-calendar-alt"></i> Événements</a>
+        <a href="#"><i class="fas fa-utensils"></i> Meal Planner</a>
+        <a href="#"><i class="fas fa-book"></i> Recettes</a>
+        <a href="#"><i class="fas fa-users"></i> Utilisateurs</a>
+        <a href="afficherProduit.php" class="active"><i class="fas fa-shopping-cart"></i> Boutique</a>
+    </div>
 
-    <!-- Form -->
-    <div class="container-lg">
+    <div class="main-content">
         <div class="form-container">
-            <h1 class="form-title">
-                <i class="fas fa-plus-circle"></i>
-                Ajouter un Produit
-            </h1>
+            <h1 class="form-title"><i class="fas fa-plus-circle"></i> Ajouter un Produit</h1>
 
-            <!-- Messages -->
             <?php if ($succes): ?>
                 <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> <?= $succes ?>
+                    <i class="fas fa-check-circle"></i> <?= htmlspecialchars($succes) ?>
                 </div>
             <?php endif; ?>
 
             <?php if ($erreur): ?>
                 <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle"></i> <?= $erreur ?>
+                    <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($erreur) ?>
                 </div>
             <?php endif; ?>
 
-            <form method="POST" enctype="multipart/form-data">
-                <!-- Image Section -->
-                <div class="image-section">
-                    <p style="font-weight: 600; margin-bottom: 15px;">Photo du produit</p>
-                    
+            <form method="POST" enctype="multipart/form-data" class="row g-4">
+                <div class="col-12 image-section">
+                    <p style="font-weight: 600; margin-bottom: 16px;">Photo du produit</p>
                     <div class="image-preview">
-                        <img id="imagePreview" 
-                             src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22 viewBox=%220 0 150 150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22150%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23999%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EPas d%27image%3C/text%3E%3C/svg%3E" 
-                             alt="Aperçu">
+                        <img id="imagePreview" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22 viewBox=%220 0 150 150%22%3E%3Crect fill=%22%23edf2f7%22 width=%22150%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23999%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EPas d%27image%3C/text%3E%3C/svg%3E" alt="Aperçu">
                     </div>
-
-                    <div class="image-input-wrapper">
-                        <label for="imageInput" class="btn-upload">
-                            <i class="fas fa-image"></i> Ajouter une image
-                        </label>
-                        <input type="file" id="imageInput" name="image" accept="image/*">
-                    </div>
-                    <p class="file-name">Format: JPG, PNG, GIF, WEBP - Max 5 MB</p>
+                    <label class="btn-upload" for="imageInput"><i class="fas fa-image"></i> Choisir une image</label>
+                    <input type="file" id="imageInput" name="image" accept="image/*" style="display:none;">
+                    <p class="text-muted mt-2">Format: JPG, PNG, GIF, WEBP - Max 5 MB</p>
                 </div>
 
-                <!-- Form Fields -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="nom">Nom du produit *</label>
-                        <input type="text" class="form-control" id="nom" name="nom" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="prix">Prix (DT) *</label>
-                        <input type="number" class="form-control" id="prix" name="prix" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="quantiteStock">Quantité en stock *</label>
-                        <input type="number" class="form-control" id="quantiteStock" name="quantiteStock" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="dateExpiration">Date d'expiration *</label>
-                        <input type="date" class="form-control" id="dateExpiration" name="dateExpiration" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="categorie">Catégorie</label>
-                        <input type="text" class="form-control" id="categorie" name="categorie" 
-                               value="<?= htmlspecialchars($_POST['categorie'] ?? '') ?>" 
-                               placeholder="Ex: Fruits, Légumes, Protéines">
+                <div class="col-md-6">
+                    <label for="nom" class="form-label">Nom du produit *</label>
+                    <input type="text" class="form-control" id="nom" name="nom" value="<?= htmlspecialchars($_POST['nom'] ?? '') ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="prix" class="form-label">Prix (DT) *</label>
+                    <input type="number" class="form-control" id="prix" name="prix" step="0.01" min="0" value="<?= htmlspecialchars($_POST['prix'] ?? '') ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="quantiteStock" class="form-label">Quantité en stock *</label>
+                    <input type="number" class="form-control" id="quantiteStock" name="quantiteStock" min="0" value="<?= htmlspecialchars($_POST['quantiteStock'] ?? '') ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="dateExpiration" class="form-label">Date d'expiration *</label>
+                    <input type="date" class="form-control" id="dateExpiration" name="dateExpiration" value="<?= htmlspecialchars($_POST['dateExpiration'] ?? '') ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="categorie" class="form-label">Catégorie</label>
+                    <input type="text" class="form-control" id="categorie" name="categorie" value="<?= htmlspecialchars($_POST['categorie'] ?? '') ?>" placeholder="Ex: Fruits, Légumes, Protéines">
+                </div>
+                <div class="col-12">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="4"><?= htmlspecialchars($_POST['description'] ?? '') ?></textarea>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="estDurable" name="estDurable" <?= isset($_POST['estDurable']) ? 'checked' : '' ?> >
+                        <label class="form-check-label" for="estDurable">Produit durable</label>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea class="form-control" id="description" name="description"><?= htmlspecialchars($_POST['description'] ?? '') ?></textarea>
-                </div>
-
-                <div class="checkbox-section">
-                    <input type="checkbox" id="estDurable" name="estDurable">
-                    <label for="estDurable">Produit durable</label>
-                </div>
-
-                <!-- Actions -->
-                <div class="form-actions">
-                    <button type="submit" class="btn-custom btn-ajouter">
+                <div class="col-12 d-flex flex-wrap gap-3">
+                    <button type="submit" class="btn btn-submit btn-custom">
                         <i class="fas fa-save"></i> Ajouter le produit
                     </button>
-                    <a href="afficherProduit.php" class="btn-custom btn-annuler">
+                    <a href="afficherProduit.php" class="btn btn-cancel btn-custom">
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>
@@ -430,19 +301,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        // Prévisualiser l'image avant upload
-        document.getElementById('imageInput')?.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    document.getElementById('imagePreview').src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         });
     </script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
