@@ -12,19 +12,6 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-    // Modifier la colonne categorie pour être VARCHAR si elle est encore INT
-    try {
-        // Vérifier si la colonne id_categorie existe et est une foreign key
-        $result = $pdo->query("SHOW COLUMNS FROM produit LIKE 'id_categorie'");
-        if ($result->rowCount() > 0) {
-            // Supprimer la foreign key si elle existe
-            $pdo->exec("ALTER TABLE produit DROP FOREIGN KEY fk_produit_categorie");
-            // Changer la colonne
-            $pdo->exec("ALTER TABLE produit CHANGE id_categorie categorie VARCHAR(100) DEFAULT 'Autre'");
-        }
-    } catch (Exception $e) {
-        // Ignorer si la colonne est déjà modifiée ou erreur
-    }
 } catch (PDOException $e) {
     die("Erreur de connexion à la base de données: " . $e->getMessage());
 }
@@ -46,7 +33,7 @@ function determinerStatut($quantiteStock, $dateExpiration) {
 
 // Direction du dossier d'uploads
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
-define('UPLOAD_URL', '/ryhem/view/back/uploads/');
+define('UPLOAD_URL', '/ryhem/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/uploads/');
 
 // Créer le dossier s'il n'existe pas
 if (!is_dir(UPLOAD_DIR)) {

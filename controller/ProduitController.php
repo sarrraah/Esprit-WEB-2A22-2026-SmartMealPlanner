@@ -1,126 +1,229 @@
 <?php
-require __DIR__ . '/../config.php';
-require __DIR__ . '/../model/Produit.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../model/Produit.php';
 
 class ProduitController
 {
-    function listProduits()
+    private function hasIdCategorieColumn()
     {
         $db = config::getConnexion();
-        $query = $db->query("SELECT * FROM produit ORDER BY id DESC");
-        $rows = $query->fetchAll();
-        $produits = [];
-        foreach ($rows as $row) {
-            $produits[] = new Produit(
-                $row['id'],
-                $row['nom'],
-                $row['description'],
-                $row['quantiteStock'],
-                $row['dateExpiration'],
-                $row['categorie'],
-                $row['prix'],
-                $row['image'],
-                $row['statut']
-            );
-        }
-        return $produits;
+        $stmt = $db->query("SHOW COLUMNS FROM produit LIKE 'id_categorie'");
+        return $stmt->fetch() !== false;
     }
 
-    function getProduitById($id)
+    public function listProduits()
     {
-        $sql = "SELECT * FROM produit WHERE id = :id";
         $db = config::getConnexion();
+        if ($this->hasIdCategorieColumn()) {
+            $query = $db->query("
+                SELECT p.*, c.nom AS categorie_nom
+                FROM produit p
+                LEFT JOIN categorieproduit c ON p.id_categorie = c.id_categorie
+                ORDER BY p.id DESC
+            ");
+        } else {
+            $query = $db->query("
+                SELECT p.*, p.categorie AS categorie_nom
+                FROM produit p
+                ORDER BY p.id DESC
+            ");
+        }
+        return $query->fetchAll();
+    }
+
+    public function listProduitsByCategorie($idCategorie)
+    {
+        $db = config::getConnexion();
+        if ($this->hasIdCategorieColumn()) {
+            $query = $db->prepare("
+                SELECT p.*, c.nom AS categorie_nom
+                FROM produit p
+                LEFT JOIN categorieproduit c ON p.id_categorie = c.id_categorie
+                WHERE p.id_categorie = :id_categorie
+                ORDER BY p.id DESC
+            ");
+            $query->execute(['id_categorie' => $idCategorie]);
+        } else {
+            $query = $db->prepare("
+                SELECT p.*, p.categorie AS categorie_nom
+                FROM produit p
+                WHERE p.categorie = (SELECT nom FROM categorieproduit WHERE id_categorie = :id_categorie LIMIT 1)
+                ORDER BY p.id DESC
+            ");
+            $query->execute(['id_categorie' => $idCategorie]);
+        }
+        return $query->fetchAll();
+    }
+
+    public function searchProduits($statutFilter = 'Tous', $searchQuery = '')
+    {
+        if ($this->hasIdCategorieColumn()) {
+            $sql = "
+                SELECT p.*, c.nom AS categorie_nom
+                FROM produit p
+                LEFT JOIN categorieproduit c ON p.id_categorie = c.id_categorie
+                WHERE 1 = 1
+            ";
+        } else {
+            $sql = "
+                SELECT p.*, p.categorie AS categorie_nom
+                FROM produit p
+                WHERE 1 = 1
+            ";
+        }
+        $params = [];
+
+        if ($statutFilter !== 'Tous') {
+            $sql .= " AND p.statut = :statut";
+            $params['statut'] = $statutFilter;
+        }
+
+        if ($searchQuery !== '') {
+            $sql .= " AND p.nom LIKE :search";
+            $params['search'] = '%' . $searchQuery . '%';
+        }
+
+        $sql .= " ORDER BY p.id DESC";
+
+        $db = config::getConnexion();
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function getProduitById($id)
+    {
+        $db = config::getConnexion();
+        if ($this->hasIdCategorieColumn()) {
+            $sql = "SELECT * FROM produit WHERE id = :id";
+        } else {
+            $sql = "
+                SELECT p.*,
+                    (SELECT cp.id_categorie FROM categorieproduit cp WHERE cp.nom = p.categorie LIMIT 1) AS id_categorie
+                FROM produit p
+                WHERE p.id = :id
+            ";
+        }
         $req = $db->prepare($sql);
-        $req->bindValue(':id', $id);
-        try {
-            $req->execute();
-            $row = $req->fetch();
-            if (!$row) return null;
-            return new Produit(
-                $row['id'],
-                $row['nom'],
-                $row['description'],
-                $row['quantiteStock'],
-                $row['dateExpiration'],
-                $row['categorie'],
-                $row['prix'],
-                $row['image'],
-                $row['statut']
-            );
-        } catch (Exception $e) {
-            die('Error: ' . $e->getMessage());
-        }
+        $req->bindValue(':id', $id, PDO::PARAM_INT);
+        $req->execute();
+        return $req->fetch() ?: null;
     }
 
-    function addProduit($produit)
+    public function addProduit($produit)
     {
-        $sql = "INSERT INTO produit
-                VALUES (NULL, :nom, :description, :quantiteStock, :dateExpiration, :categorie, :prix, :image, :statut)";
         $db = config::getConnexion();
-        try {
+        if ($this->hasIdCategorieColumn()) {
+            $sql = "INSERT INTO produit
+                    (nom, description, prix, quantiteStock, estDurable, dateExpiration, image, statut, id_categorie)
+                    VALUES (:nom, :description, :prix, :quantiteStock, :estDurable, :dateExpiration, :image, :statut, :id_categorie)";
             $query = $db->prepare($sql);
-            $query->execute([
+            return $query->execute([
                 'nom' => $produit->getNom(),
                 'description' => $produit->getDescription(),
-                'quantiteStock' => $produit->getQuantiteStock(),
-                'dateExpiration' => $produit->getDateExpiration(),
-                'categorie' => $produit->getCategorie(),
                 'prix' => $produit->getPrix(),
+                'quantiteStock' => $produit->getQuantiteStock(),
+                'estDurable' => 0,
+                'dateExpiration' => $produit->getDateExpiration(),
                 'image' => $produit->getImage(),
                 'statut' => $produit->getStatut(),
+                'id_categorie' => $produit->getIdCategorie(),
             ]);
-        } catch (Exception $e) {
-            echo 'Error: ' . $e->getMessage();
         }
+
+        $categorieNom = 'Autre';
+        if ($produit->getIdCategorie()) {
+            $stmtCat = $db->prepare("SELECT nom FROM categorieproduit WHERE id_categorie = :id_categorie");
+            $stmtCat->execute(['id_categorie' => $produit->getIdCategorie()]);
+            $categorieNom = $stmtCat->fetchColumn() ?: 'Autre';
+        }
+
+        $sql = "INSERT INTO produit
+                (nom, description, prix, quantiteStock, estDurable, dateExpiration, image, statut, categorie)
+                VALUES (:nom, :description, :prix, :quantiteStock, :estDurable, :dateExpiration, :image, :statut, :categorie)";
+        $query = $db->prepare($sql);
+        return $query->execute([
+            'nom' => $produit->getNom(),
+            'description' => $produit->getDescription(),
+            'prix' => $produit->getPrix(),
+            'quantiteStock' => $produit->getQuantiteStock(),
+            'estDurable' => 0,
+            'dateExpiration' => $produit->getDateExpiration(),
+            'image' => $produit->getImage(),
+            'statut' => $produit->getStatut(),
+            'categorie' => $categorieNom,
+        ]);
     }
 
-    function updateProduit($produit, $id)
+    public function updateProduit($produit, $id)
     {
-        try {
-            $db = config::getConnexion();
+        $db = config::getConnexion();
+        if ($this->hasIdCategorieColumn()) {
             $query = $db->prepare(
                 'UPDATE produit SET
                     nom = :nom,
                     description = :description,
                     quantiteStock = :quantiteStock,
                     dateExpiration = :dateExpiration,
-                    categorie = :categorie,
+                    id_categorie = :id_categorie,
                     prix = :prix,
                     image = :image,
                     statut = :statut
                 WHERE id = :id'
             );
 
-            $query->execute([
+            return $query->execute([
                 'id' => $id,
                 'nom' => $produit->getNom(),
                 'description' => $produit->getDescription(),
                 'quantiteStock' => $produit->getQuantiteStock(),
                 'dateExpiration' => $produit->getDateExpiration(),
-                'categorie' => $produit->getCategorie(),
+                'id_categorie' => $produit->getIdCategorie(),
                 'prix' => $produit->getPrix(),
                 'image' => $produit->getImage(),
                 'statut' => $produit->getStatut(),
             ]);
-
-            echo $query->rowCount() . " records UPDATED successfully <br>";
-        } catch (PDOException $e) {
-            $e->getMessage();
         }
+
+        $categorieNom = 'Autre';
+        if ($produit->getIdCategorie()) {
+            $stmtCat = $db->prepare("SELECT nom FROM categorieproduit WHERE id_categorie = :id_categorie");
+            $stmtCat->execute(['id_categorie' => $produit->getIdCategorie()]);
+            $categorieNom = $stmtCat->fetchColumn() ?: 'Autre';
+        }
+
+        $query = $db->prepare(
+            'UPDATE produit SET
+                nom = :nom,
+                description = :description,
+                quantiteStock = :quantiteStock,
+                dateExpiration = :dateExpiration,
+                categorie = :categorie,
+                prix = :prix,
+                image = :image,
+                statut = :statut
+            WHERE id = :id'
+        );
+
+        return $query->execute([
+            'id' => $id,
+            'nom' => $produit->getNom(),
+            'description' => $produit->getDescription(),
+            'quantiteStock' => $produit->getQuantiteStock(),
+            'dateExpiration' => $produit->getDateExpiration(),
+            'categorie' => $categorieNom,
+            'prix' => $produit->getPrix(),
+            'image' => $produit->getImage(),
+            'statut' => $produit->getStatut(),
+        ]);
     }
 
-    function deleteProduit($id)
+    public function deleteProduit($id)
     {
         $sql = "DELETE FROM produit WHERE id = :id";
         $db = config::getConnexion();
         $req = $db->prepare($sql);
-        $req->bindValue(':id', $id);
-
-        try {
-            $req->execute();
-        } catch (Exception $e) {
-            die('Error: ' . $e->getMessage());
-        }
+        return $req->execute(['id' => $id]);
     }
 }
 ?>

@@ -1,0 +1,253 @@
+
+/* =========================
+   YUMMY STYLE - SMART MEAL
+========================= */
+
+:root {
+  --default-font: "Roboto", sans-serif;
+  --heading-font: "Amatic SC", cursive;
+  --nav-font: "Inter", sans-serif;
+
+  --background-color: #ffffff;
+  --default-color: #212529;
+  --heading-color: #37373f;
+  --accent-color: #ce1212;
+  --surface-color: #ffffff;
+  --contrast-color: #ffffff;
+
+  --nav-color: #7f7f90;
+  --nav-hover-color: #ce1212;
+}
+
+/* ================= GLOBAL ================= */
+body {
+  font-family: var(--default-font);
+  background: var(--background-color);
+  color: var(--default-color);
+}
+
+a {
+  text-decoration: none;
+  color: var(--accent-color);
+}
+
+/* ================= NAVBAR (YUMMY STYLE) ================= */
+.navbar {
+  background: white;
+  padding: 18px 0;
+  box-shadow: 0 0 20px rgba(0,0,0,0.08);
+  transition: 0.3s;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--accent-color) !important;
+}
+
+.nav-link {
+  font-family: var(--nav-font);
+  font-weight: 500;
+  color: var(--nav-color) !important;
+  position: relative;
+  transition: 0.3s;
+}
+
+.nav-link:hover {
+  color: var(--accent-color) !important;
+}
+
+/* underline animation like Yummy */
+.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--accent-color);
+  transition: 0.3s;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* ================= HERO (STYLE YUMMY) ================= */
+.hero {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  background: #fff;
+  padding: 100px 20px;
+}
+
+.hero h1 {
+  font-family: var(--heading-font);
+  font-size: 70px;
+  color: var(--heading-color);
+}
+
+.hero p {
+  font-size: 20px;
+  color: #6c757d;
+}
+
+/* bouton hero */
+.hero .btn {
+  background: var(--accent-color);
+  color: white;
+  padding: 12px 28px;
+  border-radius: 50px;
+  transition: 0.3s;
+}
+
+.hero .btn:hover {
+  background: #a50f0f;
+}
+
+/* ================= SECTION TITLE ================= */
+.section-title {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.section-title h2 {
+  font-family: var(--heading-font);
+  font-size: 48px;
+  color: var(--heading-color);
+}
+
+.section-title p {
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+/* ================= PRODUCT CARD (YUMMY MENU STYLE) ================= */
+.product-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 25px rgba(0,0,0,0.08);
+  overflow: hidden;
+  transition: 0.4s;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 35px rgba(0,0,0,0.15);
+}
+
+.product-img {
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+}
+
+.product-info {
+  padding: 20px;
+}
+
+.product-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.product-description {
+  font-size: 14px;
+  color: #777;
+}
+
+.product-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+/* ================= BUTTON ================= */
+.btn-add-cart {
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 50px;
+  width: 100%;
+  transition: 0.3s;
+}
+
+.btn-add-cart:hover {
+  background: #a50f0f;
+}
+
+/* ================= BADGES ================= */
+.product-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.badge-disponible {
+  background: #28a745;
+  color: white;
+}
+
+.badge-rupture {
+  background: #dc3545;
+  color: white;
+}
+
+.badge-epuise {
+  background: #ffc107;
+  color: black;
+}
+
+/* ================= ABOUT ================= */
+.about-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.08);
+  padding: 40px;
+}
+
+/* ================= CONTACT ================= */
+#contact i {
+  color: var(--accent-color);
+}
+
+/* ================= FOOTER ================= */
+footer {
+  background: #1f1f24;
+  color: white;
+  padding: 40px 0;
+}
+
+/* ================= FILTER BUTTONS ================= */
+.filter-btn {
+  border-radius: 30px;
+  padding: 6px 16px;
+  border: 1px solid #ddd;
+  transition: 0.3s;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+/* ================= CART ================= */
+.cart-sidebar {
+  background: white;
+}
+
+/* smooth hover */
+button, .product-card {
+  transition: 0.3s ease;
+}

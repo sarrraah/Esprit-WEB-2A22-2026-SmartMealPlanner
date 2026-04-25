@@ -1,217 +1,108 @@
 <?php
 require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../controller/CategorieController.php';
+require_once __DIR__ . '/../../controller/ProduitController.php';
+require_once __DIR__ . '/../../model/Produit.php';
 
-// R�cup�rer l'ID soit depuis GET soit depuis le champ POST cach�
-$id = 0;
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-} elseif (isset($_POST['id'])) {
-    $id = intval($_POST['id']);
-}
-
-$produit = null;
-$erreur = '';
-$succes = '';
-
-if ($id > 0) {
-    $stmt = $pdo->prepare("SELECT * FROM produit WHERE id = ?");
-    $stmt->execute([$id]);
-    $produit = $stmt->fetch();
-}
+$id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
+$produitController = new ProduitController();
+$categorieController = new CategorieController();
+$produit = $produitController->getProduitById($id);
+$categories = $categorieController->getAllCategories();
 
 if (!$produit) {
     header('Location: afficherProduit.php');
     exit;
 }
 
-$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-$maxFileSize = 5 * 1024 * 1024;
-
+$erreur = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nom = trim($_POST['nom'] ?? '');
     $description = trim($_POST['description'] ?? '');
-    $prix = floatval($_POST['prix'] ?? 0);
-    $quantiteStock = intval($_POST['quantiteStock'] ?? 0);
+    $prix = (float) ($_POST['prix'] ?? 0);
+    $quantiteStock = (int) ($_POST['quantiteStock'] ?? 0);
     $dateExpiration = trim($_POST['dateExpiration'] ?? '');
-    $categorie = trim($_POST['categorie'] ?? ($produit['categorie'] ?? 'Autre'));
-    $estDurable = isset($_POST['estDurable']) ? 1 : 0;
-    $image = $produit['image'];
+    $idCategorie = !empty($_POST['id_categorie']) ? (int) $_POST['id_categorie'] : null;
+    $image = $produit['image'] ?? '';
 
-    if ($categorie === '') {
-        $categorie = 'Autre';
-    }
-
-    if (empty($nom)) {
-        $erreur = 'Le nom du produit est requis.';
-    } elseif ($prix <= 0) {
-        $erreur = 'Le prix doit �tre sup�rieur � 0.';
-    } elseif (empty($dateExpiration)) {
-        $erreur = 'La date d\'expiration est requise.';
-    }
-
-    if (empty($erreur) && isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
-        $file = $_FILES['image'];
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            $erreur = 'Erreur lors du t�l�chargement du fichier.';
-        } else {
-            $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            if (!in_array($fileExt, $allowedExtensions)) {
-                $erreur = 'Format de fichier non autoris�. Formats accept�s: ' . implode(', ', $allowedExtensions);
-            } elseif ($file['size'] > $maxFileSize) {
-                $erreur = 'La taille du fichier d�passe 5 Mo.';
-            } else {
-                if (!is_dir(UPLOAD_DIR)) {
-                    mkdir(UPLOAD_DIR, 0755, true);
-                }
-                $newFileName = time() . '_' . uniqid() . '.' . $fileExt;
-                if (move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $newFileName)) {
-                    if (!empty($produit['image']) && file_exists(UPLOAD_DIR . $produit['image'])) {
-                        unlink(UPLOAD_DIR . $produit['image']);
-                    }
-                    $image = $newFileName;
-                } else {
-                    $erreur = 'Impossible de d�placer le fichier t�l�charg�.';
-                }
-            }
+    if (!empty($_FILES['image']['name'])) {
+        $fileExt = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        if (in_array($fileExt, $allowedExtensions, true) && $_FILES['image']['size'] <= $maxFileSize) {
+            $image = time() . '_' . uniqid() . '.' . $fileExt;
+            move_uploaded_file($_FILES['image']['tmp_name'], UPLOAD_DIR . $image);
         }
     }
 
-    if (empty($erreur)) {
-        try {
-            $sql = "UPDATE produit SET nom = ?, description = ?, prix = ?, quantiteStock = ?, dateExpiration = ?, estDurable = ?, image = ?, categorie = ? WHERE id = ?";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$nom, $description, $prix, $quantiteStock, $dateExpiration, $estDurable, $image, $categorie, $id]);
-            $succes = 'Produit modifi� avec succ�s.';
-            $stmt = $pdo->prepare("SELECT * FROM produit WHERE id = ?");
-            $stmt->execute([$id]);
-            $produit = $stmt->fetch();
-        } catch (Exception $e) {
-            $erreur = 'Erreur lors de la mise � jour : ' . $e->getMessage();
-        }
+    if ($nom === '' || strlen($nom) < 2 || $prix <= 0 || $prix > 99999 || $quantiteStock < 0 || $quantiteStock > 99999 || $dateExpiration === '') {
+        $erreur = "Veuillez corriger les champs obligatoires.";
+    } elseif (strtotime($dateExpiration) < strtotime(date('Y-m-d'))) {
+        $erreur = "La date d'expiration ne peut pas être dans le passé.";
+    } else {
+        $updated = new Produit($id, $nom, $description, $quantiteStock, $dateExpiration, $idCategorie, $prix, $image, determinerStatut($quantiteStock, $dateExpiration));
+        $produitController->updateProduit($updated, $id);
+        header('Location: afficherProduit.php');
+        exit;
     }
 }
-?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modifier Produit - Administration</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .sidebar {
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 250px;
-            background-color: #343a40;
-            padding-top: 20px;
-        }
-        .sidebar a {
-            color: #ffffff;
-            text-decoration: none;
-            display: block;
-            padding: 10px 20px;
-        }
-        .sidebar a:hover {
-            background-color: #495057;
-        }
-        .main-content {
-            margin-left: 250px;
-            padding: 20px;
-        }
-    </style>
-</head>
-<body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h4 class="text-white text-center mb-4">Administration</h4>
-        <a href="#"><i class="fas fa-calendar-alt"></i> Événements</a>
-        <a href="#"><i class="fas fa-utensils"></i> Meal Planner</a>
-        <a href="#"><i class="fas fa-book"></i> Recettes</a>
-        <a href="#"><i class="fas fa-users"></i> Utilisateurs</a>
-        <a href="afficherProduit.php" class="bg-primary"><i class="fas fa-shopping-cart"></i> Boutique</a>
-    </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <h1 class="mb-4">Modifier un Produit</h1>
-        
-        <?php if ($erreur): ?>
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i> <?= $erreur ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if ($succes): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> <?= $succes ?>
-            </div>
-        <?php endif; ?>
-        
-        <form method="POST" enctype="multipart/form-data" class="row g-3">
-            <input type="hidden" name="id" value="<?= $produit['id'] ?>">
-            
-            <div class="col-md-6">
-                <label for="nom" class="form-label">Nom du produit *</label>
-                <input type="text" class="form-control" id="nom" name="nom" value="<?= htmlspecialchars($produit['nom']) ?>" required>
-            </div>
-            
-            <div class="col-md-6">
-                <label for="prix" class="form-label">Prix (DT) *</label>
-                <input type="number" class="form-control" id="prix" name="prix" step="0.01" min="0" value="<?= $produit['prix'] ?>" required>
-            </div>
-            
-            <div class="col-md-6">
-                <label for="quantiteStock" class="form-label">Quantité en stock *</label>
-                <input type="number" class="form-control" id="quantiteStock" name="quantiteStock" min="0" value="<?= $produit['quantiteStock'] ?>" required>
-            </div>
-            
-            <div class="col-md-6">
-                <label for="dateExpiration" class="form-label">Date d'expiration *</label>
-                <input type="date" class="form-control" id="dateExpiration" name="dateExpiration" value="<?= $produit['dateExpiration'] ?>" required>
-            </div>
-            
-            <div class="col-md-6">
-                <label for="categorie" class="form-label">Catégorie</label>
-                <input type="text" class="form-control" id="categorie" name="categorie" value="<?= htmlspecialchars($produit['categorie']) ?>" placeholder="Ex: Fruits, Légumes, Protéines">
-            </div>
-            
-            <div class="col-md-6">
-                <label for="image" class="form-label">Image (laisser vide pour garder l'actuelle)</label>
-                <input type="file" class="form-control" id="image" name="image" accept="image/*">
-                <?php if (!empty($produit['image'])): ?>
-                    <small class="text-muted">Image actuelle: <?= htmlspecialchars($produit['image']) ?></small>
+include("header.php");
+?>
+<section class="section">
+<div class="container py-4">
+    <h2>Modifier le Produit</h2>
+    <?php if ($erreur): ?><div class="alert alert-danger"><?= htmlspecialchars($erreur) ?></div><?php endif; ?>
+    <form method="POST" enctype="multipart/form-data" class="row g-3" id="produitForm">
+        <input type="hidden" name="id" value="<?= (int) $produit['id'] ?>">
+        <div class="col-md-6"><label class="form-label">Nom *</label><input id="nom" type="text" name="nom" class="form-control" minlength="2" maxlength="100" value="<?= htmlspecialchars($produit['nom']) ?>" required></div>
+        <div class="col-md-6"><label class="form-label">Prix *</label><input id="prix" type="number" step="0.01" min="0.01" max="99999" name="prix" class="form-control" value="<?= htmlspecialchars($produit['prix']) ?>" required></div>
+        <div class="col-md-6"><label class="form-label">Quantité *</label><input id="quantiteStock" type="number" min="0" max="99999" name="quantiteStock" class="form-control" value="<?= (int) $produit['quantiteStock'] ?>" required></div>
+        <div class="col-md-6"><label class="form-label">Date d'expiration *</label><input id="dateExpiration" type="date" name="dateExpiration" class="form-control" value="<?= htmlspecialchars($produit['dateExpiration']) ?>" required></div>
+        <div class="col-md-6">
+            <label class="form-label">Catégorie</label>
+            <select name="id_categorie" class="form-select">
+                <option value="">-- Sélectionner --</option>
+                <?php foreach ($categories as $categorie): ?>
+                    <option value="<?= (int) $categorie['id_categorie'] ?>" <?= ((int) $produit['id_categorie'] === (int) $categorie['id_categorie']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($categorie['nom']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Image</label>
+            <input type="file" name="image" class="form-control" accept="image/*" onchange="previewImage(this, 'preview')">
+            <div class="mt-2">
+                <?php
+                $imgActuelle = $produit['image'] ?? '';
+                $imgSrc = $imgActuelle ? (str_starts_with($imgActuelle, 'http') ? $imgActuelle : UPLOAD_URL . $imgActuelle) : '';
+                ?>
+                <?php if ($imgSrc): ?>
+                    <img id="preview" src="<?= htmlspecialchars($imgSrc) ?>" alt="Image actuelle" style="height:120px;object-fit:cover;border-radius:8px;border:1px solid #ddd;">
+                <?php else: ?>
+                    <img id="preview" src="#" alt="Aperçu" style="display:none;height:120px;object-fit:cover;border-radius:8px;border:1px solid #ddd;">
                 <?php endif; ?>
             </div>
-            
-            <div class="col-12">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control" id="description" name="description" rows="3"><?= htmlspecialchars($produit['description']) ?></textarea>
-            </div>
-            
-            <div class="col-12">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="estDurable" name="estDurable" <?= $produit['estDurable'] ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="estDurable">
-                        Produit durable
-                    </label>
-                </div>
-            </div>
-            
-            <div class="col-12">
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-save"></i> Modifier le produit
-                </button>
-                <a href="afficherProduit.php" class="btn btn-secondary ms-2">
-                    <i class="fas fa-times"></i> Annuler
-                </a>
-            </div>
-        </form>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        </div>
+        <div class="col-12"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="4"><?= htmlspecialchars($produit['description'] ?? '') ?></textarea></div>
+        <div class="col-12 d-flex gap-2">
+            <button class="btn btn-danger">Mettre à jour</button>
+            <a class="btn btn-outline-secondary" href="afficherProduit.php">Annuler</a>
+        </div>
+    </form>
+</div>
+</section>
+<script>
+function previewImage(input, previewId) {
+    var preview = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+<script src="/ryhem/view/assets/js/produit-validation.js"></script>
+<?php include("footer.php"); ?>
