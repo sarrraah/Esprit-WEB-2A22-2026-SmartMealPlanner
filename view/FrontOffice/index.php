@@ -44,18 +44,19 @@ $featured = array_slice($meals, 0, 4);
 
       <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
         <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner" height="44">
-        <h1 class="sitename">SmartMealPlanner</h1>
+        <h1 class="sitename"><span style="color:#212529;">Smart</span><span style="color:#ce1212;">MealPlanner</span></h1>
       </a>
 
       <nav id="navmenu" class="navmenu">
         <ul>
           <li><a href="index.php" class="active">Home</a></li>
           <li><a href="Meals.php">Meals</a></li>
+          <li><a href="Plans.php">My Plan</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
 
-      <a class="btn-getstarted" href="Meals.php">Browse Meals</a>
+
 
     </div>
   </header>
@@ -140,7 +141,7 @@ $featured = array_slice($meals, 0, 4);
           <?php endforeach; ?>
         </div>
         <div class="text-center mt-4" data-aos="fade-up">
-          <a href="Meals.php" class="btn btn-primary">View all meals</a>
+          <a href="Meals.php" class="btn btn-danger">View all meals</a>
         </div>
       </div>
     </section><!-- /Featured Meals Section -->

@@ -31,19 +31,20 @@ foreach ($meals as $meal) {
 
 <body class="index-page bo-meals-page">
 
+<?php $activePage = 'dashboard'; include __DIR__ . '/sidebar.php'; ?>
+
+<div class="bo-main-content">
+
   <header class="bo-header sticky-top">
-    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <h1 class="sitename mb-0 d-flex align-items-center gap-2">
-        <img src="../assets/img/logo-smp.jpg" alt="SmartMealPlanner" height="40">
-        SmartMealPlanner Admin
-      </h1>
+    <div class="container-fluid d-flex align-items-center justify-content-between flex-wrap gap-2 px-4">
+      <h1 class="sitename mb-0 fs-5">Dashboard</h1>
       <nav class="d-flex gap-3 align-items-center">
         <a href="../FrontOffice/index.php">View front office</a>
       </nav>
     </div>
   </header>
 
-  <main class="container py-5">
+  <main class="container-fluid px-4 py-5">
 
     <div class="row justify-content-center">
       <div class="col-lg-9">
@@ -133,13 +134,7 @@ foreach ($meals as $meal) {
 
   </main>
 
-  <footer class="footer dark-background mt-auto">
-    <div class="container copyright text-center py-4">
-      <p>© <span>Copyright</span> <strong class="px-1 sitename">Smart Meal Planner</strong> <span>All Rights Reserved</span></p>
-    </div>
-  </footer>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</div><!-- /bo-main-content -->
 </body>
-
 </html>

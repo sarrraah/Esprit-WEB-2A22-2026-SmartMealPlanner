@@ -36,20 +36,21 @@ function resolveImageUrl(string $image, string $prefix): string {
   <header id="header" class="header d-flex align-items-center sticky-top">
     <div class="container position-relative d-flex align-items-center justify-content-between">
 
-      <a href="../index.php" class="logo d-flex align-items-center me-auto me-xl-0">
+      <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
         <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner" height="44">
-        <h1 class="sitename">SmartMealPlanner</h1>
+        <h1 class="sitename"><span style="color:#212529;">Smart</span><span style="color:#ce1212;">MealPlanner</span></h1>
       </a>
 
       <nav id="navmenu" class="navmenu">
         <ul>
-          <li><a href="../index.php">Home</a></li>
+          <li><a href="index.php">Home</a></li>
           <li><a href="Meals.php" class="active">Meals</a></li>
+          <li><a href="Plans.php">My Plan</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
 
-      <a class="btn-getstarted" href="Meals.php">Plan meals</a>
+
 
     </div>
   </header>

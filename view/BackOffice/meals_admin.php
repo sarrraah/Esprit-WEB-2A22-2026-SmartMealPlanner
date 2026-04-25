@@ -24,19 +24,20 @@
 
 <body class="index-page bo-meals-page">
 
+<?php $activePage = 'meals'; include __DIR__ . '/sidebar.php'; ?>
+
+<div class="bo-main-content">
+
   <header class="bo-header sticky-top">
-    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <h1 class="sitename mb-0 d-flex align-items-center gap-2">
-        <img src="../assets/img/logo-smp.jpg" alt="SmartMealPlanner" height="40">
-        SmartMealPlanner Admin
-      </h1>
+    <div class="container-fluid d-flex align-items-center justify-content-between flex-wrap gap-2 px-4">
+      <h1 class="sitename mb-0 fs-5">Meals Management</h1>
       <nav class="d-flex gap-3 align-items-center">
         <a href="../FrontOffice/Meals.php">View front office</a>
       </nav>
     </div>
   </header>
 
-  <main class="container">
+  <main class="container-fluid px-4">
     <div class="bo-meals-layout">
 
       <section class="bo-panel bo-form" aria-labelledby="bo-form-title">
@@ -154,6 +155,6 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="backoffice-meals.js"></script>
+</div><!-- /bo-main-content -->
 </body>
-
 </html>

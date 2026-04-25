@@ -41,7 +41,7 @@
     <div class="container d-flex align-items-center justify-content-between">
       <a href="index.php" class="logo d-flex align-items-center text-decoration-none">
         <img src="assets/img/logo-smp.jpg" alt="SmartMealPlanner logo" style="height:44px;width:auto;margin-right:10px;">
-        <h1 class="sitename mb-0 text-white" style="font-size:1.6rem;">SmartMealPlanner</h1>
+        <h1 class="sitename mb-0 text-white" style="font-size:1.6rem;"><span style="color:#fff;">Smart</span><span style="color:#ce1212;">MealPlanner</span></h1>
       </a>
     </div>
   </header>

@@ -15,6 +15,20 @@ CREATE TABLE IF NOT EXISTS meals (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS plans (
+    id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name           VARCHAR(300) NOT NULL,
+    description    TEXT         NOT NULL,
+    mealType       ENUM('daily','weekly','diet','sport') NOT NULL DEFAULT 'daily',
+    totalCalories  SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    objective      VARCHAR(200) NOT NULL DEFAULT '',
+    duration       TINYINT UNSIGNED NOT NULL DEFAULT 7,
+    daysCompleted  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    mealsPlanned   TINYINT UNSIGNED NOT NULL DEFAULT 3,
+    mealsCompleted TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT INTO meals (name, calories, description, image, recipeUrl, mealType) VALUES
 ('Mediterranean Chickpea Salad with Feta & Herbs', 398, 'Chickpeas, cucumber, tomato, feta, and olive oil vinaigrette. Fresh and filling for lunch.', 'assets/img/menu/menu-item-2.png', 'https://example.com/recipes/chickpea-salad', 'lunch'),
 ('Ginger-Soy Turkey Stir-Fry with Market Vegetables', 524, 'Lean turkey strips with bell peppers, broccoli, and light soy-ginger sauce over brown rice.', 'assets/img/menu/menu-item-3.png', 'https://example.com/recipes/turkey-stir-fry', 'dinner'),
