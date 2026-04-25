@@ -13,7 +13,6 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
-// Filter by event?
 $id_event_filter = isset($_GET['id_event']) ? (int)$_GET['id_event'] : null;
 $eventTitle      = '';
 
@@ -25,7 +24,6 @@ if ($id_event_filter) {
     $participations = $ctrl->listParticipations();
 }
 
-// Load all events for the dropdown filter
 $allEvents = $evCtrl->listEvenements();
 
 $msg   = $_GET['msg'] ?? '';
@@ -44,30 +42,24 @@ $revenue   = array_sum(array_map(fn($p) => (float)$p->getMontant(), $participati
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh;display:flex}
+body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
 
-/* ── SIDEBAR ── */
-.sidebar{width:230px;background:#7f1d1d;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sb-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.1)}
-.sb-logo-txt{font-size:16px;font-weight:600;color:#fff}
-.sb-logo-txt span{color:#fca5a5}
-.sb-logo-sub{font-size:11px;color:rgba(255,255,255,0.35);margin-top:3px}
-.sb-section{padding:18px 16px 6px;font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase}
-.sb-link{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:rgba(255,255,255,0.65);text-decoration:none;border-radius:8px;margin:2px 8px;transition:all .15s;cursor:pointer;border:none;background:none;font-family:inherit;width:calc(100% - 16px)}
-.sb-link:hover{background:rgba(255,255,255,0.08);color:#fff}
-.sb-link.active{background:rgba(255,255,255,0.15);color:#fff;font-weight:500}
-.sb-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
-.sb-badge{margin-left:auto;background:rgba(255,255,255,0.15);color:#fca5a5;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
-.sb-divider{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:8px 12px}
-.sb-bottom{margin-top:auto;padding:14px}
-.sb-user{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:10px}
-.sb-avatar{width:34px;height:34px;border-radius:50%;background:#b91c1c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
-.sb-user-name{font-size:13px;color:#fff;font-weight:500}
-.sb-user-role{font-size:11px;color:rgba(255,255,255,0.38)}
+/* ── NAVBAR ── */
+.navbar{background:#7f1d1d;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:600;color:#fff;text-decoration:none}
+.nav-logo span{color:#fca5a5}
+.nav-logo sub{font-size:11px;color:rgba(255,255,255,0.4);margin-left:8px}
+.nav-links{display:flex;gap:6px;align-items:center}
+.nav-link{font-size:13px;color:rgba(255,255,255,0.7);text-decoration:none;font-weight:500;padding:7px 14px;border-radius:8px;transition:all .15s;display:flex;align-items:center;gap:6px}
+.nav-link:hover{background:rgba(255,255,255,0.1);color:#fff}
+.nav-link.active{background:rgba(255,255,255,0.18);color:#fff;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:#b91c1c;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff}
+.nav-user-name{font-size:12px;color:#fff;font-weight:500}
+.nav-user-role{font-size:10px;color:rgba(255,255,255,0.4)}
 
-/* ── MAIN ── */
-.main-wrap{flex:1;min-width:0;display:flex;flex-direction:column}
-.topbar{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+/* ── TOPBAR ── */
+.topbar{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
 .topbar-title{font-size:15px;font-weight:600;color:#1a0505}
 .topbar-sub{font-size:12px;color:#9a3535}
 .topbar-right{display:flex;align-items:center;gap:10px}
@@ -139,6 +131,14 @@ td b{font-weight:600;color:#7f1d1d}
 .empty{text-align:center;padding:50px 20px;color:#9a3535;font-size:14px}
 .empty-icon{font-size:36px;margin-bottom:10px}
 
+/* ── EVENT BANNER ── */
+.event-banner{background:#fff;border:1px solid #fde8e8;border-radius:14px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:13px}
+.event-banner-icon{font-size:22px}
+.event-banner-title{font-weight:600;color:#1a0505}
+.event-banner-sub{color:#9a3535;font-size:12px;margin-top:2px}
+.event-banner a{margin-left:auto;font-size:12px;color:#b91c1c;text-decoration:none;font-weight:500;padding:6px 14px;border:1px solid #f7c1c1;border-radius:8px;transition:all .15s}
+.event-banner a:hover{background:#fce8e8}
+
 /* ── PAGINATION ── */
 .pagination{display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px}
 .pagination-info{font-size:13px;color:#9a3535}
@@ -150,226 +150,196 @@ td b{font-weight:600;color:#7f1d1d}
 .pg-size-wrap{display:flex;align-items:center;gap:8px;font-size:13px;color:#9a3535}
 .pg-size-wrap select{padding:5px 10px;border:1.5px solid #f7c1c1;border-radius:8px;background:#fff;color:#1a0505;font-size:13px;outline:none;font-family:'Inter',sans-serif;cursor:pointer}
 
-/* ── EVENT BANNER (when filtered) ── */
-.event-banner{background:#fff;border:1px solid #fde8e8;border-radius:14px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:13px}
-.event-banner-icon{font-size:22px}
-.event-banner-title{font-weight:600;color:#1a0505}
-.event-banner-sub{color:#9a3535;font-size:12px;margin-top:2px}
-.event-banner a{margin-left:auto;font-size:12px;color:#b91c1c;text-decoration:none;font-weight:500;padding:6px 14px;border:1px solid #f7c1c1;border-radius:8px;transition:all .15s}
-.event-banner a:hover{background:#fce8e8}
-
 @media(max-width:900px){
-  .sidebar{display:none}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .content{padding:16px}
   .topbar{padding:0 16px}
   .table-wrap{overflow-x:auto}
+  .nav-links{gap:2px}
+  .nav-link{padding:6px 10px;font-size:12px}
+  .nav-user{display:none}
 }
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-txt">Event <span>Manager</span></div>
-    <div class="sb-logo-sub">Back Office</div>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="listEvenements.php" class="nav-logo">
+    Event <span>Manager</span><sub>Back Office</sub>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="listEvenements.php">📋 Événements</a>
+    <a class="nav-link" href="addEvenement.php">➕ Nouvel événement</a>
+    <a class="nav-link active" href="listParticipations.php">👥 Participants</a>
+    <a class="nav-link" href="interfaceevent.php">🌐 Vue front</a>
   </div>
-  <div class="sb-section">Menu</div>
-  <a class="sb-link" href="listEvenements.php">
-    <span class="sb-icon">📋</span> Événements
-  </a>
-  <a class="sb-link" href="addEvenement.php">
-    <span class="sb-icon">➕</span> Nouvel événement
-  </a>
-  <hr class="sb-divider">
-  <div class="sb-section">Gestion</div>
-  <a class="sb-link active" href="listParticipations.php">
-    <span class="sb-icon">👥</span> Participants
-    <span class="sb-badge"><?= $total ?></span>
-  </a>
-  <a class="sb-link" href="#">
-    <span class="sb-icon">📊</span> Statistiques
-  </a>
-  <hr class="sb-divider">
-  <div class="sb-section">Autre</div>
-  <a class="sb-link" href="interfaceevent.php">
-    <span class="sb-icon">🌐</span> Vue front
-  </a>
-  <a class="sb-link" href="#">
-    <span class="sb-icon">⚙️</span> Paramètres
-  </a>
-  <div class="sb-bottom">
-    <div class="sb-user">
-      <div class="sb-avatar">AD</div>
-      <div>
-        <div class="sb-user-name">Admin</div>
-        <div class="sb-user-role">Administrateur</div>
-      </div>
+  <div class="nav-user">
+    <div class="nav-avatar">AD</div>
+    <div>
+      <div class="nav-user-name">Admin</div>
+      <div class="nav-user-role">Administrateur</div>
     </div>
+  </div>
+</nav>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">👥 Liste des Participations</div>
+    <div class="topbar-sub">
+      <?= $id_event_filter ? 'Filtré par : ' . htmlspecialchars($eventTitle) : 'Toutes les participations' ?>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-csv" onclick="exportCSV()">⬇ Export CSV</button>
+    <a class="btn-new" href="addParticipation.php<?= $id_event_filter ? '?id_event=' . $id_event_filter : '' ?>">+ Nouvelle Participation</a>
   </div>
 </div>
 
-<!-- MAIN -->
-<div class="main-wrap">
-  <div class="topbar">
+<div class="content">
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-num"><?= $total ?></div>
+      <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat-card s-confirme">
+      <div class="stat-num"><?= $confirmes ?></div>
+      <div class="stat-lbl">Confirmés</div>
+    </div>
+    <div class="stat-card s-attente">
+      <div class="stat-num"><?= $enAttente ?></div>
+      <div class="stat-lbl">En attente</div>
+    </div>
+    <div class="stat-card s-revenue">
+      <div class="stat-num"><?= number_format($revenue, 2) ?></div>
+      <div class="stat-lbl">Revenue (TND)</div>
+    </div>
+  </div>
+
+  <!-- ALERTS -->
+  <?php if ($msg === 'added'):   ?><div class="alert alert-success">✅ Participation ajoutée avec succès.</div><?php endif; ?>
+  <?php if ($msg === 'updated'): ?><div class="alert alert-success">✅ Participation mise à jour.</div><?php endif; ?>
+  <?php if ($msg === 'deleted'): ?><div class="alert alert-danger">🗑️ Participation supprimée.</div><?php endif; ?>
+
+  <!-- EVENT BANNER -->
+  <?php if ($id_event_filter && $eventTitle): ?>
+  <div class="event-banner">
+    <span class="event-banner-icon">📋</span>
     <div>
-      <div class="topbar-title">👥 Liste des Participations</div>
-      <div class="topbar-sub">
-        <?= $id_event_filter ? 'Filtré par : ' . htmlspecialchars($eventTitle) : 'Toutes les participations' ?>
-      </div>
+      <div class="event-banner-title"><?= htmlspecialchars($eventTitle) ?></div>
+      <div class="event-banner-sub">Affichage des participations liées à cet événement</div>
     </div>
-    <div class="topbar-right">
-      <button class="btn-csv" onclick="exportCSV()">⬇ Export CSV</button>
-      <a class="btn-new" href="addParticipation.php<?= $id_event_filter ? '?id_event=' . $id_event_filter : '' ?>">+ Nouvelle Participation</a>
-    </div>
+    <a href="listParticipations.php">Voir tout</a>
   </div>
+  <?php endif; ?>
 
-  <div class="content">
-
-    <!-- STATS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-num"><?= $total ?></div>
-        <div class="stat-lbl">Total</div>
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="filters">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Rechercher..." oninput="applyFilters()">
       </div>
-      <div class="stat-card s-confirme">
-        <div class="stat-num"><?= $confirmes ?></div>
-        <div class="stat-lbl">Confirmés</div>
-      </div>
-      <div class="stat-card s-attente">
-        <div class="stat-num"><?= $enAttente ?></div>
-        <div class="stat-lbl">En attente</div>
-      </div>
-      <div class="stat-card s-revenue">
-        <div class="stat-num"><?= number_format($revenue, 2) ?></div>
-        <div class="stat-lbl">Revenue (TND)</div>
-      </div>
-    </div>
-
-    <!-- ALERTS -->
-    <?php if ($msg === 'added'):   ?><div class="alert alert-success">✅ Participation ajoutée avec succès.</div><?php endif; ?>
-    <?php if ($msg === 'updated'): ?><div class="alert alert-success">✅ Participation mise à jour.</div><?php endif; ?>
-    <?php if ($msg === 'deleted'): ?><div class="alert alert-danger">🗑️ Participation supprimée.</div><?php endif; ?>
-
-    <!-- EVENT BANNER -->
-    <?php if ($id_event_filter && $eventTitle): ?>
-    <div class="event-banner">
-      <span class="event-banner-icon">📋</span>
-      <div>
-        <div class="event-banner-title"><?= htmlspecialchars($eventTitle) ?></div>
-        <div class="event-banner-sub">Affichage des participations liées à cet événement</div>
-      </div>
-      <a href="listParticipations.php">Voir tout</a>
-    </div>
-    <?php endif; ?>
-
-    <!-- TOOLBAR -->
-    <div class="toolbar">
-      <div class="filters">
-        <div class="search-wrap">
-          <input type="text" id="searchInput" placeholder="Rechercher..." oninput="applyFilters()">
-        </div>
-        <select class="filter-select" id="filterStatut" onchange="applyFilters()">
-          <option value="">— Tous les statuts —</option>
-          <option value="confirmé">Confirmé</option>
-          <option value="en attente">En attente</option>
-          <option value="annulé">Annulé</option>
-        </select>
-        <select class="filter-select" id="filterEvent" onchange="applyFilters()">
-          <option value="">— Tous les événements —</option>
-          <?php foreach ($allEvents as $ev): ?>
-            <option value="<?= $ev->getIdEvent() ?>"
-              <?= ($id_event_filter == $ev->getIdEvent()) ? 'selected' : '' ?>>
-              <?= htmlspecialchars($ev->getTitre()) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-    </div>
-
-    <!-- TABLE -->
-    <div class="table-wrap">
-      <?php if (empty($participations)): ?>
-        <div class="empty">
-          <div class="empty-icon">👥</div>
-          Aucune participation enregistrée.
-        </div>
-      <?php else: ?>
-      <table id="partTable">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th class="sortable" data-col="1" onclick="sortTable(1)">Participant <span class="sort-arrow"></span></th>
-            <th>Événement</th>
-            <th class="sortable" data-col="3" onclick="sortTable(3)">Date <span class="sort-arrow"></span></th>
-            <th class="sortable" data-col="4" onclick="sortTable(4)">Montant <span class="sort-arrow"></span></th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        <?php
-          // Build event map for quick lookup
-          $eventMap = [];
-          foreach ($allEvents as $ev) $eventMap[$ev->getIdEvent()] = $ev->getTitre();
-
-          foreach ($participations as $p):
-            $s = strtolower($p->getStatut());
-            $badgeClass = match(true) {
-                str_contains($s, 'confirm') => 'badge-confirme',
-                str_contains($s, 'attente') => 'badge-attente',
-                default                     => 'badge-annule',
-            };
-            $isFree  = (float)$p->getMontant() == 0;
-            $mClass  = $isFree ? 'montant-free' : 'montant-cell';
-            $mLabel  = $isFree ? 'Gratuit' : number_format($p->getMontant(), 2) . ' TND';
-            $evName  = $eventMap[$p->getIdEvent()] ?? '—';
-        ?>
-          <tr data-statut="<?= htmlspecialchars($p->getStatut()) ?>"
-              data-event="<?= $p->getIdEvent() ?>">
-            <td><?= $p->getIdParticipation() ?></td>
-            <td><b><?= htmlspecialchars($p->getNomParticipant()) ?></b></td>
-            <td><?= htmlspecialchars($evName) ?></td>
-            <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
-            <td><span class="<?= $mClass ?>"><?= $mLabel ?></span></td>
-            <td><span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($p->getStatut()) ?></span></td>
-            <td>
-              <div class="actions">
-                <a class="action-btn btn-edit"
-                   href="updateParticipation.php?id=<?= $p->getIdParticipation() ?>"
-                   title="Modifier">✏️</a>
-                <a class="action-btn btn-delete"
-                   href="listParticipations.php?delete=<?= $p->getIdParticipation() ?><?= $id_event_filter ? '&id_event=' . $id_event_filter : '' ?>"
-                   onclick="return confirm('Supprimer cette participation ?')"
-                   title="Supprimer">🗑️</a>
-              </div>
-            </td>
-          </tr>
+      <select class="filter-select" id="filterStatut" onchange="applyFilters()">
+        <option value="">— Tous les statuts —</option>
+        <option value="confirmé">Confirmé</option>
+        <option value="en attente">En attente</option>
+        <option value="annulé">Annulé</option>
+      </select>
+      <select class="filter-select" id="filterEvent" onchange="applyFilters()">
+        <option value="">— Tous les événements —</option>
+        <?php foreach ($allEvents as $ev): ?>
+          <option value="<?= $ev->getIdEvent() ?>"
+            <?= ($id_event_filter == $ev->getIdEvent()) ? 'selected' : '' ?>>
+            <?= htmlspecialchars($ev->getTitre()) ?>
+          </option>
         <?php endforeach; ?>
-        </tbody>
-      </table>
-      <?php endif; ?>
+      </select>
     </div>
-
-    <!-- PAGINATION -->
-    <div class="pagination" id="paginationBar">
-      <div class="pagination-info" id="paginationInfo"></div>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <div class="pg-size-wrap">
-          Lignes&nbsp;:
-          <select id="pgSize" onchange="goPage(1)">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="9999">Tout</option>
-          </select>
-        </div>
-        <div class="pagination-btns" id="pgButtons"></div>
-      </div>
-    </div>
-
   </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <?php if (empty($participations)): ?>
+      <div class="empty">
+        <div class="empty-icon">👥</div>
+        Aucune participation enregistrée.
+      </div>
+    <?php else: ?>
+    <table id="partTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th class="sortable" data-col="1" onclick="sortTable(1)">Participant <span class="sort-arrow"></span></th>
+          <th>Événement</th>
+          <th class="sortable" data-col="3" onclick="sortTable(3)">Date <span class="sort-arrow"></span></th>
+          <th class="sortable" data-col="4" onclick="sortTable(4)">Montant <span class="sort-arrow"></span></th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php
+        $eventMap = [];
+        foreach ($allEvents as $ev) $eventMap[$ev->getIdEvent()] = $ev->getTitre();
+
+        foreach ($participations as $p):
+          $s = strtolower($p->getStatut());
+          $badgeClass = match(true) {
+              str_contains($s, 'confirm') => 'badge-confirme',
+              str_contains($s, 'attente') => 'badge-attente',
+              default                     => 'badge-annule',
+          };
+          $isFree  = (float)$p->getMontant() == 0;
+          $mClass  = $isFree ? 'montant-free' : 'montant-cell';
+          $mLabel  = $isFree ? 'Gratuit' : number_format($p->getMontant(), 2) . ' TND';
+          $evName  = $eventMap[$p->getIdEvent()] ?? '—';
+      ?>
+        <tr data-statut="<?= htmlspecialchars($p->getStatut()) ?>"
+            data-event="<?= $p->getIdEvent() ?>">
+          <td><?= $p->getIdParticipation() ?></td>
+          <td><b><?= htmlspecialchars($p->getNomParticipant()) ?></b></td>
+          <td><?= htmlspecialchars($evName) ?></td>
+          <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
+          <td><span class="<?= $mClass ?>"><?= $mLabel ?></span></td>
+          <td><span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($p->getStatut()) ?></span></td>
+          <td>
+            <div class="actions">
+              <a class="action-btn btn-edit"
+                 href="updateParticipation.php?id=<?= $p->getIdParticipation() ?>"
+                 title="Modifier">✏️</a>
+              <a class="action-btn btn-delete"
+                 href="listParticipations.php?delete=<?= $p->getIdParticipation() ?><?= $id_event_filter ? '&id_event=' . $id_event_filter : '' ?>"
+                 onclick="return confirm('Supprimer cette participation ?')"
+                 title="Supprimer">🗑️</a>
+            </div>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php endif; ?>
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="pagination" id="paginationBar">
+    <div class="pagination-info" id="paginationInfo"></div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="pg-size-wrap">
+        Lignes&nbsp;:
+        <select id="pgSize" onchange="goPage(1)">
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="9999">Tout</option>
+        </select>
+      </div>
+      <div class="pagination-btns" id="pgButtons"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -396,9 +366,9 @@ function applyFilters() {
   const evId   = document.getElementById('filterEvent').value;
 
   let visible = allRows.filter(row => {
-    const text     = row.textContent.toLowerCase();
-    const rowStatut= (row.dataset.statut || '').toLowerCase();
-    const rowEvent = (row.dataset.event  || '');
+    const text      = row.textContent.toLowerCase();
+    const rowStatut = (row.dataset.statut || '').toLowerCase();
+    const rowEvent  = (row.dataset.event  || '');
     return (!q      || text.includes(q))
         && (!statut || rowStatut === statut)
         && (!evId   || rowEvent  === evId);
@@ -476,9 +446,9 @@ function exportCSV() {
   const evId   = document.getElementById('filterEvent').value;
 
   const rows = allRows.filter(row => {
-    const text     = row.textContent.toLowerCase();
-    const rowStatut= (row.dataset.statut || '').toLowerCase();
-    const rowEvent = (row.dataset.event  || '');
+    const text      = row.textContent.toLowerCase();
+    const rowStatut = (row.dataset.statut || '').toLowerCase();
+    const rowEvent  = (row.dataset.event  || '');
     return (!q      || text.includes(q))
         && (!statut || rowStatut === statut)
         && (!evId   || rowEvent  === evId);

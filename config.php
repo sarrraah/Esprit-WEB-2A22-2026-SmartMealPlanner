@@ -5,7 +5,7 @@ class config
 
     public static function getConnexion()
     {
-        if (!isset(self::$pdo)) {
+        if (self::$pdo === null) {
             $servername = "localhost";
             $username   = "root";
             $password   = "";

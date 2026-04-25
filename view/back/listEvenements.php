@@ -1,502 +1,639 @@
 <?php
-require '../../controller/EvenementController.php';
-$controller = new EvenementController();
+require_once __DIR__ . '/../../controller/EvenementController.php';
+$ctrl       = new EvenementController();
+$evenements = $ctrl->listEvenements();
 
-if (isset($_GET['delete'])) {
-    $controller->deleteEvenement($_GET['delete']);
-    header('Location: listEvenements.php?msg=deleted');
-    exit;
-}
+$assetPrefix = '../assets/';
 
-$evenements = $controller->listEvenements();
-$msg = $_GET['msg'] ?? '';
+$typeConfig = [
+    'Conférence'  => ['emoji' => '🎤', 'color' => '#ce1212'],
+    'Atelier'     => ['emoji' => '🛠️', 'color' => '#f7971e'],
+    'Compétition' => ['emoji' => '🏆', 'color' => '#e24b4a'],
+    'Forum'       => ['emoji' => '💬', 'color' => '#11998e'],
+    'Séminaire'   => ['emoji' => '📚', 'color' => '#8e44ad'],
+    'Autre'       => ['emoji' => '📅', 'color' => '#636e72'],
+];
 
-$total    = count($evenements);
-$actifs   = count(array_filter($evenements, fn($e) => str_contains(strtolower($e->getStatut()), 'actif')));
-$gratuits = count(array_filter($evenements, fn($e) => (float)$e->getPrix() == 0));
-$termines = count(array_filter($evenements, fn($e) => str_contains(strtolower($e->getStatut()), 'termin')));
+$total = count($evenements);
+$types = array_unique(array_map(fn($e) => $e->getType(), $evenements));
+sort($types);
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Liste des Événements</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Events — Smart Meal Planner</title>
+
+<link href="<?php echo $assetPrefix; ?>img/favicon.jpg" rel="icon">
+
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
+
+<link href="<?php echo $assetPrefix; ?>vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="<?php echo $assetPrefix; ?>vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="<?php echo $assetPrefix; ?>css/main.css" rel="stylesheet">
+
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh;display:flex}
-
-/* ── SIDEBAR ── */
-.sidebar{width:230px;background:#7f1d1d;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sb-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.1)}
-.sb-logo-txt{font-size:16px;font-weight:600;color:#fff}
-.sb-logo-txt span{color:#fca5a5}
-.sb-logo-sub{font-size:11px;color:rgba(255,255,255,0.35);margin-top:3px}
-.sb-section{padding:18px 16px 6px;font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase}
-.sb-link{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:rgba(255,255,255,0.65);text-decoration:none;border-radius:8px;margin:2px 8px;transition:all .15s;cursor:pointer;border:none;background:none;font-family:inherit;width:calc(100% - 16px)}
-.sb-link:hover{background:rgba(255,255,255,0.08);color:#fff}
-.sb-link.active{background:rgba(255,255,255,0.15);color:#fff;font-weight:500}
-.sb-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
-.sb-badge{margin-left:auto;background:rgba(255,255,255,0.15);color:#fca5a5;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
-.sb-divider{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:8px 12px}
-.sb-bottom{margin-top:auto;padding:14px}
-.sb-user{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:10px}
-.sb-avatar{width:34px;height:34px;border-radius:50%;background:#b91c1c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
-.sb-user-name{font-size:13px;color:#fff;font-weight:500}
-.sb-user-role{font-size:11px;color:rgba(255,255,255,0.38)}
-
-/* ── MAIN ── */
-.main-wrap{flex:1;min-width:0;display:flex;flex-direction:column}
-
-.topbar{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.topbar-left{display:flex;align-items:center;gap:10px}
-.topbar-title{font-size:15px;font-weight:600;color:#1a0505}
-.topbar-sub{font-size:12px;color:#9a3535}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.btn-new{display:inline-flex;align-items:center;gap:6px;background:#b91c1c;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;text-decoration:none;transition:background .15s}
-.btn-new:hover{background:#991b1b}
-.btn-csv{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#7f1d1d;border:1.5px solid #f7c1c1;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;transition:all .15s}
-.btn-csv:hover{background:#fce8e8;border-color:#f09595}
-
-.content{padding:28px 28px 60px}
-
-/* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
-.stat-card{background:#fff;border:1px solid #fde8e8;border-radius:14px;padding:16px 20px}
-.stat-num{font-size:26px;font-weight:700;color:#1a0505;line-height:1}
-.stat-lbl{font-size:11px;color:#9a3535;margin-top:5px;text-transform:uppercase;letter-spacing:.6px}
-.stat-card.s-actif .stat-num{color:#b91c1c}
-.stat-card.s-gratuit .stat-num{color:#15803d}
-.stat-card.s-termine .stat-num{color:#6b7280}
-
-/* ── ALERTS ── */
-.alert{padding:12px 16px;border-radius:10px;margin-bottom:18px;font-size:14px;font-weight:500}
-.alert-success{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595}
-.alert-danger{background:#fff0e0;color:#7a4000;border:1px solid #fad99a}
-
-/* ── TOOLBAR ── */
-.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px}
-.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-
-.search-wrap{position:relative}
-.search-wrap input{padding:9px 14px 9px 36px;border:1px solid #f7c1c1;border-radius:10px;background:#fff;color:#1a0505;font-size:13px;width:220px;outline:none;font-family:'Inter',sans-serif;transition:border-color .2s}
-.search-wrap input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,0.1)}
-.search-wrap input::placeholder{color:#c9a0a0}
-.search-wrap::before{content:'🔍';font-size:13px;position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none}
-
-.filter-select{padding:9px 14px;border:1px solid #f7c1c1;border-radius:10px;background:#fff;color:#1a0505;font-size:13px;outline:none;font-family:'Inter',sans-serif;cursor:pointer;transition:border-color .2s}
-.filter-select:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,0.1)}
-
-/* ── TABLE ── */
-.table-wrap{background:#fff;border:1px solid #fde8e8;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(185,28,28,0.06)}
-
-table{width:100%;border-collapse:collapse}
-thead{background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 100%)}
-thead th{padding:14px 12px;text-align:center;font-size:13px;font-weight:500;color:#fff;white-space:nowrap;user-select:none}
-thead th.sortable{cursor:pointer;transition:background .15s}
-thead th.sortable:hover{background:rgba(255,255,255,0.12)}
-thead th .sort-arrow{display:inline-block;margin-left:5px;font-size:10px;opacity:.5}
-thead th.asc .sort-arrow::after{content:'▲';opacity:1}
-thead th.desc .sort-arrow::after{content:'▼';opacity:1}
-thead th:not(.asc):not(.desc) .sort-arrow::after{content:'⇅';opacity:.4}
-
-tbody tr{border-bottom:1px solid #fce8e8;transition:background .15s}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#fff5f5}
-td{padding:13px 12px;text-align:center;font-size:13px;color:#1a0505}
-td b{font-weight:600;color:#7f1d1d}
-
-.badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
-.badge-active{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595}
-.badge-annule{background:#fff0e0;color:#7a4000;border:1px solid #fad99a}
-.badge-termine{background:#f0f0f0;color:#555;border:1px solid #ccc}
-
-.price-free{color:#15803d;font-weight:600}
-.price-paid{color:#b91c1c;font-weight:600}
-
-.actions{display:flex;justify-content:center;align-items:center;gap:8px}
-.action-btn{width:36px;height:36px;border:none;border-radius:10px;cursor:pointer;font-size:15px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;transition:all .15s;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
-.action-btn:hover{transform:translateY(-2px)}
-.btn-edit{background:#f7c1c1;color:#7f1d1d}
-.btn-edit:hover{background:#f09595}
-.btn-view{background:#fce8e8;color:#b91c1c}
-.btn-view:hover{background:#f7c1c1}
-.btn-delete{background:#b91c1c;color:#fff}
-.btn-delete:hover{background:#991b1b}
-
-.empty{text-align:center;padding:50px 20px;color:#9a3535;font-size:14px}
-.empty-icon{font-size:36px;margin-bottom:10px}
-
-/* ── PAGINATION ── */
-.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px}
-.pagination-info{font-size:13px;color:#9a3535}
-.pagination-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pg-btn{width:34px;height:34px;border:1.5px solid #f7c1c1;border-radius:8px;background:#fff;color:#7f1d1d;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;display:inline-flex;align-items:center;justify-content:center}
-.pg-btn:hover{background:#fce8e8;border-color:#f09595}
-.pg-btn.active{background:#b91c1c;color:#fff;border-color:#b91c1c}
-.pg-btn:disabled{opacity:.35;cursor:default}
-.pg-size-wrap{display:flex;align-items:center;gap:8px;font-size:13px;color:#9a3535}
-.pg-size-wrap select{padding:5px 10px;border:1.5px solid #f7c1c1;border-radius:8px;background:#fff;color:#1a0505;font-size:13px;outline:none;font-family:'Inter',sans-serif;cursor:pointer}
-
-/* ── RESPONSIVE ── */
-@media(max-width:900px){
-  .sidebar{display:none}
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
-  .content{padding:16px}
-  .topbar{padding:0 16px}
-  .table-wrap{overflow-x:auto}
+/* ── FILTERS ── */
+.filters-section {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
+.filter-btn {
+  margin: 5px;
+  padding: 8px 20px;
+  border-radius: 25px;
+  border: 1px solid #ddd;
+  background: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  transition: 0.3s;
+  cursor: pointer;
+}
+.filter-btn.active, .filter-btn:hover {
+  background: var(--accent-color, #ce1212);
+  color: white;
+  border-color: var(--accent-color, #ce1212);
+}
+.sort-select {
+  padding: 8px 16px;
+  border-radius: 25px;
+  border: 1px solid #ddd;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* ── EVENT CARD ── */
+.event-card {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+  transition: transform 0.3s, box-shadow 0.3s;
+  margin-bottom: 30px;
+  cursor: pointer;
+  height: 100%;
+}
+.event-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 40px rgba(206,18,18,0.15);
+}
+.event-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+.event-img-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  opacity: 0.4;
+}
+.event-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.event-price-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(206,18,18,0.88);
+  color: white;
+}
+.badge-actif   { background: #28a745; color: white; }
+.badge-annule  { background: #dc3545; color: white; }
+.badge-termine { background: #6c757d; color: white; }
+
+.event-info { padding: 18px; }
+.event-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.event-meta {
+  font-size: 0.82rem;
+  color: #666;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.event-meta i { color: var(--accent-color, #ce1212); width: 14px; }
+.event-price {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent-color, #ce1212);
+  margin: 12px 0 8px;
+}
+.btn-register {
+  background: var(--accent-color, #ce1212);
+  color: white;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 25px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  transition: 0.3s;
+  width: 100%;
+  font-size: 13px;
+}
+.btn-register:hover { background: #b00e0e; transform: scale(1.02); color: white; }
+.btn-register.closed { background: #ccc; cursor: not-allowed; }
+.btn-register.waiting { background: #b45309; }
+.btn-register.waiting:hover { background: #92400e; }
+
+/* ── MODAL ── */
+.modal-event-img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.modal-event-placeholder {
+  width: 100%;
+  height: 250px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  opacity: 0.3;
+}
+.modal-price {
+  font-size: 2rem;
+  color: var(--accent-color, #ce1212);
+  font-weight: 700;
+}
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+.info-row i { color: var(--accent-color, #ce1212); width: 18px; }
+.info-row strong { color: #333; min-width: 80px; }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+.empty-state i { font-size: 3rem; color: #ddd; margin-bottom: 16px; display: block; }
+
+/* Section title — match friend's style */
+.section-title h2 {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0;
+  line-height: 1px;
+  margin: 0;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--default-color), transparent 50%);
+  position: relative;
+}
+.section-title h2::after {
+  content: "";
+  width: 120px;
+  height: 1px;
+  display: inline-block;
+  background: var(--accent-color, #ce1212);
+  margin: 4px 10px;
+}
+.section-title p {
+  color: var(--heading-color);
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  font-family: "Amatic SC", sans-serif;
+}
+.section-title p span { color: var(--accent-color, #ce1212); }
 </style>
 </head>
-<body>
+<body class="index-page">
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-txt">Event <span>Manager</span></div>
-    <div class="sb-logo-sub">Back Office</div>
+<!-- NAVBAR — same as friend -->
+<header id="header" class="header d-flex align-items-center sticky-top">
+  <div class="container position-relative d-flex align-items-center justify-content-between">
+
+    <a href="../index.php" class="logo d-flex align-items-center me-auto me-xl-0">
+      <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner" height="44">
+      <h1 class="sitename">SmartMealPlanner</h1>
+    </a>
+
+    <nav id="navmenu" class="navmenu">
+      <ul>
+        <li><a href="../index.php">Home</a></li>
+        <li><a href="../view/Meals.php">Meals</a></li>
+        <li><a href="#" class="active">Events</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+    </nav>
+
+    <a class="btn-getstarted" href="#events">Browse Events</a>
+
   </div>
+</header>
 
-  <div class="sb-section">Menu</div>
-  <a class="sb-link active" href="listEvenements.php">
-    <span class="sb-icon">📋</span> Événements
-    <span class="sb-badge"><?= $total ?></span>
-  </a>
-  <a class="sb-link" href="addEvenement.php">
-    <span class="sb-icon">➕</span> Nouvel événement
-  </a>
+<main class="main">
 
-  <hr class="sb-divider">
-  <div class="sb-section">Gestion</div>
-  <a class="sb-link" href="listParticipations.php">
-    <span class="sb-icon">👥</span> Participants
-  </a>
-  <a class="sb-link" href="#">
-    <span class="sb-icon">📊</span> Statistiques
-  </a>
-
-  <hr class="sb-divider">
-  <div class="sb-section">Autre</div>
-  <a class="sb-link" href="interfaceevent.php">
-    <span class="sb-icon">🌐</span> Vue front
-  </a>
-  <a class="sb-link" href="#">
-    <span class="sb-icon">⚙️</span> Paramètres
-  </a>
-
-  <div class="sb-bottom">
-    <div class="sb-user">
-      <div class="sb-avatar">AD</div>
-      <div>
-        <div class="sb-user-name">Admin</div>
-        <div class="sb-user-role">Administrateur</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN -->
-<div class="main-wrap">
-
-  <div class="topbar">
-    <div class="topbar-left">
-      <div>
-        <div class="topbar-title">📋 Liste des Événements</div>
-        <div class="topbar-sub">Gérez tous vos événements</div>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <button class="btn-csv" onclick="exportCSV()">⬇ Export CSV</button>
-      <a class="btn-new" href="addEvenement.php">+ Nouvel Événement</a>
-    </div>
-  </div>
-
-  <div class="content">
-
-    <!-- STATS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-num"><?= $total ?></div>
-        <div class="stat-lbl">Total</div>
-      </div>
-      <div class="stat-card s-actif">
-        <div class="stat-num"><?= $actifs ?></div>
-        <div class="stat-lbl">Actifs</div>
-      </div>
-      <div class="stat-card s-gratuit">
-        <div class="stat-num"><?= $gratuits ?></div>
-        <div class="stat-lbl">Gratuits</div>
-      </div>
-      <div class="stat-card s-termine">
-        <div class="stat-num"><?= $termines ?></div>
-        <div class="stat-lbl">Terminés</div>
-      </div>
-    </div>
-
-    <!-- ALERTS -->
-    <?php if ($msg === 'added'):   ?><div class="alert alert-success">✅ Événement ajouté avec succès.</div><?php endif; ?>
-    <?php if ($msg === 'updated'): ?><div class="alert alert-success">✅ Événement mis à jour avec succès.</div><?php endif; ?>
-    <?php if ($msg === 'deleted'): ?><div class="alert alert-danger">🗑️ Événement supprimé.</div><?php endif; ?>
-
-    <!-- TOOLBAR -->
-    <div class="toolbar">
-      <div class="filters">
-        <div class="search-wrap">
-          <input type="text" id="searchInput" placeholder="Rechercher..." oninput="applyFilters()">
+  <!-- HERO — match friend's section style -->
+  <section id="hero" class="hero section light-background">
+    <div class="container">
+      <div class="row gy-4 justify-content-center justify-content-lg-between">
+        <div class="col-lg-6 order-2 order-lg-1 d-flex flex-column justify-content-center">
+          <h1>Discover <span style="color:var(--accent-color,#ce1212)">exceptional</span> events</h1>
+          <p>Conferences, workshops, competitions — register in just a few clicks.</p>
+          <div class="d-flex">
+            <a href="#events" class="btn-get-started">Browse Events</a>
+          </div>
         </div>
-        <select class="filter-select" id="filterType" onchange="applyFilters()">
-          <option value="">— Tous les types —</option>
-          <?php
-            $types = array_unique(array_map(fn($e) => $e->getType(), $evenements));
-            sort($types);
-            foreach ($types as $t): ?>
-              <option value="<?= htmlspecialchars($t) ?>"><?= htmlspecialchars($t) ?></option>
-          <?php endforeach; ?>
-        </select>
-        <select class="filter-select" id="filterStatut" onchange="applyFilters()">
-          <option value="">— Tous les statuts —</option>
-          <?php
-            $statuts = array_unique(array_map(fn($e) => $e->getStatut(), $evenements));
-            sort($statuts);
-            foreach ($statuts as $s): ?>
-              <option value="<?= htmlspecialchars($s) ?>"><?= htmlspecialchars($s) ?></option>
-          <?php endforeach; ?>
-        </select>
+        <div class="col-lg-5 order-1 order-lg-2 hero-img">
+          <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800"
+               class="img-fluid animated rounded-4 shadow" alt="Events">
+        </div>
       </div>
     </div>
+  </section>
 
-    <!-- TABLE -->
-    <div class="table-wrap">
-      <?php if (empty($evenements)): ?>
-        <div class="empty">
-          <div class="empty-icon">📅</div>
-          Aucun événement enregistré.
+  <!-- EVENTS SECTION -->
+  <section id="events" class="section light-background py-5">
+    <div class="container section-title">
+      <h2>Events</h2>
+      <p><span>Browse</span> <span class="description-title">All Events</span></p>
+    </div>
+    <div class="container">
+
+      <!-- FILTERS -->
+      <div class="filters-section">
+        <div class="row align-items-center">
+          <div class="col-md-7">
+            <strong style="font-size:13px">Filter by type :</strong>
+            <button class="filter-btn active" data-filter="all">All (<?= $total ?>)</button>
+            <?php foreach ($types as $type):
+              $cnt = count(array_filter($evenements, fn($e) => $e->getType() === $type));
+            ?>
+            <button class="filter-btn" data-filter="<?= htmlspecialchars($type, ENT_QUOTES) ?>">
+              <?= htmlspecialchars($type) ?> (<?= $cnt ?>)
+            </button>
+            <?php endforeach; ?>
+          </div>
+          <div class="col-md-3 mt-2 mt-md-0">
+            <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search events..."
+                   oninput="filterAndRender()"
+                   style="border-radius:25px;border:1px solid #ddd;font-family:'Inter',sans-serif;font-size:13px">
+          </div>
+          <div class="col-md-2 mt-2 mt-md-0">
+            <select id="sortSel" class="sort-select w-100" onchange="filterAndRender()">
+              <option value="date">By date</option>
+              <option value="prix_asc">Price ↑</option>
+              <option value="prix_desc">Price ↓</option>
+              <option value="titre">A → Z</option>
+            </select>
+          </div>
         </div>
-      <?php else: ?>
-      <table id="eventsTable">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th class="sortable" data-col="1" onclick="sortTable(1)">Titre <span class="sort-arrow"></span></th>
-            <th>Type</th>
-            <th>Lieu</th>
-            <th class="sortable" data-col="4" onclick="sortTable(4)">Début <span class="sort-arrow"></span></th>
-            <th>Fin</th>
-            <th>Capacité</th>
-            <th class="sortable" data-col="7" onclick="sortTable(7)">Prix <span class="sort-arrow"></span></th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($evenements as $e):
-            $s = strtolower($e->getStatut());
-            $badge = match(true) {
-                str_contains($s, 'actif')  => 'badge-active',
-                str_contains($s, 'annul')  => 'badge-annule',
-                str_contains($s, 'termin') => 'badge-termine',
-                default => 'badge-active',
+      </div>
+
+      <!-- EVENTS GRID -->
+      <div class="row" id="eventsGrid">
+        <?php if (empty($evenements)): ?>
+          <div class="empty-state">
+            <i class="fas fa-calendar-times"></i>
+            No events available at the moment.
+          </div>
+        <?php else: ?>
+          <?php foreach ($evenements as $e):
+            $tc        = $typeConfig[$e->getType()] ?? $typeConfig['Autre'];
+            $dateDebut = date('d/m/Y', strtotime($e->getDateDebut()));
+            $dateFin   = date('d/m/Y', strtotime($e->getDateFin()));
+            $dateLabel = ($dateDebut === $dateFin) ? $dateDebut : "$dateDebut → $dateFin";
+            $isFree    = ($e->getPrix() == 0);
+            $priceLabel= $isFree ? 'Free' : number_format($e->getPrix(), 2) . ' TND';
+            $imgPath   = $e->getImage() ? '../../uploads/evenements/' . $e->getImage() : null;
+            $statut    = strtolower($e->getStatut());
+            $badgeCls  = match(true) {
+              str_contains($statut, 'actif')  => 'badge-actif',
+              str_contains($statut, 'annul')  => 'badge-annule',
+              default                         => 'badge-termine',
             };
-            $isFree = (float)$e->getPrix() == 0;
-            $priceClass = $isFree ? 'price-free' : 'price-paid';
-            $priceLabel = $isFree ? 'Gratuit' : number_format($e->getPrix(), 2) . ' TND';
-        ?>
-          <tr
-            data-type="<?= htmlspecialchars($e->getType()) ?>"
-            data-statut="<?= htmlspecialchars($e->getStatut()) ?>"
-            data-prix="<?= (float)$e->getPrix() ?>">
-            <td><?= htmlspecialchars($e->getIdEvent()) ?></td>
-            <td><b><?= htmlspecialchars($e->getTitre()) ?></b></td>
-            <td><?= htmlspecialchars($e->getType()) ?></td>
-            <td><?= htmlspecialchars($e->getLieu()) ?></td>
-            <td><?= htmlspecialchars($e->getDateDebut()) ?></td>
-            <td><?= htmlspecialchars($e->getDateFin()) ?></td>
-            <td><?= htmlspecialchars($e->getCapaciteMax()) ?></td>
-            <td><span class="<?= $priceClass ?>"><?= $priceLabel ?></span></td>
-            <td><span class="badge <?= $badge ?>"><?= htmlspecialchars($e->getStatut()) ?></span></td>
-            <td>
-              <div class="actions">
-                <a class="action-btn btn-edit"
-                   href="updateEvenement.php?id=<?= $e->getIdEvent() ?>"
-                   title="Modifier">✏️</a>
-                <a class="action-btn btn-view"
-href="listParticipation.php?id_event=<?= $e->getIdEvent() ?>"
-                   title="Participants">👥</a>
-                <a class="action-btn btn-delete"
-                   href="listEvenements.php?delete=<?= $e->getIdEvent() ?>"
-                   onclick="return confirm('Supprimer cet événement ?')"
-                   title="Supprimer">🗑️</a>
+            $statusLabel = match(true) {
+              str_contains($statut, 'actif')  => 'Active',
+              str_contains($statut, 'annul')  => 'Cancelled',
+              default                         => 'Ended',
+            };
+          ?>
+          <div class="col-md-6 col-lg-4 event-item"
+               data-type="<?= htmlspecialchars($e->getType()) ?>"
+               data-titre="<?= htmlspecialchars(strtolower($e->getTitre())) ?>"
+               data-lieu="<?= htmlspecialchars(strtolower($e->getLieu())) ?>"
+               data-date="<?= $e->getDateDebut() ?>"
+               data-prix="<?= $e->getPrix() ?>">
+            <div class="event-card" onclick="showEventModal(<?= $e->getIdEvent() ?>)">
+              <div style="position:relative">
+                <?php if ($imgPath): ?>
+                  <img src="<?= htmlspecialchars($imgPath) ?>" class="event-img" alt="<?= htmlspecialchars($e->getTitre()) ?>">
+                <?php else: ?>
+                  <div class="event-img-placeholder" style="background:linear-gradient(135deg,<?= $tc['color'] ?>22,<?= $tc['color'] ?>44)">
+                    <?= $tc['emoji'] ?>
+                  </div>
+                <?php endif; ?>
+                <span class="event-badge <?= $badgeCls ?>"><?= $statusLabel ?></span>
+                <span class="event-price-badge"><?= $priceLabel ?></span>
               </div>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-        </tbody>
-      </table>
-      <?php endif; ?>
-    </div>
+              <div class="event-info">
+                <h5 class="event-title"><?= htmlspecialchars($e->getTitre()) ?></h5>
+                <div class="event-meta"><i class="fas fa-tag"></i><?= htmlspecialchars($e->getType()) ?></div>
+                <div class="event-meta"><i class="fas fa-calendar"></i><?= $dateLabel ?></div>
+                <div class="event-meta"><i class="fas fa-map-marker-alt"></i><?= htmlspecialchars($e->getLieu()) ?></div>
+                <div class="event-meta"><i class="fas fa-users"></i><?= $e->getCapaciteMax() ?> max seats</div>
+                <div class="event-price"><?= $priceLabel ?></div>
+                <?php if (str_contains($statut, 'actif')): ?>
+                  <button class="btn-register"
+                          onclick="event.stopPropagation(); window.location='detailEvent.php?id=<?= $e->getIdEvent() ?>'">
+                    <i class="fas fa-ticket-alt me-1"></i> Register Now
+                  </button>
+                <?php elseif (str_contains($statut, 'complet')): ?>
+                  <button class="btn-register waiting"
+                          onclick="event.stopPropagation(); window.location='detailEvent.php?id=<?= $e->getIdEvent() ?>'">
+                    <i class="fas fa-clock me-1"></i> Join Waitlist
+                  </button>
+                <?php else: ?>
+                  <button class="btn-register closed" disabled>
+                    <i class="fas fa-lock me-1"></i> Registration Closed
+                  </button>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
 
-    <!-- PAGINATION -->
-    <div class="pagination" id="paginationBar">
-      <div class="pagination-info" id="paginationInfo"></div>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <div class="pg-size-wrap">
-          Lignes&nbsp;:
-          <select id="pgSize" onchange="goPage(1)">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="9999">Tout</option>
-          </select>
-        </div>
-        <div class="pagination-btns" id="pgButtons"></div>
+      <div id="noResults" class="empty-state" style="display:none">
+        <i class="fas fa-search"></i>
+        No results found.
+      </div>
+      <div class="text-center mt-2">
+        <span id="countLabel" style="font-size:13px;color:#999"><?= $total ?> event(s)</span>
       </div>
     </div>
+  </section>
 
+  <!-- ABOUT — match friend's about section -->
+  <section id="about" class="about section">
+    <div class="container section-title">
+      <h2>About Us</h2>
+      <p><span>Learn More</span> <span class="description-title">About Smart Meal Planner</span></p>
+    </div>
+    <div class="container">
+      <div class="row gy-4 align-items-center">
+        <div class="col-lg-6">
+          <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800"
+               class="img-fluid rounded-4 shadow mb-4" alt="Events">
+        </div>
+        <div class="col-lg-6">
+          <div class="content ps-0 ps-lg-5">
+            <p class="fst-italic">
+              Your go-to platform for discovering and joining the best events in Tunisia. Conferences, workshops, competitions and more — all in one place.
+            </p>
+            <ul>
+              <li><i class="bi bi-check-circle-fill"></i> <span>Easy registration in seconds.</span></li>
+              <li><i class="bi bi-check-circle-fill"></i> <span>Filter events by type: conferences, workshops, competitions.</span></li>
+              <li><i class="bi bi-check-circle-fill"></i> <span>Never miss an event with instant notifications.</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="section light-background">
+    <div class="container section-title">
+      <h2>Contact</h2>
+      <p><span>Get in</span> <span class="description-title">Touch With Us</span></p>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4 text-center mb-4">
+          <i class="bi bi-geo-alt-fill fa-3x mb-3" style="font-size:3rem;color:var(--accent-color,#ce1212)"></i>
+          <h5>Address</h5>
+          <p class="text-muted">Esprit Ghazela, Tunis, Tunisia</p>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+          <i class="bi bi-telephone-fill mb-3" style="font-size:3rem;color:var(--accent-color,#ce1212)"></i>
+          <h5>Phone</h5>
+          <p class="text-muted">+216 50 547 135</p>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+          <i class="bi bi-envelope-fill mb-3" style="font-size:3rem;color:var(--accent-color,#ce1212)"></i>
+          <h5>Email</h5>
+          <p class="text-muted">contact@smartmealplanner.tn</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- EVENT MODAL -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-5">
+            <img id="modalImage" class="modal-event-img d-none" alt="">
+            <div id="modalPlaceholder" class="modal-event-placeholder"></div>
+          </div>
+          <div class="col-md-7">
+            <div class="modal-price mb-2" id="modalPrice"></div>
+            <div id="modalBadge" class="mb-3"></div>
+            <div id="modalInfoRows"></div>
+            <div class="mt-3" id="modalDescription"
+                 style="font-size:14px;color:#555;line-height:1.7"></div>
+            <div class="mt-4 d-flex gap-2">
+              <a id="modalDetailBtn" href="#"
+                 class="btn rounded-pill px-4"
+                 style="background:var(--accent-color,#ce1212);color:white;border-color:var(--accent-color,#ce1212)">
+                <i class="fas fa-info-circle me-1"></i> View Details
+              </a>
+              <a id="modalRegisterBtn" href="#"
+                 class="btn rounded-pill px-4"
+                 style="color:var(--accent-color,#ce1212);border:1px solid var(--accent-color,#ce1212)">
+                <i class="fas fa-ticket-alt me-1"></i> Register
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
+<!-- FOOTER — same as friend -->
+<footer id="footer" class="footer dark-background">
+  <div class="container copyright text-center py-4">
+    <p>© <span>Copyright</span> <strong class="px-1 sitename">Smart Meal Planner</strong> <span>All Rights Reserved</span></p>
+  </div>
+</footer>
+
+<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+  <i class="bi bi-arrow-up-short"></i>
+</a>
+
+<script src="<?php echo $assetPrefix; ?>vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
-const allRows = Array.from(document.querySelectorAll('#eventsTable tbody tr'));
-let sortCol = -1, sortDir = 1, currentPage = 1;
+const events = <?= json_encode(array_map(function($e) {
+  return [
+    'id'          => $e->getIdEvent(),
+    'titre'       => $e->getTitre(),
+    'description' => $e->getDescription(),
+    'lieu'        => $e->getLieu(),
+    'dateDebut'   => $e->getDateDebut(),
+    'dateFin'     => $e->getDateFin(),
+    'capacite'    => $e->getCapaciteMax(),
+    'prix'        => (float)$e->getPrix(),
+    'statut'      => $e->getStatut(),
+    'type'        => $e->getType(),
+    'image'       => $e->getImage() ? '../../uploads/evenements/' . $e->getImage() : null,
+  ];
+}, $evenements), JSON_UNESCAPED_UNICODE) ?>;
 
-function getCellText(row, col) {
-  return row.cells[col]?.textContent.trim() ?? '';
-}
+const typeEmojis = <?= json_encode(array_map(fn($t) => $t['emoji'], $typeConfig), JSON_UNESCAPED_UNICODE) ?>;
 
-function sortTable(col) {
-  const ths = document.querySelectorAll('#eventsTable thead th');
-  if (sortCol === col) { sortDir *= -1; } else { sortCol = col; sortDir = 1; }
-  ths.forEach((th, i) => {
-    th.classList.remove('asc','desc');
-    if (i === col) th.classList.add(sortDir === 1 ? 'asc' : 'desc');
+let currentFilter = 'all';
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentFilter = this.dataset.filter;
+    filterAndRender();
   });
-  applyFilters();
-}
+});
 
-function applyFilters() {
-  const q      = document.getElementById('searchInput').value.toLowerCase();
-  const type   = document.getElementById('filterType').value.toLowerCase();
-  const statut = document.getElementById('filterStatut').value.toLowerCase();
+function filterAndRender() {
+  const q    = document.getElementById('searchInput').value.toLowerCase().trim();
+  const sort = document.getElementById('sortSel').value;
+  const items = Array.from(document.querySelectorAll('.event-item'));
+  let visible = [];
 
-  let visible = allRows.filter(row => {
-    const text      = row.textContent.toLowerCase();
-    const rowType   = (row.dataset.type   || '').toLowerCase();
-    const rowStatut = (row.dataset.statut || '').toLowerCase();
-    return (!q      || text.includes(q))
-        && (!type   || rowType   === type)
-        && (!statut || rowStatut === statut);
+  items.forEach(item => {
+    const ok = (currentFilter === 'all' || item.dataset.type === currentFilter)
+            && (!q || item.dataset.titre.includes(q)
+                   || item.dataset.lieu.includes(q)
+                   || item.dataset.type.toLowerCase().includes(q));
+    item.style.display = ok ? '' : 'none';
+    if (ok) visible.push(item);
   });
 
-  if (sortCol >= 0) {
-    visible.sort((a, b) => {
-      let va = getCellText(a, sortCol);
-      let vb = getCellText(b, sortCol);
-      const na = parseFloat(va.replace(/[^\d.]/g, ''));
-      const nb = parseFloat(vb.replace(/[^\d.]/g, ''));
-      if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
-      return va.localeCompare(vb, 'fr') * sortDir;
-    });
-  }
+  const grid = document.getElementById('eventsGrid');
+  visible.sort((a, b) => {
+    if (sort === 'date')      return a.dataset.date.localeCompare(b.dataset.date);
+    if (sort === 'prix_asc')  return parseFloat(a.dataset.prix) - parseFloat(b.dataset.prix);
+    if (sort === 'prix_desc') return parseFloat(b.dataset.prix) - parseFloat(a.dataset.prix);
+    if (sort === 'titre')     return a.dataset.titre.localeCompare(b.dataset.titre);
+    return 0;
+  });
+  visible.forEach(item => grid.appendChild(item));
 
-  renderPage(visible, currentPage);
+  document.getElementById('countLabel').textContent = visible.length + ' event(s)';
+  document.getElementById('noResults').style.display = visible.length === 0 ? 'block' : 'none';
 }
 
-function renderPage(rows, page) {
-  const pgSize    = parseInt(document.getElementById('pgSize').value);
-  const total     = rows.length;
-  const totalPages = Math.max(1, Math.ceil(total / pgSize));
-  if (page > totalPages) page = totalPages;
-  currentPage = page;
+function showEventModal(id) {
+  const e = events.find(ev => ev.id === id);
+  if (!e) return;
 
-  const start = (page - 1) * pgSize;
-  const end   = Math.min(start + pgSize, total);
+  const dateDebut = new Date(e.dateDebut).toLocaleDateString('en-GB');
+  const dateFin   = new Date(e.dateFin).toLocaleDateString('en-GB');
+  const dateLabel = dateDebut === dateFin ? dateDebut : dateDebut + ' → ' + dateFin;
+  const isFree    = e.prix === 0;
+  const statut    = e.statut.toLowerCase();
 
-  allRows.forEach(r => r.style.display = 'none');
-  rows.slice(start, end).forEach(r => r.style.display = '');
+  document.getElementById('modalTitle').textContent = e.titre;
+  document.getElementById('modalPrice').innerHTML   = isFree
+    ? '<span style="color:#28a745">Free</span>'
+    : e.prix.toFixed(2) + ' <small style="font-size:1rem">TND</small>';
 
-  document.getElementById('paginationInfo').textContent =
-    total === 0 ? 'Aucun résultat'
-    : `Affichage ${start + 1}–${end} sur ${total} événement${total > 1 ? 's' : ''}`;
+  const badgeColor = statut.includes('actif') ? '#28a745' : statut.includes('annul') ? '#dc3545' : '#6c757d';
+  const badgeLabel = statut.includes('actif') ? 'Active' : statut.includes('annul') ? 'Cancelled' : 'Ended';
+  document.getElementById('modalBadge').innerHTML =
+    `<span style="background:${badgeColor};color:white;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">${badgeLabel}</span>
+     <span style="background:#f0f0f0;color:#333;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-left:6px">${e.type}</span>`;
 
-  const container = document.getElementById('pgButtons');
-  container.innerHTML = '';
-
-  const mkBtn = (label, p, disabled, active) => {
-    const b = document.createElement('button');
-    b.className = 'pg-btn' + (active ? ' active' : '');
-    b.textContent = label;
-    b.disabled = disabled;
-    b.onclick = () => goPage(p);
-    return b;
-  };
-
-  container.appendChild(mkBtn('‹', page - 1, page <= 1, false));
-
-  let pages = [];
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  const img = document.getElementById('modalImage');
+  const ph  = document.getElementById('modalPlaceholder');
+  if (e.image) {
+    img.src = e.image;
+    img.classList.remove('d-none');
+    ph.style.display = 'none';
   } else {
-    pages = [1];
-    if (page > 3) pages.push('…');
-    for (let i = Math.max(2, page-1); i <= Math.min(totalPages-1, page+1); i++) pages.push(i);
-    if (page < totalPages - 2) pages.push('…');
-    pages.push(totalPages);
+    img.classList.add('d-none');
+    ph.style.display = 'flex';
+    ph.style.background = 'linear-gradient(135deg,#ce121222,#ce121244)';
+    ph.innerHTML = typeEmojis[e.type] || '📅';
   }
 
-  pages.forEach(p => {
-    if (p === '…') {
-      const span = document.createElement('span');
-      span.textContent = '…';
-      span.style.cssText = 'padding:0 4px;color:#9a3535;font-size:13px;line-height:34px';
-      container.appendChild(span);
-    } else {
-      container.appendChild(mkBtn(p, p, false, p === page));
-    }
-  });
+  document.getElementById('modalInfoRows').innerHTML = `
+    <div class="info-row"><i class="fas fa-calendar"></i><strong>Date</strong>${dateLabel}</div>
+    <div class="info-row"><i class="fas fa-map-marker-alt"></i><strong>Location</strong>${e.lieu}</div>
+    <div class="info-row"><i class="fas fa-users"></i><strong>Capacity</strong>${e.capacite} seats</div>
+  `;
 
-  container.appendChild(mkBtn('›', page + 1, page >= totalPages, false));
+  document.getElementById('modalDescription').textContent =
+    e.description ? e.description.substring(0, 200) + (e.description.length > 200 ? '...' : '') : '';
+
+  document.getElementById('modalDetailBtn').href   = `detailEvent.php?id=${e.id}`;
+  document.getElementById('modalRegisterBtn').href = statut.includes('actif')
+    ? `../back/addParticipation.php?id_event=${e.id}`
+    : `detailEvent.php?id=${e.id}`;
+
+  new bootstrap.Modal(document.getElementById('eventModal')).show();
 }
 
-function goPage(p) {
-  currentPage = p;
-  applyFilters();
-}
-
-function exportCSV() {
-  const headers = ['#','Titre','Type','Lieu','Début','Fin','Capacité','Prix','Statut'];
-  const q      = document.getElementById('searchInput').value.toLowerCase();
-  const type   = document.getElementById('filterType').value.toLowerCase();
-  const statut = document.getElementById('filterStatut').value.toLowerCase();
-
-  const rows = allRows.filter(row => {
-    const text      = row.textContent.toLowerCase();
-    const rowType   = (row.dataset.type   || '').toLowerCase();
-    const rowStatut = (row.dataset.statut || '').toLowerCase();
-    return (!q      || text.includes(q))
-        && (!type   || rowType   === type)
-        && (!statut || rowStatut === statut);
+// Scroll-top button
+const scrollTop = document.getElementById('scroll-top');
+if (scrollTop) {
+  window.addEventListener('scroll', () => {
+    scrollTop.classList.toggle('active', window.scrollY > 100);
   });
-
-  const escape = v => '"' + v.replace(/"/g, '""') + '"';
-  const lines  = [headers.map(escape).join(',')];
-
-  rows.forEach(row => {
-    const cols = [];
-    for (let i = 0; i < row.cells.length - 1; i++) {
-      cols.push(escape(row.cells[i].textContent.trim()));
-    }
-    lines.push(cols.join(','));
+  scrollTop.addEventListener('click', e => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
-
-  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = 'evenements_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
 }
-
-applyFilters();
 </script>
-
 </body>
 </html>

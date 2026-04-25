@@ -131,31 +131,38 @@ class EvenementController
 
     // ── Utilitaire upload image ──────────────────────────────────────────
     function uploadImage($file, $oldImage = null)
-    {
-        $uploadDir     = __DIR__ . '/../uploads/evenements/';
-        $allowedTypes  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        $maxSize       = 5 * 1024 * 1024; // 5 MB
+{
+    $uploadDir = __DIR__ . '/../uploads/evenements/';
 
-        if ($file['error'] !== UPLOAD_ERR_OK)  return ['error' => "Erreur lors de l'upload."];
-        if (!in_array($file['type'], $allowedTypes)) return ['error' => "Format non autorisé (jpg, png, gif, webp)."];
-        if ($file['size'] > $maxSize)           return ['error' => "Image trop lourde (max 5 Mo)."];
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $maxSize      = 5 * 1024 * 1024;
 
-        // Crée le dossier si besoin
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-
-        $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = uniqid('event_', true) . '.' . $ext;
-
-        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
-            return ['error' => "Impossible de déplacer le fichier."];
-        }
-
-        // Supprime l'ancienne image si elle existe
-        if ($oldImage && file_exists($uploadDir . $oldImage)) {
-            unlink($uploadDir . $oldImage);
-        }
-
-        return ['success' => $filename];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['error' => "Erreur lors de l upload."];
     }
+    if (!in_array($file['type'], $allowedTypes)) {
+        return ['error' => "Format non autorise (jpg, png, gif, webp)."];
+    }
+    if ($file['size'] > $maxSize) {
+        return ['error' => "Image trop lourde (max 5 Mo)."];
+    }
+
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = uniqid('event_', true) . '.' . $ext;
+
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+        return ['error' => "Impossible de deplacer le fichier."];
+    }
+
+    if ($oldImage && file_exists($uploadDir . $oldImage)) {
+        unlink($uploadDir . $oldImage);
+    }
+
+    return ['success' => $filename];
+}
 }
 ?>

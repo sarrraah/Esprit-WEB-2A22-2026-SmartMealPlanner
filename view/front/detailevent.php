@@ -34,7 +34,7 @@ $badgeClass    = match(true) {
     str_contains($statut, 'termin') => 's-termine',
     default                         => 's-complet',
 };
-$imgPath = $e->getImage() ? '../../../uploads/evenements/' . $e->getImage() : null;
+$imgPath  = $e->getImage() ? '../../uploads/evenements/' . $e->getImage() : null;
 
 $tous     = $ctrl->listEvenements();
 $suggests = array_filter($tous, fn($ev) => $ev->getType() === $e->getType() && $ev->getIdEvent() !== $e->getIdEvent());
@@ -59,7 +59,6 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .back-link{display:flex;align-items:center;gap:6px;font-size:13px;color:#9a3535;text-decoration:none;font-weight:500}
 .back-link:hover{color:#b91c1c}
 
-/* Hero avec image ou gradient */
 .hero{height:320px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .hero-img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,<?= $tc['from'] ?> 0%,<?= $tc['to'] ?> 100%)}
@@ -151,7 +150,6 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
   <a href="interfaceevent.php" class="back-link">← Back to events</a>
 </nav>
 
-<!-- HERO avec image ou gradient -->
 <div class="hero">
   <?php if ($imgPath): ?>
     <img class="hero-img" src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($e->getTitre()) ?>">
@@ -225,9 +223,9 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       <h2>Similar events</h2>
       <div class="suggests-grid">
         <?php foreach ($suggests as $s):
-          $stc     = $typeConfig[$s->getType()] ?? $typeConfig['Autre'];
-          $sd      = date('m/d/Y', strtotime($s->getDateDebut()));
-          $sImgPath= $s->getImage() ? '../../../uploads/evenements/' . $s->getImage() : null;
+          $stc      = $typeConfig[$s->getType()] ?? $typeConfig['Autre'];
+          $sd       = date('m/d/Y', strtotime($s->getDateDebut()));
+          $sImgPath = $s->getImage() ? '../../uploads/evenements/' . $s->getImage() : null;
         ?>
         <a class="scard" href="detailEvent.php?id=<?= $s->getIdEvent() ?>">
           <div class="scard-banner" style="background:linear-gradient(135deg,<?= $stc['from'] ?>,<?= $stc['to'] ?>)">
