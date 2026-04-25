@@ -81,37 +81,7 @@ $selectedObj = $prefill['objectif'];
     .kcal-wrap { position: relative; }
     .kcal-wrap input { padding-right: 3.5rem; }
     .kcal-unit { position: absolute; right: .9rem; top: 50%; transform: translateY(-50%); color: #999; font-size: .95rem; pointer-events: none; }
-    #calories-slider {
-      accent-color: #2e7d32;
-      -webkit-appearance: none;
-      appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      background: #d4edda;
-      outline: none;
-      width: 100%;
-    }
-    #calories-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #2e7d32;
-      cursor: pointer;
-      border: 2px solid #fff;
-      box-shadow: 0 1px 4px rgba(0,0,0,.2);
-    }
-    #calories-slider::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #2e7d32;
-      cursor: pointer;
-      border: 2px solid #fff;
-    }
-    #calories-slider::-webkit-slider-runnable-track { background: #d4edda; border-radius: 3px; }
-    #calories-slider::-moz-range-track { background: #d4edda; border-radius: 3px; }
+    #cal-slider-track { user-select: none; }
   </style>
 </head>
 <body>
@@ -227,7 +197,10 @@ $selectedObj = $prefill['objectif'];
                 </div>
                 <div id="cal-hint" class="form-text mt-1"></div>
                 <div id="cal-range-bar" class="mt-2" style="display:none;">
-                  <input type="range" class="form-range" id="calories-slider" min="1000" max="3500" step="50">
+                  <div id="cal-slider-track" style="position:relative;height:8px;background:#d4edda;border-radius:4px;cursor:pointer;margin:8px 4px;">
+                    <div id="cal-slider-fill" style="position:absolute;left:0;top:0;height:8px;background:#2e7d32;border-radius:4px;width:0%;"></div>
+                    <div id="cal-slider-thumb" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;background:#2e7d32;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:grab;left:0%;"></div>
+                  </div>
                 </div>
               </div>
 
@@ -333,66 +306,84 @@ $selectedObj = $prefill['objectif'];
     };
 
     var calInput  = document.getElementById('calories');
-    var calSlider = document.getElementById('calories-slider');
     var calHint   = document.getElementById('cal-hint');
     var calBar    = document.getElementById('cal-range-bar');
+    var track     = document.getElementById('cal-slider-track');
+    var fill      = document.getElementById('cal-slider-fill');
+    var thumb     = document.getElementById('cal-slider-thumb');
     var objSelect = document.getElementById('objectif');
+    var currentRange = null;
+
+    function pct(val, r) {
+      return Math.min(100, Math.max(0, ((val - r.min) / (r.max - r.min)) * 100));
+    }
+
+    function updateSliderUI(val) {
+      if (!currentRange) return;
+      var p = pct(val, currentRange);
+      fill.style.width  = p + '%';
+      thumb.style.left  = p + '%';
+    }
+
+    function updateHint(val, r) {
+      calHint.innerHTML = '👉 ' + r.label +
+        ' &nbsp;<span style="color:#2e7d32;font-weight:700;">' + val + ' kcal/day</span>';
+    }
 
     function applyRange(obj) {
       var r = RANGES[obj];
       if (!r) {
         calHint.textContent = '👉 Default: 1,800 kcal/day';
         calBar.style.display = 'none';
+        currentRange = null;
         return;
       }
-      calSlider.min   = r.min;
-      calSlider.max   = r.max;
-      calSlider.step  = 50;
+      currentRange = r;
       calBar.style.display = '';
-
       var current = parseInt(calInput.value, 10);
-      if (!current || current < r.min || current > r.max) {
-        calInput.value  = r.def;
-        calSlider.value = r.def;
-      } else {
-        calSlider.value = current;
-      }
-      calHint.innerHTML = '👉 ' + r.label +
-        ' &nbsp;<span style="color:#ce1212;font-weight:700;">' + calInput.value + ' kcal/day</span>';
+      var val = (!current || current < r.min || current > r.max) ? r.def : current;
+      calInput.value = val;
+      updateSliderUI(val);
+      updateHint(val, r);
     }
 
-    // Slider → input
-    calSlider.addEventListener('input', function() {
-      calInput.value = this.value;
-      var obj = objSelect.value;
-      var r   = RANGES[obj];
-      if (r) {
-        calHint.innerHTML = '👉 ' + r.label +
-          ' &nbsp;<span style="color:#ce1212;font-weight:700;">' + this.value + ' kcal/day</span>';
-      }
-    });
+    // Drag logic
+    function sliderSetFromEvent(e) {
+      if (!currentRange) return;
+      var rect = track.getBoundingClientRect();
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      var step  = 50;
+      var raw   = currentRange.min + ratio * (currentRange.max - currentRange.min);
+      var val   = Math.round(raw / step) * step;
+      val = Math.min(currentRange.max, Math.max(currentRange.min, val));
+      calInput.value = val;
+      updateSliderUI(val);
+      updateHint(val, currentRange);
+    }
 
-    // Input → clamp + slider
+    var dragging = false;
+    track.addEventListener('mousedown',  function(e) { dragging = true; sliderSetFromEvent(e); });
+    document.addEventListener('mousemove', function(e) { if (dragging) sliderSetFromEvent(e); });
+    document.addEventListener('mouseup',   function()  { dragging = false; });
+    track.addEventListener('touchstart', function(e) { dragging = true; sliderSetFromEvent(e); }, { passive: true });
+    document.addEventListener('touchmove', function(e) { if (dragging) sliderSetFromEvent(e); }, { passive: true });
+    document.addEventListener('touchend',  function()  { dragging = false; });
+
+    // Typing in input
     calInput.addEventListener('input', function() {
-      var obj = objSelect.value;
-      var r   = RANGES[obj];
-      if (!r) return;
+      if (!currentRange) return;
       var v = parseInt(this.value, 10);
-      if (!isNaN(v)) {
-        calSlider.value = Math.min(r.max, Math.max(r.min, v));
-        calHint.innerHTML = '👉 ' + r.label +
-          ' &nbsp;<span style="color:#ce1212;font-weight:700;">' + calSlider.value + ' kcal/day</span>';
-      }
+      if (!isNaN(v)) { updateSliderUI(v); updateHint(v, currentRange); }
     });
-
     calInput.addEventListener('blur', function() {
-      var obj = objSelect.value;
-      var r   = RANGES[obj];
-      if (!r) return;
+      if (!currentRange) return;
       var v = parseInt(this.value, 10);
-      if (isNaN(v) || v < r.min) this.value = r.min;
-      else if (v > r.max)        this.value = r.max;
-      calSlider.value = this.value;
+      if (isNaN(v) || v < currentRange.min) v = currentRange.min;
+      else if (v > currentRange.max)        v = currentRange.max;
+      this.value = v;
+      updateSliderUI(v);
+      updateHint(v, currentRange);
     });
 
     // Objective change
@@ -408,7 +399,6 @@ $selectedObj = $prefill['objectif'];
       });
     });
 
-    // Init on load
     applyRange(objSelect.value);
 
     <?php if ($isEditing) : ?>
