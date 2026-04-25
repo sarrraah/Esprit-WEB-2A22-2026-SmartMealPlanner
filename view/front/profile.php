@@ -1,12 +1,9 @@
 <?php
+require_once 'auth.php';
 require_once '../../config.php';
 
-$userId = $_GET['id'] ?? '';
+$userId = $_SESSION['user_id'];
 $editMode = isset($_GET['edit']) && $_GET['edit'] == '1';
-
-if ($userId == '') {
-    die("No user ID provided.");
-}
 
 $nom = '';
 $prenom = '';
@@ -53,7 +50,7 @@ try {
                 'id' => $userId
             ]);
 
-            header("Location: profile.php?id=" . urlencode($userId) . "&request=pending");
+            header("Location: profile.php?request=pending");
             exit();
         }
     }
@@ -84,7 +81,7 @@ try {
             'id' => $userId
         ]);
 
-        header("Location: profile.php?id=" . urlencode($userId));
+        header("Location: profile.php");
         exit();
     }
 
@@ -766,25 +763,24 @@ $requestText = 'Your professional account request is currently being reviewed by
     <header id="header" class="header d-flex align-items-center sticky-top">
         <div class="container position-relative d-flex align-items-center justify-content-between">
 
-            <a href="index.php?id=<?= urlencode($userId) ?>&login=success" class="logo d-flex align-items-center me-auto me-xl-0">
+            <a href="index.php?login=success" class="logo d-flex align-items-center me-auto me-xl-0">
                 <h1 class="sitename">Yummy</h1>
                 <span>.</span>
             </a>
 
             <nav id="navmenu" class="navmenu">
                 <ul>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#hero" class="active">Home</a></li>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#about">About</a></li>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#menu">Menu</a></li>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#contact">Contact</a></li>
+                    <li><a href="index.php?login=success#hero" class="active">Home</a></li>
+                    <li><a href="index.php?login=success#about">About</a></li>
+                    <li><a href="index.php?login=success#menu">Menu</a></li>
+                    <li><a href="index.php?login=success#contact">Contact</a></li>
                 </ul>
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
-            <a href="profile.php?id=<?= urlencode($userId) ?>" class="btn-book-a-table text-start" style="line-height: 1.3;">
+            <a href="profile.php" class="btn-book-a-table text-start" style="line-height: 1.3;">
                 <div>
                     <strong><?= htmlspecialchars($prenom . ' ' . $nom) ?></strong><br>
-                    <small>User ID: <?= htmlspecialchars($userId) ?></small>
                 </div>
             </a>
 
@@ -865,7 +861,7 @@ $requestText = 'Your professional account request is currently being reviewed by
                                         <div class="reapply-error"><?= htmlspecialchars($reapplyError) ?></div>
                                     <?php endif; ?>
 
-                                    <form method="POST" action="profile.php?id=<?= urlencode($userId) ?>">
+                                    <form method="POST" action="profile.php">
                                         <input type="hidden" name="reapply_request" value="1">
 
                                         <div class="reapply-grid">
@@ -902,7 +898,7 @@ $requestText = 'Your professional account request is currently being reviewed by
                             </div>
                         <?php endif; ?>
 
-                        <form method="POST" action="profile.php?id=<?= urlencode($userId) ?>">
+                        <form method="POST" action="profile.php">
                             <div class="info-grid">
 
                                 <div class="info-box">
@@ -986,30 +982,43 @@ $requestText = 'Your professional account request is currently being reviewed by
                                         Save Changes
                                     </button>
 
-                                    <a href="profile.php?id=<?= urlencode($userId) ?>" class="profile-btn btn-home-profile">
+                                    <a href="profile.php" class="profile-btn btn-home-profile">
                                         <i class="bi bi-x-circle"></i>
                                         Cancel
                                     </a>
                                 <?php else: ?>
-                                    <a href="profile.php?id=<?= urlencode($userId) ?>&edit=1" class="profile-btn btn-edit-profile">
+                                    <a href="profile.php?edit=1" class="profile-btn btn-edit-profile">
                                         <i class="bi bi-pencil-square"></i>
                                         Edit Profile
                                     </a>
+
+                                    <a href="forgot_password.php" class="profile-btn btn-deactivate-profile">
+                                        <i class="bi bi-key"></i>
+                                        Change Password
+                                    </a>
                                 <?php endif; ?>
 
-                                <a href="deactivate_account.php?id=<?= urlencode($userId) ?>" class="profile-btn btn-deactivate-profile">
+                                <a href="deactivate_account.php" class="profile-btn btn-deactivate-profile">
                                     <i class="bi bi-person-x"></i>
                                     Deactivate Account
                                 </a>
 
-                                <a href="index.php?id=<?= urlencode($userId) ?>&login=success" class="profile-btn btn-home-profile">
+                                <a href="index.php?login=success" class="profile-btn btn-home-profile">
                                     <i class="bi bi-house-door"></i>
                                     Back to Home
                                 </a>
+
                                 <a href="logout.php" class="profile-btn btn-home-profile">
                                     <i class="bi bi-box-arrow-right"></i>
                                     Log Out
                                 </a>
+
+                                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                                    <a href="../back/users.php" class="profile-btn btn-home-profile">
+                                        <i class="bi bi-speedometer2"></i>
+                                        Admin Dashboard
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </form>
 
@@ -1043,7 +1052,7 @@ $requestText = 'Your professional account request is currently being reviewed by
         }
 
         if (window.location.search.includes('request=')) {
-            const cleanUrl = window.location.pathname + '?id=<?= urlencode($userId) ?>';
+            const cleanUrl = window.location.pathname;
             window.history.replaceState({}, document.title, cleanUrl);
         }
     </script>

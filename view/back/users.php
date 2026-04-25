@@ -3,6 +3,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../controller/UserController.php';
+require_once 'admin_auth.php';
 
 $controller = new UserController();
 $users = $controller->index();
@@ -101,6 +102,7 @@ foreach ($users as $u) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Users Management</title>
+    <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -122,6 +124,24 @@ foreach ($users as $u) {
         .page-shell {
             max-width: 1380px;
             margin: 0 auto;
+        }
+
+        .row-delete-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #dc2626;
+            font-size: 19px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .row-delete-btn:hover {
+            color: #991b1b;
+            transform: translateY(-50%) scale(1.15);
         }
 
         .topbar {
@@ -777,6 +797,7 @@ foreach ($users as $u) {
                                     $genderDisplay = $genderRaw !== '' ? $genderRaw : '—';
                                 }
                                 ?>
+
                                 <tr
                                     class="user-row"
                                     data-id="<?= htmlspecialchars((string)$user['id']) ?>"
@@ -785,16 +806,25 @@ foreach ($users as $u) {
                                     data-role="<?= htmlspecialchars(strtolower((string)($user['role'] ?? ''))) ?>"
                                     data-status="<?= htmlspecialchars(strtolower((string)($user['statut'] ?? ''))) ?>"
                                     data-gender="<?= htmlspecialchars(strtolower($genderDisplay)) ?>">
-                                    <td><span class="id-pill">#<?= htmlspecialchars((string)($user['id'] ?? '')) ?></span></td>
+
+                                    <td>
+                                        <span class="id-pill">#<?= htmlspecialchars((string)($user['id'] ?? '')) ?></span>
+                                    </td>
+
                                     <td class="name-cell"><?= htmlspecialchars((string)($user['nom'] ?? '—')) ?></td>
+
                                     <td class="name-cell"><?= htmlspecialchars((string)($user['prenom'] ?? '—')) ?></td>
+
                                     <td><?= htmlspecialchars((string)($user['date_naissance'] ?? '—')) ?></td>
+
                                     <td class="email-cell"><?= htmlspecialchars((string)($user['email'] ?? '—')) ?></td>
+
                                     <td>
                                         <span class="badge <?= $roleClass ?>">
                                             <?= htmlspecialchars($role !== '' ? ucfirst($role) : '—') ?>
                                         </span>
                                     </td>
+
                                     <td>
                                         <?php if ($status === 'pending'): ?>
                                             <a href="review_user_request.php?id=<?= urlencode((string)$user['id']) ?>" class="badge <?= $statusClass ?> status-link">
@@ -806,8 +836,17 @@ foreach ($users as $u) {
                                             </span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>
+
+                                    <td style="position: relative; padding-right: 44px;">
                                         <span class="gender-pill"><?= htmlspecialchars($genderDisplay) ?></span>
+
+                                        <button
+                                            type="button"
+                                            class="row-delete-btn"
+                                            data-id="<?= htmlspecialchars((string)$user['id']) ?>"
+                                            data-name="<?= htmlspecialchars((string)($user['nom'] ?? '') . ' ' . (string)($user['prenom'] ?? '')) ?>">
+                                            <i class="bi bi-dash-circle"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -829,7 +868,7 @@ foreach ($users as $u) {
             <p id="deleteModalText">Are you sure you want to delete this user?</p>
 
             <form method="POST" action="delete_user.php">
-                <input type="text" name="id" id="modalDeleteUserId" style="display:none;">
+                <input type="hidden" name="id" id="modalDeleteUserId">
                 <div class="modal-actions">
                     <button type="button" class="modal-btn-secondary" id="cancelDeleteBtn">No</button>
                     <button type="submit" class="modal-btn-danger">Yes, Delete</button>
@@ -989,6 +1028,20 @@ foreach ($users as $u) {
             if (e.target === deleteModal) {
                 closeDeleteModal();
             }
+        });
+        document.addEventListener('click', function(e) {
+            const deleteBtn = e.target.closest('.row-delete-btn');
+
+            if (!deleteBtn) {
+                return;
+            }
+
+            e.stopPropagation();
+
+            const userId = deleteBtn.dataset.id;
+            const userName = deleteBtn.dataset.name || 'this user';
+
+            openDeleteModal(userId, userName);
         });
 
         // Initial render (IMPORTANT)

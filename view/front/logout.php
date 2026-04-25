@@ -1,6 +1,8 @@
 <?php
-// logout.php
+session_start();
 
-// No session yet → just redirect to public homepage
-header("Location: index.php");
+session_unset();   // remove all session variables
+session_destroy(); // destroy the session
+
+header("Location: ../index.php");
 exit();

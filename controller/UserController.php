@@ -17,6 +17,10 @@ class UserController
 
     public function store($data)
     {
+        if (!empty($data['mot_de_passe'])) {
+            $data['mot_de_passe'] = password_hash($data['mot_de_passe'], PASSWORD_DEFAULT);
+        }
+
         return $this->userModel->addUser($data);
     }
 
@@ -27,6 +31,10 @@ class UserController
 
     public function update($id, $data)
     {
+        if (!empty($data['mot_de_passe'])) {
+            $data['mot_de_passe'] = password_hash($data['mot_de_passe'], PASSWORD_DEFAULT);
+        }
+
         return $this->userModel->updateUser($id, $data);
     }
 
@@ -34,6 +42,7 @@ class UserController
     {
         return $this->userModel->deleteUser($id);
     }
+
     public function findByEmail($email)
     {
         return $this->userModel->getUserByEmail($email);
@@ -41,6 +50,12 @@ class UserController
 
     public function login($email, $password)
     {
-        return $this->userModel->authenticateUser($email, $password);
+        $user = $this->userModel->getUserByEmail($email);
+
+        if ($user && password_verify($password, $user['mot_de_passe'])) {
+            return $user;
+        }
+
+        return false;
     }
 }

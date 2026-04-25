@@ -1,9 +1,9 @@
 <?php
+require_once 'auth.php';
 require_once '../../config.php';
 
-$loggedInUserId = $_GET['id'] ?? '';
-$loginSuccess   = $_GET['login'] ?? '';
-$signupSuccess  = $_GET['signup'] ?? '';
+$loggedInUserId = $_SESSION['user_id'];
+
 
 $loggedInNom = '';
 $loggedInPrenom = '';
@@ -60,7 +60,7 @@ if ($loggedInUserId !== '') {
     <header id="header" class="header d-flex align-items-center sticky-top">
         <div class="container position-relative d-flex align-items-center justify-content-between">
 
-            <a href="index.php<?= $loggedInUserId !== '' ? '?id=' . urlencode((string)$loggedInUserId) . '&login=success' : '' ?>" class="logo d-flex align-items-center me-auto me-xl-0">
+            <a href="index.php<?= $loggedInUserId !== '' ? '?login=success' : '' ?>" class="logo d-flex align-items-center me-auto me-xl-0">
                 <h1 class="sitename">Yummy</h1>
                 <span>.</span>
             </a>
@@ -107,8 +107,8 @@ if ($loggedInUserId !== '') {
             </nav>
 
             <div class="d-flex align-items-center gap-2">
-                <?php if (($loginSuccess === 'success' || $signupSuccess === 'success') && $loggedInUserId !== ''): ?>
-                    <a href="profile.php?id=<?= urlencode((string)$loggedInUserId) ?>" class="btn-book-a-table text-start" style="line-height: 1.3;">
+                <?php if ($loggedInUserId !== ''): ?>
+                    <a href="profile.php" class="btn-book-a-table text-start">
                         <div>
                             <strong>
                                 <?= htmlspecialchars(trim($loggedInNom . ' ' . $loggedInPrenom) ?: 'User') ?>
@@ -953,22 +953,26 @@ if ($loggedInUserId !== '') {
                         <form action="forms/book-a-table.php" method="post" role="form" class="php-email-form">
                             <div class="row gy-4">
                                 <div class="col-lg-4 col-md-6">
-                                    <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required="">
+                                    <input type="text" name="name" class="form-control" id="name" placeholder="Your Name">
                                 </div>
                                 <div class="col-lg-4 col-md-6">
-                                    <input type="email" class="form-control" name="email" id="email" placeholder="Your Email" required="">
+                                    <input type="text" class="form-control" name="email" id="email" placeholder="Your Email">
                                 </div>
+
                                 <div class="col-lg-4 col-md-6">
-                                    <input type="text" class="form-control" name="phone" id="phone" placeholder="Your Phone" required="">
+                                    <input type="text" class="form-control" name="phone" id="phone" placeholder="Your Phone">
                                 </div>
+
                                 <div class="col-lg-4 col-md-6">
-                                    <input type="date" name="date" class="form-control" id="date" placeholder="Date" required="">
+                                    <input type="text" name="date" class="form-control" id="date" placeholder="Date">
                                 </div>
+
                                 <div class="col-lg-4 col-md-6">
-                                    <input type="time" class="form-control" name="time" id="time" placeholder="Time" required="">
+                                    <input type="text" class="form-control" name="time" id="time" placeholder="Time">
                                 </div>
+
                                 <div class="col-lg-4 col-md-6">
-                                    <input type="number" class="form-control" name="people" id="people" placeholder="# of people" required="">
+                                    <input type="text" class="form-control" name="people" id="people" placeholder="# of people">
                                 </div>
                             </div>
 
@@ -1111,21 +1115,20 @@ if ($loggedInUserId !== '') {
 
                 <form action="forms/contact.php" method="post" class="php-email-form" data-aos="fade-up" data-aos-delay="600">
                     <div class="row gy-4">
+                        <div class="col-md-6">
+                            <input type="text" name="name" class="form-control" placeholder="Your Name">
+                        </div>
 
                         <div class="col-md-6">
-                            <input type="text" name="name" class="form-control" placeholder="Your Name" required="">
-                        </div>
-
-                        <div class="col-md-6 ">
-                            <input type="email" class="form-control" name="email" placeholder="Your Email" required="">
+                            <input type="text" class="form-control" name="email" placeholder="Your Email">
                         </div>
 
                         <div class="col-md-12">
-                            <input type="text" class="form-control" name="subject" placeholder="Subject" required="">
+                            <input type="text" class="form-control" name="subject" placeholder="Subject">
                         </div>
 
                         <div class="col-md-12">
-                            <textarea class="form-control" name="message" rows="6" placeholder="Message" required=""></textarea>
+                            <textarea class="form-control" name="message" rows="6" placeholder="Message"></textarea>
                         </div>
 
                         <div class="col-md-12 text-center">

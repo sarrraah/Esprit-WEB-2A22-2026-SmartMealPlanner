@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once '../../config.php';
 
 $error = '';
@@ -10,35 +11,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo = config::getConnexion();
 
-        $sql = "SELECT * FROM user WHERE email = :email";
+        $sql = "SELECT * FROM user WHERE email = :email LIMIT 1";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['email' => $email]);
-        $user = $stmt->fetch();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user) {
-            if ($password === $user['mot_de_passe']) {
-                if ($user['statut'] === 'banned') {
-                    $error = "Your account has been banned.";
-                } elseif ($user['statut'] === 'deactivated') {
-                    header("Location: ../index.php?deactivated=1&id=" . urlencode($user['id']));
-                    exit();
-                } else {
-                    header("Location: index.php?id=" . urlencode($user['id']) . "&login=success");
-                    exit();
-                }
-                if ($user['statut'] === 'pending') {
-                    $error = 'Your request is still under review by the admin team.';
-                } elseif ($user['statut'] === 'active') {
-                    header('Location: index.php?id=' . urlencode((string)$user['id']) . '&login=success');
-                    exit;
-                } else {
-                    $error = 'Your account is not available right now.';
-                }
-            } else {
-                $error = "Invalid email or password.";
-            }
-        } else {
+        if (!$user || !password_verify($password, $user['mot_de_passe'])) {
             $error = "Invalid email or password.";
+        } else {
+            if ($user['statut'] === 'banned') {
+                $error = "Your account has been banned.";
+            } elseif ($user['statut'] === 'pending') {
+                $error = "Your request is still under review by the admin team.";
+            } elseif ($user['statut'] === 'deactivated') {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_role'] = $user['role'];
+
+                header("Location: reactivate_account.php");
+                exit();
+            } elseif ($user['statut'] === 'active') {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_role'] = $user['role'];
+
+                header("Location: index.php?login=success");
+                exit();
+            } else {
+                $error = "Your account is not available right now.";
+            }
         }
     } catch (Exception $e) {
         $error = "An error occurred. Please try again.";
@@ -357,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-box">
                 <span class="brand">Smart Meal Planner</span>
                 <h2>Welcome back
-                             
+
 
 
                 </h2>
@@ -378,7 +377,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <div class="forgot-wrap">
-                        <a href="#" class="forgot-password">Forgot your password?</a>
+                        <a href="forgot_password.php" class="forgot-password">Forgot your password?</a>
                     </div>
 
                     <button type="submit" class="signin-btn">Sign In</button>

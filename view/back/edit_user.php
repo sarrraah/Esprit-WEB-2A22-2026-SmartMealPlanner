@@ -357,8 +357,8 @@ $currentSexe = $_POST['sexe'] ?? trim((string)($user['sexe'] ?? ''));
 
                     <div class="form-group">
                         <label for="mot_de_passe">New Password</label>
-                        <input id="mot_de_passe" class="form-control" type="password" name="mot_de_passe" value="" placeholder="Leave blank to keep current password">
-                        <span class="hint">Leave empty if you do not want to change it.</span>
+                        <input id="mot_de_passe" class="form-control" type="text" name="mot_de_passe" value="" placeholder="Write a new password only if you want to change it">
+                        <span class="hint">The current password is encrypted and cannot be displayed.</span>
                     </div>
 
                     <div class="form-group">

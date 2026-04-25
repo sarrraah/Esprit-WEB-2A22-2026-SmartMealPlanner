@@ -1,12 +1,8 @@
 <?php
+require_once 'auth.php';
 require_once '../../config.php';
 
-$userId = $_GET['id'] ?? '';
-
-if ($userId == '') {
-    header("Location: ../index.php");
-    exit();
-}
+$userId = $_SESSION['user_id'];
 
 try {
     $pdo = config::getConnexion();
@@ -18,7 +14,7 @@ try {
         'id' => $userId
     ]);
 
-    header("Location: index.php?id=" . urlencode($userId) . "&login=success");
+    header("Location: index.php?login=success");
     exit();
 } catch (Exception $e) {
     header("Location: ../index.php");

@@ -133,7 +133,7 @@ class UserModel
         }
 
         $finalPassword = trim($data['mot_de_passe'] ?? '') !== ''
-            ? $data['mot_de_passe']
+            ? password_hash($data['mot_de_passe'], PASSWORD_DEFAULT)
             : $existingUser['mot_de_passe'];
 
         $sql = "UPDATE `user`
@@ -189,18 +189,4 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function authenticateUser($email, $password)
-    {
-        $sql = "SELECT * FROM `user`
-                WHERE email = :email AND mot_de_passe = :mot_de_passe
-                LIMIT 1";
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':email' => $email,
-            ':mot_de_passe' => $password
-        ]);
-
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
 }

@@ -1,12 +1,10 @@
 <?php
+require_once 'auth.php';
 require_once '../../config.php';
 
-$userId = $_GET['id'] ?? '';
+$userId = $_SESSION['user_id'];
 
-if ($userId == '') {
-    header("Location: ../index.php");
-    exit();
-}
+
 
 $nom = '';
 $prenom = '';
@@ -25,7 +23,9 @@ try {
             'id' => $userId
         ]);
 
-        header("Location: ../index.php?deactivated=1&id=" . urlencode($userId));
+        session_unset();
+        session_destroy();
+        header("Location: ../index.php");
         exit();
     }
 
@@ -323,22 +323,22 @@ try {
     <header id="header" class="header d-flex align-items-center sticky-top">
         <div class="container position-relative d-flex align-items-center justify-content-between">
 
-            <a href="index.php?id=<?= urlencode($userId) ?>&login=success" class="logo d-flex align-items-center me-auto me-xl-0">
+            <a href="index.php?login=success" class="logo d-flex align-items-center me-auto me-xl-0">
                 <h1 class="sitename">Yummy</h1>
                 <span>.</span>
             </a>
 
             <nav id="navmenu" class="navmenu">
                 <ul>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#hero" class="active">Home</a></li>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#about">About</a></li>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#menu">Menu</a></li>
-                    <li><a href="index.php?id=<?= urlencode($userId) ?>&login=success#contact">Contact</a></li>
+                    <li><a href="index.php?login=success#hero" class="active">Home</a></li>
+                    <li><a href="index.php?login=success#about">About</a></li>
+                    <li><a href="index.php?login=success#menu">Menu</a></li>
+                    <li><a href="index.php?login=success#contact">Contact</a></li>
                 </ul>
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
-            <a href="profile.php?id=<?= urlencode($userId) ?>" class="btn-book-a-table text-start" style="line-height: 1.3;">
+            <a href="profile.php" class="btn-book-a-table text-start" style="line-height: 1.3;">
                 <div>
                     <strong><?= htmlspecialchars($prenom . ' ' . $nom) ?></strong>
                 </div>
@@ -393,7 +393,7 @@ try {
                             </div>
                         </div>
 
-                        <form method="POST" action="deactivate_account.php?id=<?= urlencode($userId) ?>">
+                        <form method="POST" action="deactivate_account.php">
 
                             <div class="profile-actions">
                                 <button type="submit" class="profile-btn btn-confirm-deactivate">
@@ -404,12 +404,11 @@ try {
 
                         </form>
 
-                        <a href="profile.php?id=<?= urlencode($userId) ?>" class="profile-btn btn-home-profile">
+                        <a href="profile.php" class="profile-btn btn-home-profile">
                             <i class="bi bi-arrow-left-circle"></i>
                             Cancel
                         </a>
                     </div>
-                    </form>
 
                 </div>
             </div>
