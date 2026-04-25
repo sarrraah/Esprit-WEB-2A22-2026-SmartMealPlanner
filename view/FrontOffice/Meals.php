@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../../controller/MealController.php';
 
 $meals = MealController::listMeals();
-$assetPrefix = '../assets/';
+$assetPrefix = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
 
 function resolveImageUrl(string $image, string $prefix): string {
     return $prefix . ltrim(preg_replace('#^assets/#', '', $image), '/');
@@ -25,8 +25,8 @@ function resolveImageUrl(string $image, string $prefix): string {
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
 
-  <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="<?php echo $assetPrefix; ?>css/main.css" rel="stylesheet">
   <link href="<?php echo $assetPrefix; ?>css/meals.css" rel="stylesheet">
 </head>
@@ -63,7 +63,18 @@ function resolveImageUrl(string $image, string $prefix): string {
       </div>
 
       <div class="container">
-        <div class="row g-4">
+
+        <!-- Filter bar -->
+        <div class="d-flex flex-wrap gap-2 justify-content-center mb-4">
+          <button class="btn btn-danger rounded-pill meal-filter active" data-filter="all">All</button>
+          <button class="btn btn-outline-danger rounded-pill meal-filter" data-filter="breakfast">Breakfast</button>
+          <button class="btn btn-outline-danger rounded-pill meal-filter" data-filter="lunch">Lunch</button>
+          <button class="btn btn-outline-danger rounded-pill meal-filter" data-filter="dinner">Dinner</button>
+          <button class="btn btn-outline-danger rounded-pill meal-filter" data-filter="snack">Snack</button>
+          <button class="btn btn-outline-success rounded-pill meal-filter" data-filter="low-cal">Low Calories</button>
+        </div>
+
+        <div class="row g-4" id="meal-grid">
           <?php foreach ($meals as $meal) :
             $imgSrc = htmlspecialchars(resolveImageUrl($meal->image, $assetPrefix), ENT_QUOTES, 'UTF-8');
             $safeName = htmlspecialchars($meal->name, ENT_QUOTES, 'UTF-8');
@@ -71,7 +82,7 @@ function resolveImageUrl(string $image, string $prefix): string {
             $safeRecipe = htmlspecialchars($meal->recipeUrl, ENT_QUOTES, 'UTF-8');
             $safeType = htmlspecialchars($meal->mealType, ENT_QUOTES, 'UTF-8');
             $safeTypeLabel = htmlspecialchars($meal->mealTypeLabel(), ENT_QUOTES, 'UTF-8');
-            ?>
+          ?>
             <div class="col-lg-3 col-md-4 col-sm-6">
               <article
                 class="meal-card"
@@ -114,7 +125,7 @@ function resolveImageUrl(string $image, string $prefix): string {
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h2 class="modal-title fs-5" id="mealDetailModalLabel">Meal details</h2>
+          <h2 class="modal-title fs-5" id="mealDetailModalLabel" style="font-size:1.15rem !important;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Meal details</h2>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -144,8 +155,33 @@ function resolveImageUrl(string $image, string $prefix): string {
     </div>
   </div>
 
-  <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="meals.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/js/meals.js"></script>
+
+  <script>
+    document.querySelectorAll('.meal-filter').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.meal-filter').forEach(function(b) {
+          b.classList.remove('active', 'btn-danger', 'btn-success');
+          b.classList.add(b.dataset.filter === 'low-cal' ? 'btn-outline-success' : 'btn-outline-danger');
+        });
+        this.classList.add('active');
+        this.classList.remove('btn-outline-danger', 'btn-outline-success');
+        this.classList.add(this.dataset.filter === 'low-cal' ? 'btn-success' : 'btn-danger');
+
+        var filter = this.dataset.filter;
+        document.querySelectorAll('#meal-grid .col-lg-3').forEach(function(col) {
+          var card = col.querySelector('.meal-card');
+          var type = card.dataset.mealType;
+          var cal  = parseInt(card.dataset.mealCalories, 10);
+          var show = filter === 'all'
+                  || filter === type
+                  || (filter === 'low-cal' && cal < 400);
+          col.style.display = show ? '' : 'none';
+        });
+      });
+    });
+  </script>
 </body>
 
 </html>

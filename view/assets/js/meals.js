@@ -65,6 +65,11 @@
 (function () {
   'use strict';
 
+  // Init Bootstrap tooltips
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+    new bootstrap.Tooltip(el);
+  });
+
   const modalEl = document.getElementById('mealDetailModal');
   if (!modalEl || typeof bootstrap === 'undefined') return;
 
@@ -132,10 +137,31 @@
   if (addBtn) {
     addBtn.addEventListener('click', function () {
       const id = addBtn.getAttribute('data-meal-id');
+      const name = modalEl.querySelector('[data-meal-detail="name"]').textContent;
       document.dispatchEvent(
         new CustomEvent('mealPlanner:add', { detail: { mealId: id } })
       );
       modal.hide();
+      showToast('\u2714 "' + name + '" added to your plan!');
     });
+  }
+
+  function showToast(message) {
+    let container = document.getElementById('plan-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'plan-toast-container';
+      container.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.style.cssText = 'background:#ce1212;color:#fff;padding:.75rem 1.25rem;border-radius:.5rem;box-shadow:0 4px 12px rgba(0,0,0,.2);font-size:.95rem;opacity:0;transition:opacity .3s;';
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
   }
 })();
