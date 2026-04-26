@@ -241,7 +241,7 @@ sort($types);
   <div class="container position-relative d-flex align-items-center justify-content-between">
 
     <a href="../index.php" class="logo d-flex align-items-center me-auto me-xl-0">
-      <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner" height="70">
+      <img src="<?php echo $assetPrefix; ?>img/logo-smp.jpg" alt="SmartMealPlanner" height="44">
       <h1 class="sitename">SmartMealPlanner</h1>
     </a>
 

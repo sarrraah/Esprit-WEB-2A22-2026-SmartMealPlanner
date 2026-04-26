@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../model/Participation.php';
+
 class ParticipationController
 {
     function listParticipations()
@@ -106,7 +107,6 @@ class ParticipationController
                 'montant'            => $participation->getMontant(),
                 'date_participation' => $participation->getDateParticipation(),
             ]);
-            echo $query->rowCount() . " records UPDATED successfully <br>";
         } catch (PDOException $e) {
             $e->getMessage();
         }
@@ -121,6 +121,26 @@ class ParticipationController
         try {
             $req->execute();
         } catch (Exception $e) {
+            die('Error: ' . $e->getMessage());
+        }
+    }
+
+    // ── JOINTURE : participations avec infos de l'événement ─────────────
+    function getParticipationsAvecEvenement($id_event)
+    {
+        $db  = config::getConnexion();
+        $req = $db->prepare(
+            "SELECT participation.*, evenement.titre, evenement.lieu, evenement.date_debut
+             FROM participation
+             INNER JOIN evenement ON participation.id_event = evenement.id_event
+             WHERE participation.id_event = :id
+             ORDER BY participation.date_participation DESC"
+        );
+        $req->bindValue(':id', $id_event);
+        try {
+            $req->execute();
+            return $req->fetchAll();
+        } catch (PDOException $e) {
             die('Error: ' . $e->getMessage());
         }
     }
