@@ -29,7 +29,7 @@ require_once __DIR__ . '/partials/sidebar.php';
             <div class="col-lg-9">
                 <div class="admin-card card">
                     <div class="card-body p-4">
-                        <form action="<?= htmlspecialchars($baseUrl.'/controller/RepasController.php') ?>" method="POST" enctype="multipart/form-data">
+                        <form action="<?= htmlspecialchars($baseUrl.'/controller/RepasController.php') ?>" method="POST" enctype="multipart/form-data" id="formEditRepas" novalidate>
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?= $repas['id_repas'] ?>">
                             <input type="hidden" name="current_image" value="<?= htmlspecialchars($repas['image_repas'] ?? '') ?>">
@@ -112,6 +112,18 @@ require_once __DIR__ . '/partials/sidebar.php';
 <?php
 $extraJs = <<<JS
 <script>
+smAttachRealtime('formEditRepas',
+    ['nom'],
+    ['calories','proteines','glucides','lipides']
+);
+smAttachSubmit('formEditRepas', [
+    { name: 'nom',        type: 'nom',    label: 'Le nom du repas' },
+    { name: 'id_recette', type: 'select', label: 'La recette' },
+    { name: 'calories',   type: 'number', label: 'Les calories',  min: 0 },
+    { name: 'proteines',  type: 'number', label: 'Les protéines', min: 0 },
+    { name: 'glucides',   type: 'number', label: 'Les glucides',  min: 0 },
+    { name: 'lipides',    type: 'number', label: 'Les lipides',   min: 0 },
+]);
 function previewImg(input) {
     if (!input.files||!input.files[0]) return;
     const file=input.files[0], reader=new FileReader();

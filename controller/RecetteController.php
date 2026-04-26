@@ -1,4 +1,5 @@
 <?php
+session_start();
 defined('APP_ROOT') || require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../model/Recette.php';
 
@@ -30,15 +31,56 @@ function getRecetteFields(): array {
         'nb_personnes' => (int)($_POST['nb_personnes'] ?? 2),
     ];
 }
+/**
+ * Validation des champs de la recette.
+ */
+function validateRecetteFields(array $f): array {
+    $errors = [];
 
-$model  = new Recette();
+    // Nom : obligatoire, lettres uniquement, pas de chiffres
+    if ($f['nom'] === '') {
+        $errors['nom'] = 'Le nom de la recette est obligatoire.';
+    } elseif (preg_match('/\d/', $f['nom'])) {
+        $errors['nom'] = 'Le nom de la recette ne doit pas contenir de chiffres.';
+    } elseif (!preg_match('/^[\p{L}\s\'\-\.]+$/u', $f['nom'])) {
+        $errors['nom'] = 'Le nom de la recette ne doit contenir que des lettres.';
+    }
+
+    // Temps de préparation : entier positif si renseigné
+    if ($f['temps_prep'] !== null && $f['temps_prep'] < 0) {
+        $errors['temps_prep'] = 'Le temps de préparation doit être un nombre positif.';
+    }
+
+    // Temps de cuisson : entier positif si renseigné
+    if ($f['temps_cuisson'] !== null && $f['temps_cuisson'] < 0) {
+        $errors['temps_cuisson'] = 'Le temps de cuisson doit être un nombre positif.';
+    }
+
+    // Nombre de personnes : entier >= 1
+    if ($f['nb_personnes'] < 1) {
+        $errors['nb_personnes'] = 'Le nombre de personnes doit être au moins 1.';
+    }
+
+    return $errors;
+}
+
 $base   = recetteBaseUrl();
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 $list   = $base . '/view/back/recette.php';
+$model  = new Recette();
 
 // ADD
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add') {
-    $f = getRecetteFields();
+    $f      = getRecetteFields();
+    $errors = validateRecetteFields($f);
+
+    if (!empty($errors)) {
+        $_SESSION['recette_errors'] = $errors;
+        $_SESSION['recette_old']    = $_POST;
+        header('Location: ' . $base . '/view/back/add_recette.php?error=1');
+        exit;
+    }
+
     $image = uploadRecetteImage('image_recette');
     if ($f['nom'] !== '') {
         $newId = $model->addRecette($f['nom'], $f['etapes'], $f['temps_prep'], $f['temps_cuisson'], $f['difficulte'], $f['nb_personnes'], $image);
@@ -51,8 +93,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add') {
 
 // UPDATE
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'update') {
-    $id      = (int)($_POST['id'] ?? 0);
-    $f       = getRecetteFields();
+    $id     = (int)($_POST['id'] ?? 0);
+    $f      = getRecetteFields();
+    $errors = validateRecetteFields($f);
+
+    if (!empty($errors)) {
+        $_SESSION['recette_errors'] = $errors;
+        $_SESSION['recette_old']    = $_POST;
+        header('Location: ' . $base . '/view/back/edit_recette.php?id=' . $id . '&error=1');
+        exit;
+    }
+
     $current = $_POST['current_image'] ?? null;
     $new     = uploadRecetteImage('image_recette');
     $image   = $new ?: $current;

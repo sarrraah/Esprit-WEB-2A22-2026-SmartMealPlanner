@@ -50,15 +50,12 @@ require_once __DIR__ . '/partials/header.php';
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4 class="mb-0"><?= count($repas) ?> repas trouvé<?= count($repas) > 1 ? 's' : '' ?></h4>
-            <a href="add_repas.php" class="btn btn-danger">
-                <i class="bi bi-plus-lg me-1"></i>Ajouter un Repas
-            </a>
         </div>
 
         <?php if (empty($repas)): ?>
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                <p>Aucun repas enregistré. <a href="add_repas.php">Ajoutez le premier !</a></p>
+                <p>Aucun repas enregistré.</p>
             </div>
         <?php else: ?>
         <div class="row g-4">

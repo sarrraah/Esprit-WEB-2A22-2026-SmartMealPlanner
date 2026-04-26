@@ -1,4 +1,5 @@
 <?php
+session_start();
 defined('APP_ROOT') || require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../model/Repas.php';
 require_once __DIR__ . '/../../model/Ingredient.php';
@@ -74,7 +75,21 @@ require_once __DIR__ . '/partials/head.php';
                 </div>
                 <div class="card-body pt-0">
                     <form action="<?= htmlspecialchars($baseUrl.'/controller/IngredientController.php') ?>"
-                          method="POST">
+                          method="POST" id="formIngredient" novalidate>
+                        <?php
+                        $ingErrors = $_SESSION['ing_errors'] ?? [];
+                        unset($_SESSION['ing_errors'], $_SESSION['ing_old']);
+                        if (!empty($ingErrors)):
+                        ?>
+                        <div class="alert alert-danger mb-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <ul class="mb-0">
+                                <?php foreach ($ingErrors as $err): ?>
+                                    <li><?= htmlspecialchars($err) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                        <?php endif; ?>
                         <input type="hidden" name="action" value="<?= $editIngredient ? 'update' : 'add' ?>">
                         <input type="hidden" name="id_repas" value="<?= $idRepas ?>">
                         <?php if ($editIngredient): ?>
@@ -213,4 +228,17 @@ require_once __DIR__ . '/partials/head.php';
     </div>
 </div>
 
-<?php require_once __DIR__ . '/partials/foot.php'; ?>
+<?php
+$extraJs = <<<JS
+<script>
+smAttachRealtime('formIngredient',
+    ['nom_ingredient'],   // texte : pas de chiffres
+    ['quantite']          // numérique : pas de lettres
+);
+smAttachSubmit('formIngredient', [
+    { name: 'nom_ingredient', type: 'nom',    label: "Le nom de l'ingrédient" },
+    { name: 'quantite',       type: 'number', label: 'La quantité', min: 0 },
+]);
+</script>
+JS;
+require_once __DIR__ . '/partials/foot.php';

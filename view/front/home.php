@@ -13,9 +13,6 @@ require_once __DIR__ . '/partials/header.php';
                 <p>Planifiez vos repas intelligemment. Découvrez des recettes équilibrées, gérez vos repas quotidiens et atteignez vos objectifs nutritionnels.</p>
                 <div class="d-flex gap-3 flex-wrap">
                     <a href="repas.php" class="btn-get-started">Découvrir les Repas</a>
-                    <a href="add_repas.php" class="btn-watch-video d-flex align-items-center gap-2">
-                        <i class="bi bi-plus-circle-fill"></i><span>Ajouter un Repas</span>
-                    </a>
                 </div>
             </div>
             <div class="col-lg-5 order-1 order-lg-2">
@@ -48,90 +45,6 @@ require_once __DIR__ . '/partials/header.php';
                     <div class="icon-box">
                         <div class="icon"><i class="bi bi-leaf"></i></div>
                         <h4 class="title"><a href="#">Aliments Durables</a></h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ======= Actions Rapides ======= -->
-<section class="section" style="padding:50px 0 30px;">
-    <div class="container" data-aos="fade-up">
-        <div class="section-title">
-            <h2>Actions Rapides</h2>
-            <p><span>Gérez</span> <span class="description-title">Vos Repas en un Clic</span></p>
-        </div>
-        <div class="row g-4 justify-content-center mt-2">
-            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="100">
-                <div class="card border-0 shadow-sm text-center h-100"
-                     style="border-radius:16px;transition:transform .25s;"
-                     onmouseover="this.style.transform='translateY(-6px)'"
-                     onmouseout="this.style.transform='translateY(0)'">
-                    <div class="card-body p-4">
-                        <div class="mb-3 mx-auto d-flex align-items-center justify-content-center"
-                             style="width:64px;height:64px;background:#fde8e8;border-radius:16px;">
-                            <i class="bi bi-plus-circle-fill" style="font-size:1.8rem;color:#ce1212;"></i>
-                        </div>
-                        <h5 class="fw-bold mb-2">Ajouter un Repas</h5>
-                        <p class="text-muted small mb-3">Enregistrez un nouveau repas avec ses informations nutritionnelles.</p>
-                        <a href="add_repas.php" class="btn btn-danger w-100">
-                            <i class="bi bi-plus-lg me-1"></i>Ajouter
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="200">
-                <div class="card border-0 shadow-sm text-center h-100"
-                     style="border-radius:16px;transition:transform .25s;"
-                     onmouseover="this.style.transform='translateY(-6px)'"
-                     onmouseout="this.style.transform='translateY(0)'">
-                    <div class="card-body p-4">
-                        <div class="mb-3 mx-auto d-flex align-items-center justify-content-center"
-                             style="width:64px;height:64px;background:#e8f4fd;border-radius:16px;">
-                            <i class="bi bi-bowl-hot" style="font-size:1.8rem;color:#0d6efd;"></i>
-                        </div>
-                        <h5 class="fw-bold mb-2">Voir les Repas</h5>
-                        <p class="text-muted small mb-3">Consultez et gérez tous les repas enregistrés.</p>
-                        <a href="repas.php" class="btn btn-primary w-100">
-                            <i class="bi bi-list-ul me-1"></i>Consulter
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                <div class="card border-0 shadow-sm text-center h-100"
-                     style="border-radius:16px;transition:transform .25s;"
-                     onmouseover="this.style.transform='translateY(-6px)'"
-                     onmouseout="this.style.transform='translateY(0)'">
-                    <div class="card-body p-4">
-                        <div class="mb-3 mx-auto d-flex align-items-center justify-content-center"
-                             style="width:64px;height:64px;background:#e8fdf0;border-radius:16px;">
-                            <i class="bi bi-speedometer2" style="font-size:1.8rem;color:#198754;"></i>
-                        </div>
-                        <h5 class="fw-bold mb-2">Admin Dashboard</h5>
-                        <p class="text-muted small mb-3">Gérez recettes, repas et statistiques.</p>
-                        <a href="../back/index.php" class="btn btn-success w-100">
-                            <i class="bi bi-gear me-1"></i>Administrer
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="400">
-                <div class="card border-0 shadow-sm text-center h-100"
-                     style="border-radius:16px;transition:transform .25s;"
-                     onmouseover="this.style.transform='translateY(-6px)'"
-                     onmouseout="this.style.transform='translateY(0)'">
-                    <div class="card-body p-4">
-                        <div class="mb-3 mx-auto d-flex align-items-center justify-content-center"
-                             style="width:64px;height:64px;background:#fff8e1;border-radius:16px;">
-                            <i class="bi bi-journal-richtext" style="font-size:1.8rem;color:#fd7e14;"></i>
-                        </div>
-                        <h5 class="fw-bold mb-2">Gérer les Recettes</h5>
-                        <p class="text-muted small mb-3">Créez et organisez vos recettes.</p>
-                        <a href="../back/recette.php" class="btn btn-warning w-100">
-                            <i class="bi bi-journal-plus me-1"></i>Recettes
-                        </a>
                     </div>
                 </div>
             </div>

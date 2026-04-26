@@ -1,6 +1,8 @@
 <?php
+session_start();
 defined('APP_ROOT') || require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../model/Repas.php';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function repasBaseUrl(): string {
     $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -26,6 +28,50 @@ function deleteRepasFile(?string $path): void {
     if (is_file($abs)) @unlink($abs);
 }
 
+/**
+ * Validation des champs du repas.
+ * Retourne un tableau d'erreurs (vide = OK).
+ */
+function validateRepasFields(array $f): array {
+    $errors = [];
+
+    // Nom : obligatoire, lettres/espaces/accents/tirets uniquement, pas de chiffres
+    if ($f['nom'] === '') {
+        $errors['nom'] = 'Le nom du repas est obligatoire.';
+    } elseif (preg_match('/\d/', $f['nom'])) {
+        $errors['nom'] = 'Le nom du repas ne doit pas contenir de chiffres.';
+    } elseif (!preg_match('/^[\p{L}\s\'\-\.]+$/u', $f['nom'])) {
+        $errors['nom'] = 'Le nom du repas ne doit contenir que des lettres.';
+    }
+
+    // Calories : nombre positif si renseigné
+    if ($f['calories'] !== null && $f['calories'] < 0) {
+        $errors['calories'] = 'Les calories doivent être un nombre positif.';
+    }
+
+    // Protéines : nombre positif si renseigné
+    if ($f['proteines'] !== null && $f['proteines'] < 0) {
+        $errors['proteines'] = 'Les protéines doivent être un nombre positif.';
+    }
+
+    // Glucides : nombre positif si renseigné
+    if ($f['glucides'] !== null && $f['glucides'] < 0) {
+        $errors['glucides'] = 'Les glucides doivent être un nombre positif.';
+    }
+
+    // Lipides : nombre positif si renseigné
+    if ($f['lipides'] !== null && $f['lipides'] < 0) {
+        $errors['lipides'] = 'Les lipides doivent être un nombre positif.';
+    }
+
+    // Recette obligatoire
+    if ($f['id_recette'] <= 0) {
+        $errors['id_recette'] = 'Veuillez sélectionner une catégorie.';
+    }
+
+    return $errors;
+}
+
 function getRepasFields(): array {
     $f = function(string $k): ?float {
         $v = $_POST[$k] ?? '';
@@ -43,7 +89,9 @@ function getRepasFields(): array {
     ];
 }
 
-$model  = new Repas();
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+$pdo    = config::getConnexion();
 $base   = repasBaseUrl();
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
@@ -52,45 +100,120 @@ $back   = $base . '/view/back/repas.php';
 $front  = $base . '/view/front/repas.php';
 $redir  = $from === 'front' ? $front : $back;
 
-// ADD
+// ── ADD ───────────────────────────────────────────────────────────────────────
 if ($method === 'POST' && $action === '') {
-    $f = getRepasFields();
+    $f      = getRepasFields();
+    $errors = validateRepasFields($f);
+
+    if (!empty($errors)) {
+        $_SESSION['repas_errors'] = $errors;
+        $_SESSION['repas_old']    = $_POST;
+        $redirect = $from === 'back'
+            ? $base . '/view/back/add_repas.php'
+            : $base . '/view/front/add_repas.php';
+        header('Location: ' . $redirect . '?error=1');
+        exit;
+    }
+
     $image = uploadRepasImage('image_repas');
-    if ($f['nom'] !== '' && $f['id_recette'] > 0) {
-        $model->addRepas($f['nom'], $f['calories'], $f['proteines'], $f['glucides'], $f['lipides'], $f['description'], $f['type_repas'], $f['id_recette'], $image);
-        $newId = (int) config::getConnexion()->lastInsertId();
-        if ($from === 'back') {
-            header('Location: ' . $base . '/view/back/add_repas.php?id_repas=' . $newId);
-        } else {
-            header('Location: ' . $front . '?success=1');
-        }
+
+    // SQL INSERT
+    $stmt = $pdo->prepare("
+        INSERT INTO repas
+            (nom, calories, proteines, glucides, lipides,
+             description, type_repas, id_recette, image_repas)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([
+        $f['nom'], $f['calories'], $f['proteines'], $f['glucides'],
+        $f['lipides'], $f['description'], $f['type_repas'],
+        $f['id_recette'], $image
+    ]);
+
+    $newId = (int) $pdo->lastInsertId();
+
+    if ($from === 'back') {
+        header('Location: ' . $base . '/view/back/add_repas.php?id_repas=' . $newId);
     } else {
-        header('Location: ' . $redir . '?success=1');
+        header('Location: ' . $front . '?success=1');
     }
     exit;
 }
 
-// UPDATE
+// ── UPDATE ────────────────────────────────────────────────────────────────────
 if ($method === 'POST' && $action === 'update') {
-    $id      = (int)($_POST['id'] ?? 0);
-    $f       = getRepasFields();
+    $id     = (int)($_POST['id'] ?? 0);
+    $f      = getRepasFields();
+    $errors = validateRepasFields($f);
+
+    if (!empty($errors)) {
+        $_SESSION['repas_errors'] = $errors;
+        $_SESSION['repas_old']    = $_POST;
+        $redirect = $from === 'back'
+            ? $base . '/view/back/edit_repas.php?id=' . $id
+            : $base . '/view/front/edit_repas.php?id=' . $id;
+        header('Location: ' . $redirect . '?error=1');
+        exit;
+    }
+
     $current = $_POST['current_image'] ?? null;
     $new     = uploadRepasImage('image_repas');
     $image   = $new ?: $current;
-    if ($id > 0 && $f['nom'] !== '' && $f['id_recette'] > 0) {
-        $model->updateRepas($id, $f['nom'], $f['calories'], $f['proteines'], $f['glucides'], $f['lipides'], $f['description'], $f['type_repas'], $f['id_recette'], $image);
-        if ($new && $current && $new !== $current) deleteRepasFile($current);
+
+    if ($image !== null && $image !== '') {
+        // SQL UPDATE avec image
+        $stmt = $pdo->prepare("
+            UPDATE repas
+            SET nom=?, calories=?, proteines=?, glucides=?, lipides=?,
+                description=?, type_repas=?, id_recette=?, image_repas=?
+            WHERE id_repas=?
+        ");
+        $stmt->execute([
+            $f['nom'], $f['calories'], $f['proteines'], $f['glucides'],
+            $f['lipides'], $f['description'], $f['type_repas'],
+            $f['id_recette'], $image, $id
+        ]);
+    } else {
+        // SQL UPDATE sans image
+        $stmt = $pdo->prepare("
+            UPDATE repas
+            SET nom=?, calories=?, proteines=?, glucides=?, lipides=?,
+                description=?, type_repas=?, id_recette=?
+            WHERE id_repas=?
+        ");
+        $stmt->execute([
+            $f['nom'], $f['calories'], $f['proteines'], $f['glucides'],
+            $f['lipides'], $f['description'], $f['type_repas'],
+            $f['id_recette'], $id
+        ]);
     }
-    header('Location: ' . $redir . '?success=1'); exit;
+
+    if ($new && $current && $new !== $current) deleteRepasFile($current);
+
+    header('Location: ' . $redir . '?success=1');
+    exit;
 }
 
-// DELETE
+// ── DELETE ────────────────────────────────────────────────────────────────────
 if ($method === 'GET' && $action === 'delete' && isset($_GET['id'])) {
-    $id   = (int)$_GET['id'];
-    $item = $model->getRepasById($id);
-    $model->deleteRepas($id);
-    if ($item && !empty($item['image_repas'])) deleteRepasFile($item['image_repas']);
-    header('Location: ' . $redir . '?deleted=1'); exit;
+    $id = (int)$_GET['id'];
+
+    // SQL SELECT pour récupérer l'image avant suppression
+    $stmt = $pdo->prepare("SELECT image_repas FROM repas WHERE id_repas = ?");
+    $stmt->execute([$id]);
+    $item = $stmt->fetch();
+
+    // SQL DELETE
+    $stmt = $pdo->prepare("DELETE FROM repas WHERE id_repas = ?");
+    $stmt->execute([$id]);
+
+    if ($item && !empty($item['image_repas'])) {
+        deleteRepasFile($item['image_repas']);
+    }
+
+    header('Location: ' . $redir . '?deleted=1');
+    exit;
 }
 
-header('Location: ' . $back); exit;
+header('Location: ' . $back);
+exit;

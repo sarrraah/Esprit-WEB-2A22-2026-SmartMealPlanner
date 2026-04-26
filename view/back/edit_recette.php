@@ -26,7 +26,7 @@ require_once __DIR__ . '/partials/sidebar.php';
             <div class="col-lg-8">
                 <div class="admin-card card">
                     <div class="card-body p-4">
-                        <form action="<?= htmlspecialchars($baseUrl.'/controller/RecetteController.php?action=update') ?>" method="POST" enctype="multipart/form-data">
+                        <form action="<?= htmlspecialchars($baseUrl.'/controller/RecetteController.php?action=update') ?>" method="POST" enctype="multipart/form-data" id="formEditRecette" novalidate>
                             <input type="hidden" name="id" value="<?= $recette['id_recette'] ?>">
                             <input type="hidden" name="current_image" value="<?= htmlspecialchars($recette['image_recette'] ?? '') ?>">
                             <div class="row g-3">
@@ -143,6 +143,16 @@ require_once __DIR__ . '/partials/sidebar.php';
 <?php
 $extraJs = <<<JS
 <script>
+smAttachRealtime('formEditRecette',
+    ['nom'],
+    ['temps_prep','temps_cuisson','nb_personnes']
+);
+smAttachSubmit('formEditRecette', [
+    { name: 'nom',           type: 'nom',    label: 'Le nom de la recette' },
+    { name: 'temps_prep',    type: 'number', label: 'Le temps de préparation', min: 0 },
+    { name: 'temps_cuisson', type: 'number', label: 'Le temps de cuisson',     min: 0 },
+    { name: 'nb_personnes',  type: 'number', label: 'Le nombre de personnes',  min: 1, required: true },
+]);
 function previewImg(input) {
     if (!input.files||!input.files[0]) return;
     const file=input.files[0], reader=new FileReader();

@@ -1,7 +1,12 @@
 <?php
+session_start();
 defined('APP_ROOT') || require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../model/Recette.php';
 require_once __DIR__ . '/../../model/Ingredient.php';
+
+$formErrors = $_SESSION['recette_errors'] ?? [];
+$formOld    = $_SESSION['recette_old'] ?? [];
+unset($_SESSION['recette_errors'], $_SESSION['recette_old']);
 
 $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $project = str_replace('\\', '/', dirname(__DIR__, 2));
@@ -46,7 +51,18 @@ require_once __DIR__ . '/partials/sidebar.php';
                 <div class="admin-card card">
                     <div class="card-body p-4">
                         <form action="<?= htmlspecialchars($baseUrl.'/controller/RecetteController.php?action=add') ?>"
-                              method="POST" enctype="multipart/form-data">
+                              method="POST" enctype="multipart/form-data" id="formRecette" novalidate>
+                            <?php if (!empty($formErrors)): ?>
+                            <div class="alert alert-danger mb-3">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Erreurs de saisie :</strong>
+                                <ul class="mb-0 mt-1">
+                                    <?php foreach ($formErrors as $err): ?>
+                                        <li><?= htmlspecialchars($err) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <?php endif; ?>
                             <div class="row g-3">
 
                                 <div class="col-12">
@@ -300,6 +316,19 @@ require_once __DIR__ . '/partials/sidebar.php';
 <?php
 $extraJs = <<<JS
 <script>
+// ── Validation formulaire recette ─────────────────────────────────────────────
+smAttachRealtime('formRecette',
+    ['nom'],
+    ['temps_prep','temps_cuisson','nb_personnes']
+);
+smAttachSubmit('formRecette', [
+    { name: 'nom',           type: 'nom',    label: 'Le nom de la recette' },
+    { name: 'temps_prep',    type: 'number', label: 'Le temps de préparation', min: 0 },
+    { name: 'temps_cuisson', type: 'number', label: 'Le temps de cuisson',     min: 0 },
+    { name: 'nb_personnes',  type: 'number', label: 'Le nombre de personnes',  min: 1, required: true },
+]);
+
+// ── Image preview ─────────────────────────────────────────────────────────────
 function previewImg(input) {
     if (!input.files||!input.files[0]) return;
     const file=input.files[0], reader=new FileReader();

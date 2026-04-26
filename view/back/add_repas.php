@@ -1,8 +1,13 @@
 <?php
+session_start();
 defined('APP_ROOT') || require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../model/Repas.php';
 require_once __DIR__ . '/../../model/Recette.php';
 require_once __DIR__ . '/../../model/Ingredient.php';
+
+$formErrors = $_SESSION['repas_errors'] ?? [];
+$formOld    = $_SESSION['repas_old'] ?? [];
+unset($_SESSION['repas_errors'], $_SESSION['repas_old']);
 
 $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $project = str_replace('\\', '/', dirname(__DIR__, 2));
@@ -47,8 +52,19 @@ require_once __DIR__ . '/partials/sidebar.php';
                             <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Aucune catégorie. <a href="add_recette.php">Créez-en une d'abord.</a></div>
                         <?php endif; ?>
                         <form action="<?= htmlspecialchars($baseUrl.'/controller/RepasController.php') ?>"
-                              method="POST" enctype="multipart/form-data">
+                              method="POST" enctype="multipart/form-data" id="formRepas" novalidate>
                             <input type="hidden" name="from" value="back">
+                            <?php if (!empty($formErrors)): ?>
+                            <div class="alert alert-danger mb-3">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Erreurs de saisie :</strong>
+                                <ul class="mb-0 mt-1">
+                                    <?php foreach ($formErrors as $err): ?>
+                                        <li><?= htmlspecialchars($err) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <?php endif; ?>
                             <div class="row g-3">
 
                                 <!-- Infos générales -->
@@ -165,7 +181,7 @@ require_once __DIR__ . '/partials/sidebar.php';
                         <?= $editIngredient ? 'Modifier l\'ingrédient' : 'Ajouter un ingrédient à ce repas' ?>
                     </div>
                     <div class="card-body">
-                        <form action="<?= htmlspecialchars($baseUrl.'/controller/IngredientController.php') ?>" method="POST">
+                        <form action="<?= htmlspecialchars($baseUrl.'/controller/IngredientController.php') ?>" method="POST" id="formIngredient" novalidate>
                             <input type="hidden" name="action" value="<?= $editIngredient ? 'update' : 'add' ?>">
                             <input type="hidden" name="id_repas" value="<?= $idRepas ?>">
                             <input type="hidden" name="redirect" value="add_repas">
@@ -307,6 +323,31 @@ require_once __DIR__ . '/partials/sidebar.php';
 <?php
 $extraJs = <<<JS
 <script>
+// ── Validation formulaire repas (step 1) ──────────────────────────────────────
+smAttachRealtime('formRepas',
+    ['nom'],
+    ['calories','proteines','glucides','lipides']
+);
+smAttachSubmit('formRepas', [
+    { name: 'nom',        type: 'nom',    label: 'Le nom du repas' },
+    { name: 'id_recette', type: 'select', label: 'La catégorie' },
+    { name: 'calories',   type: 'number', label: 'Les calories',  min: 0 },
+    { name: 'proteines',  type: 'number', label: 'Les protéines', min: 0 },
+    { name: 'glucides',   type: 'number', label: 'Les glucides',  min: 0 },
+    { name: 'lipides',    type: 'number', label: 'Les lipides',   min: 0 },
+]);
+
+// ── Validation formulaire ingrédients (step 2) ────────────────────────────────
+smAttachRealtime('formIngredient',
+    ['nom_ingredient'],
+    ['quantite']
+);
+smAttachSubmit('formIngredient', [
+    { name: 'nom_ingredient', type: 'nom',    label: "Le nom de l'ingrédient" },
+    { name: 'quantite',       type: 'number', label: 'La quantité', min: 0 },
+]);
+
+// ── Image preview ─────────────────────────────────────────────────────────────
 function previewImg(input) {
     if (!input.files||!input.files[0]) return;
     const file=input.files[0], reader=new FileReader();
