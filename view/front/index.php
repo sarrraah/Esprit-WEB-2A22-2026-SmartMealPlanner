@@ -11,7 +11,7 @@ $loggedInPrenom = '';
 if ($loggedInUserId !== '') {
     try {
         $pdo = config::getConnexion();
-        $sql = "SELECT id, nom, prenom FROM user WHERE id = :id";
+        $sql = "SELECT id, nom, prenom, profile_picture FROM user WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['id' => $loggedInUserId]);
         $user = $stmt->fetch();
@@ -19,6 +19,7 @@ if ($loggedInUserId !== '') {
         if ($user) {
             $loggedInNom = $user['nom'];
             $loggedInPrenom = $user['prenom'];
+            $loggedInPicture = $user['profile_picture'] ?? 'default.png';
         }
     } catch (Exception $e) {
         $loggedInNom = '';
@@ -108,12 +109,17 @@ if ($loggedInUserId !== '') {
 
             <div class="d-flex align-items-center gap-2">
                 <?php if ($loggedInUserId !== ''): ?>
-                    <a href="profile.php" class="btn-book-a-table text-start">
-                        <div>
-                            <strong>
-                                <?= htmlspecialchars(trim($loggedInNom . ' ' . $loggedInPrenom) ?: 'User') ?>
-                            </strong><br>
-                        </div>
+                    <a href="profile.php" class="btn-book-a-table text-center d-flex flex-column align-items-center">
+
+                        <img
+                            src="../assets/img/profiles/<?= htmlspecialchars($loggedInPicture) ?>"
+                            alt="Profile"
+                            style="width:40px; height:40px; border-radius:50%; object-fit:cover; margin-bottom:5px;">
+
+                        <strong style="font-size:12px;">
+                            <?= htmlspecialchars(trim($loggedInNom . ' ' . $loggedInPrenom) ?: 'User') ?>
+                        </strong>
+
                     </a>
                 <?php else: ?>
                     <a class="btn-book-a-table" href="signup.php">Sign Up</a>

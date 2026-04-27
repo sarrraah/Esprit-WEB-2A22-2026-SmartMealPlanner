@@ -16,9 +16,11 @@ $experience = '';
 $speciality = '';
 $motivation = '';
 $reapplyError = '';
+$profilePicture = $user['profile_picture'] ?? 'default.png';
 
 try {
     $pdo = config::getConnexion();
+
 
     // Reapply request form
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reapply_request'])) {
@@ -33,14 +35,14 @@ try {
             $reapplyError = 'Please complete all request fields.';
         } else {
             $stmtReapply = $pdo->prepare("
-                UPDATE user
-                SET role = :role,
-                    statut = 'pending',
-                    experience = :experience,
-                    speciality = :speciality,
-                    motivation = :motivation
-                WHERE id = :id
-            ");
+            UPDATE user
+            SET role = :role,
+                statut = 'pending',
+                experience = :experience,
+                speciality = :speciality,
+                motivation = :motivation
+            WHERE id = :id
+        ");
 
             $stmtReapply->execute([
                 'role' => $requestedRole,
@@ -56,30 +58,61 @@ try {
     }
 
     // Main profile update form
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['reapply_request'])) {
+    if (
+        $_SERVER['REQUEST_METHOD'] === 'POST'
+        && !isset($_POST['reapply_request'])
+        && !isset($_POST['upload_pic'])
+    ) {
         $nom = trim($_POST['nom'] ?? '');
         $prenom = trim($_POST['prenom'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $sexe = trim($_POST['sexe'] ?? '');
         $date_naissance = trim($_POST['date_naissance'] ?? '');
 
+        $profilePictureSql = "";
+        $paramsPicture = [];
+        if (isset($_POST['remove_profile_picture']) && $_POST['remove_profile_picture'] === '1') {
+            $profilePictureSql = ", profile_picture = :profile_picture";
+            $paramsPicture['profile_picture'] = 'default.png';
+        }
+
+        if (
+            (!isset($_POST['remove_profile_picture']) || $_POST['remove_profile_picture'] !== '1')
+            && isset($_FILES['profile_picture'])
+            && $_FILES['profile_picture']['error'] === 0
+        ) {
+            $extension = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'jfif'];
+
+            if (in_array($extension, $allowedExtensions, true)) {
+                $newFileName = 'user_' . $userId . '_' . time() . '.' . $extension;
+                $targetPath = __DIR__ . '/../assets/img/profiles/' . $newFileName;
+
+                if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $targetPath)) {
+                    $profilePictureSql = ", profile_picture = :profile_picture";
+                    $paramsPicture['profile_picture'] = $newFileName;
+                }
+            }
+        }
+
         $sqlUpdate = "UPDATE user 
-                      SET nom = :nom,
-                          prenom = :prenom,
-                          email = :email,
-                          sexe = :sexe,
-                          date_naissance = :date_naissance
-                      WHERE id = :id";
+                  SET nom = :nom,
+                      prenom = :prenom,
+                      email = :email,
+                      sexe = :sexe,
+                      date_naissance = :date_naissance
+                      $profilePictureSql
+                  WHERE id = :id";
 
         $stmtUpdate = $pdo->prepare($sqlUpdate);
-        $stmtUpdate->execute([
+        $stmtUpdate->execute(array_merge([
             'nom' => $nom,
             'prenom' => $prenom,
             'email' => $email,
             'sexe' => $sexe,
             'date_naissance' => $date_naissance,
             'id' => $userId
-        ]);
+        ], $paramsPicture));
 
         header("Location: profile.php");
         exit();
@@ -101,6 +134,7 @@ try {
         $experience = $user['experience'] ?? '';
         $speciality = $user['speciality'] ?? '';
         $motivation = $user['motivation'] ?? '';
+        $profilePicture = $user['profile_picture'] ?? 'default.png';
     } else {
         die("User not found.");
     }
@@ -755,6 +789,82 @@ $requestText = 'Your professional account request is currently being reviewed by
             border: 1px solid #fecaca !important;
             border-left: 5px solid #ef4444 !important;
         }
+
+        .profile-photo-wrapper {
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .profile-photo {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            background: #f8f8f8;
+        }
+
+
+
+
+        .profile-photo-wrapper {
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .profile-photo {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            background: #f8f8f8;
+        }
+
+        .photo-buttons {
+            position: absolute;
+            bottom: -8px;
+            right: -20px;
+            display: flex;
+            flex-direction: column;
+            /* stack vertically */
+            gap: 6px;
+        }
+
+        .photo-edit-btn,
+        .photo-remove-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid white;
+            background: #ce1212;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+        }
+
+        .profile-photo:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-photo-display {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 
@@ -778,10 +888,17 @@ $requestText = 'Your professional account request is currently being reviewed by
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
-            <a href="profile.php" class="btn-book-a-table text-start" style="line-height: 1.3;">
-                <div>
-                    <strong><?= htmlspecialchars($prenom . ' ' . $nom) ?></strong><br>
-                </div>
+            <a href="profile.php" class="btn-book-a-table text-center d-flex flex-column align-items-center">
+
+                <img
+                    src="../assets/img/profiles/<?= htmlspecialchars($profilePicture ?? 'default.png') ?>"
+                    alt="Profile"
+                    style="width:40px; height:40px; border-radius:50%; object-fit:cover; margin-bottom:5px;">
+
+                <strong style="font-size:12px;">
+                    <?= htmlspecialchars($prenom . ' ' . $nom) ?>
+                </strong>
+
             </a>
 
         </div>
@@ -838,10 +955,25 @@ $requestText = 'Your professional account request is currently being reviewed by
                     <div class="profile-card">
 
                         <div class="profile-top">
-                            <div class="profile-avatar">
-                                <?= htmlspecialchars(strtoupper(substr($prenom, 0, 1))) ?>
+                            <div class="profile-photo-wrapper">
+                                <img
+                                    src="../assets/img/profiles/<?= htmlspecialchars($user['profile_picture'] ?? 'default.png') ?>"
+                                    alt="Profile Picture"
+                                    class="profile-photo"
+                                    id="profilePreview">
+                                <?php if ($editMode): ?>
+                                    <div class="photo-buttons">
+                                        <label class="photo-edit-btn" for="profilePictureInput">
+                                            <i class="bi bi-camera-fill"></i>
+                                        </label>
+
+                                        <button type="button" class="photo-remove-btn" id="removePhotoBtn">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
                             </div>
-                            <h2 class="profile-name"><?= htmlspecialchars($prenom . ' ' . $nom) ?></h2>
+
                             <span class="profile-role"><?= htmlspecialchars($role) ?></span>
                         </div>
 
@@ -861,8 +993,10 @@ $requestText = 'Your professional account request is currently being reviewed by
                                         <div class="reapply-error"><?= htmlspecialchars($reapplyError) ?></div>
                                     <?php endif; ?>
 
-                                    <form method="POST" action="profile.php">
+                                    <form method="POST" enctype="multipart/form-data">
                                         <input type="hidden" name="reapply_request" value="1">
+
+
 
                                         <div class="reapply-grid">
                                             <div class="reapply-field">
@@ -898,10 +1032,15 @@ $requestText = 'Your professional account request is currently being reviewed by
                             </div>
                         <?php endif; ?>
 
-                        <form method="POST" action="profile.php">
+                        <form id="profileForm" method="POST" action="profile.php" enctype="multipart/form-data">
+                            <?php if ($editMode): ?>
+                                <input type="file" name="profile_picture" id="profilePictureInput" form="profileForm" hidden>
+                                <input type="hidden" name="remove_profile_picture" id="removeProfilePicture" form="profileForm" value="0">
+                            <?php endif; ?>
                             <div class="info-grid">
 
                                 <div class="info-box">
+
                                     <span class="info-label">First Name</span>
                                     <div class="info-value">
                                         <?php if ($editMode): ?>
@@ -1030,6 +1169,29 @@ $requestText = 'Your professional account request is currently being reviewed by
 
     <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/vendor/aos/aos.js"></script>
+    <script>
+        const profileInput = document.getElementById('profilePictureInput');
+        const profilePreview = document.getElementById('profilePreview');
+        const removeBtn = document.getElementById('removePhotoBtn');
+        const removeInput = document.getElementById('removeProfilePicture');
+
+        if (profileInput) {
+            profileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    profilePreview.src = URL.createObjectURL(this.files[0]);
+                    removeInput.value = '0';
+                }
+            });
+        }
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                profilePreview.src = '../assets/img/profiles/default.png';
+                removeInput.value = '1';
+                profileInput.value = '';
+            });
+        }
+    </script>
     <script>
         AOS.init({
             duration: 900,
