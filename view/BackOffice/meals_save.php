@@ -17,3 +17,4 @@ require_once __DIR__ . '/../../controller/MealAdminController.php';
 
 $result = MealAdminController::handlePost($_POST, $_FILES);
 echo json_encode($result, JSON_UNESCAPED_UNICODE);
+

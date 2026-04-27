@@ -34,11 +34,11 @@ $objectifLabel = $objectifLabels[$plan->objectif] ?? ucfirst($plan->objectif);
 // Pick one meal per type — check DB overrides first, then seed by day number
 $allMeals = Meal::all();
 
-// Load overrides for this date from plan_meals table
+// Load overrides for this date from plan_detail table
 $overrides = [];
 try {
     $pdo = Database::pdo();
-    $stmt = $pdo->prepare('SELECT meal_type, meal_id FROM plan_meals WHERE plan_id=:pid AND meal_date=:dt');
+    $stmt = $pdo->prepare('SELECT meal_type, meal_id FROM plan_detail WHERE plan_id=:pid AND meal_date=:dt');
     $stmt->execute([':pid' => $plan->id, ':dt' => $dateStr]);
     foreach ($stmt->fetchAll() as $row) {
         $overrides[strtolower($row['meal_type'])] = (int) $row['meal_id'];
@@ -349,3 +349,4 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
   <script src="<?php echo $assetPrefix; ?>js/main.js"></script>
 </body>
 </html>
+

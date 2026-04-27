@@ -15,9 +15,10 @@ if ($pmId <= 0) {
 
 try {
     $pdo = Database::pdo();
-    $stmt = $pdo->prepare('DELETE FROM plan_meals WHERE id = :id');
+    $stmt = $pdo->prepare('DELETE FROM plan_detail WHERE id = :id');
     $stmt->execute([':id' => $pmId]);
     echo json_encode(['ok' => true, 'message' => 'Meal removed.']);
 } catch (Throwable $e) {
     echo json_encode(['ok' => false, 'message' => 'DB error: ' . $e->getMessage()]);
 }
+

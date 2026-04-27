@@ -8,3 +8,4 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 require_once __DIR__ . '/../../controller/PlanAdminController.php';
 echo json_encode(PlanAdminController::handlePost($_POST), JSON_UNESCAPED_UNICODE);
+

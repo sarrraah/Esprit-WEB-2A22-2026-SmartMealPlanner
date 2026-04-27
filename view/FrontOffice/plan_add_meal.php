@@ -62,7 +62,7 @@ try {
     $pdo = Database::pdo();
 
     // Ensure table exists
-    $pdo->exec('CREATE TABLE IF NOT EXISTS plan_meals (
+    $pdo->exec('CREATE TABLE IF NOT EXISTS plan_detail (
         id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
         plan_id   INT UNSIGNED NOT NULL,
         meal_date DATE         NOT NULL,
@@ -73,12 +73,12 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
 
     // Check if a meal already exists for this type today
-    $checkStmt = $pdo->prepare('SELECT meal_id FROM plan_meals WHERE plan_id=:pid AND meal_date=:dt AND meal_type=:mt');
+    $checkStmt = $pdo->prepare('SELECT meal_id FROM plan_detail WHERE plan_id=:pid AND meal_date=:dt AND meal_type=:mt');
     $checkStmt->execute([':pid' => $plan->id, ':dt' => $mealDate, ':mt' => $mealType]);
     $existing = $checkStmt->fetch();
 
     $stmt = $pdo->prepare('
-        INSERT INTO plan_meals (plan_id, meal_date, meal_type, meal_id)
+        INSERT INTO plan_detail (plan_id, meal_date, meal_type, meal_id)
         VALUES (:plan_id, :meal_date, :meal_type, :meal_id)
         ON DUPLICATE KEY UPDATE meal_id = :meal_id2
     ');
@@ -100,3 +100,4 @@ try {
 } catch (Throwable $e) {
     echo json_encode(['ok' => false, 'message' => 'DB error: ' . $e->getMessage()]);
 }
+

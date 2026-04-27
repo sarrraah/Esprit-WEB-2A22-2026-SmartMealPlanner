@@ -53,6 +53,12 @@ class PlanAdminController
                 'objectif'    => $obj,
                 'description' => $desc,
             ]);
+            // Re-seed any new days added
+            $updated = Plan::find($editId);
+            if ($updated) {
+                require_once __DIR__ . '/../controller/PlanController.php';
+                PlanController::seedPlanDetail($updated);
+            }
             return ['ok' => true, 'errors' => [], 'message' => 'Plan updated.'];
         }
 

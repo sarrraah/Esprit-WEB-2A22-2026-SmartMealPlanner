@@ -18,16 +18,16 @@ for ($i = 0; $i < 7; $i++) {
 // Selected day
 $selectedDate = $_GET['date'] ?? $today;
 
-// Load plan_meals for selected day — use same logic as front office (overrides + seed fallback)
+// Load plan_detail for selected day — use same logic as front office (overrides + seed fallback)
 $allMeals = Meal::all();
 $overrides = [];
-$overridePmIds = []; // plan_meals.id keyed by type (for delete)
+$overridePmIds = []; // plan_detail.id keyed by type (for delete)
 $queryError = '';
 
 if ($plan) {
     try {
         $pdo = Database::pdo();
-        $stmt = $pdo->prepare('SELECT id, meal_type, meal_id FROM plan_meals WHERE plan_id=:pid AND meal_date=:dt');
+        $stmt = $pdo->prepare('SELECT id, meal_type, meal_id FROM plan_detail WHERE plan_id=:pid AND meal_date=:dt');
         $stmt->execute([':pid' => $plan->id, ':dt' => $selectedDate]);
         foreach ($stmt->fetchAll() as $row) {
             $type = strtolower($row['meal_type']);
@@ -284,7 +284,7 @@ $objectifLabels = [
             $mealsPlanned = 0;
             try {
                 $pdo = Database::pdo();
-                $ms = $pdo->prepare('SELECT COUNT(*) FROM plan_meals WHERE plan_id=:pid');
+                $ms = $pdo->prepare('SELECT COUNT(*) FROM plan_detail WHERE plan_id=:pid');
                 $ms->execute([':pid' => $plan->id]);
                 $mealsPlanned = (int) $ms->fetchColumn();
             } catch (Throwable $e) {}
@@ -357,7 +357,7 @@ $objectifLabels = [
         $dayKcal = 0;
         try {
             $pdo = Database::pdo();
-            $ks = $pdo->prepare('SELECT SUM(m.calories) FROM plan_meals pm JOIN meal m ON m.id_meal=pm.meal_id WHERE pm.plan_id=:pid AND pm.meal_date=:dt');
+            $ks = $pdo->prepare('SELECT SUM(m.calories) FROM plan_detail pm JOIN meal m ON m.id_meal=pm.meal_id WHERE pm.plan_id=:pid AND pm.meal_date=:dt');
             $ks->execute([':pid' => $plan->id, ':dt' => $day]);
             $dayKcal = (int) $ks->fetchColumn() ?: $dailyKcal;
         } catch (Throwable $e) { $dayKcal = $dailyKcal; }
@@ -651,3 +651,4 @@ document.getElementById('meal-form').addEventListener('submit', function(e) {
 </script>
 </body>
 </html>
+

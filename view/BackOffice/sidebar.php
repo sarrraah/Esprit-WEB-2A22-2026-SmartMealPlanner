@@ -33,3 +33,4 @@ $base = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
     </li>
   </ul>
 </nav>
+

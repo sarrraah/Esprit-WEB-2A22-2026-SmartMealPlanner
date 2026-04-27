@@ -9,3 +9,4 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once __DIR__ . '/../../controller/PlanAdminController.php';
 $id = $_POST['id'] ?? $_POST['selected_id'] ?? '';
 echo json_encode(PlanAdminController::handlePost(['action' => 'delete', 'selected_id' => $id]), JSON_UNESCAPED_UNICODE);
+

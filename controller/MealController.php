@@ -17,8 +17,8 @@ class MealController
     }
 
     /**
-     * Returns meals joined with their plan (INNER JOIN — only meals with a valid id_plan).
-     * Each row has extra keys: plan_name, objectif.
+     * Returns meals that are currently assigned to the active plan today,
+     * joined via plan_detail. Each row has extra keys: plan_name, objectif.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -28,16 +28,18 @@ class MealController
             $pdo  = Database::pdo();
             $stmt = $pdo->prepare('
                 SELECT
-                    meal.id_meal,
-                    meal.nom_meal,
-                    meal.type,
-                    meal.calories,
-                    meal.image,
-                    meal.recipe_url,
-                    mealplan.nom      AS plan_name,
-                    mealplan.objectif AS objectif
-                FROM meal
-                INNER JOIN mealplan ON meal.id_plan = mealplan.id_plan
+                    m.id_meal,
+                    m.nom_meal,
+                    m.type,
+                    m.calories,
+                    m.image,
+                    m.recipe_url,
+                    mp.nom      AS plan_name,
+                    mp.objectif AS objectif
+                FROM meal m
+                INNER JOIN plan_detail pd ON pd.meal_id = m.id_meal
+                INNER JOIN mealplan mp    ON mp.id_plan = pd.plan_id
+                GROUP BY m.id_meal
             ');
             $stmt->execute();
             return $stmt->fetchAll();

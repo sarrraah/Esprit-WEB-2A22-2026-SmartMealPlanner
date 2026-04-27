@@ -335,3 +335,4 @@ $objectifLabel = $objectifLabels[$plan->objectif] ?? ucfirst($plan->objectif);
   </script>
 </body>
 </html>
+

@@ -27,3 +27,4 @@ $out = array_map(static function (Meal $m, int $idx): array {
 }, $meals, array_keys($meals));
 
 echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+

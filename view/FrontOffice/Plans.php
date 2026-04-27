@@ -192,3 +192,4 @@ $assetPrefix = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
   <script src="<?php echo $assetPrefix; ?>js/main.js"></script>
 </body>
 </html>
+

@@ -27,3 +27,4 @@ echo json_encode([
     'mealType' => $meal->mealType,
     'mealTypeLabel' => $meal->mealTypeLabel(),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+

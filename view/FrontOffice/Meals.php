@@ -234,3 +234,4 @@ function resolveImageUrl(string $image, string $prefix): string {
 </body>
 
 </html>
+

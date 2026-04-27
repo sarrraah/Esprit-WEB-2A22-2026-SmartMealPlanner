@@ -31,3 +31,4 @@ try {
         'message' => ''
     ], JSON_UNESCAPED_UNICODE);
 }
+
