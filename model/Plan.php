@@ -42,6 +42,28 @@ class Plan
         return min($this->duree, max(0, (int) floor((time() - strtotime($this->dateDebut)) / 86400)));
     }
 
+    public function toArray(): array
+    {
+        return [
+            'id'          => $this->id,
+            'nom'         => $this->nom,
+            'duree'       => $this->duree,
+            'dateDebut'   => $this->dateDebut,
+            'dateFin'     => $this->dateFin,
+            'objectif'    => $this->objectif,
+            'description' => $this->description,
+            'userId'      => $this->userId,
+        ];
+    }
+
+    public function mealTypeLabel(): string
+    {
+        // This is a placeholder - adjust based on your needs
+        return ucfirst($this->objectif);
+    }
+
+    public static function all(): array { return PlanDbStore::all(); }
+
     public static function first(): ?self  { return PlanDbStore::first(); }
 
     public static function find(int $id): ?self

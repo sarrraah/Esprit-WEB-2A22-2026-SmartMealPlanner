@@ -24,6 +24,7 @@
 
 <body class="index-page bo-meals-page">
 
+<div class="bo-layout">
 <?php $activePage = 'meals'; include __DIR__ . '/sidebar.php'; ?>
 
 <div class="bo-main-content">
@@ -156,5 +157,6 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="backoffice-meals.js"></script>
 </div><!-- /bo-main-content -->
+</div><!-- /bo-layout -->
 </body>
 </html>

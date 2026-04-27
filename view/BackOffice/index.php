@@ -2,14 +2,19 @@
 
 require_once __DIR__ . '/../../model/Meal.php';
 
-$meals = Meal::all();
-$totalMeals = count($meals);
+try {
+    $meals = Meal::all();
+    $totalMeals = count($meals);
 
-$byType = ['breakfast' => 0, 'lunch' => 0, 'dinner' => 0, 'snack' => 0];
-foreach ($meals as $meal) {
-    if (isset($byType[$meal->mealType])) {
-        $byType[$meal->mealType]++;
+    $byType = ['breakfast' => 0, 'lunch' => 0, 'dinner' => 0, 'snack' => 0];
+    foreach ($meals as $meal) {
+        if (isset($byType[$meal->mealType])) {
+            $byType[$meal->mealType]++;
+        }
     }
+} catch (Throwable $e) {
+    // If there's an error, show it
+    die('Error loading meals: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 }
 
 ?>
@@ -25,12 +30,14 @@ foreach ($meals as $meal) {
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/css/main.css" rel="stylesheet">
   <link href="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/css/backoffice-meals.css" rel="stylesheet">
 </head>
 
 <body class="index-page bo-meals-page">
 
+<div class="bo-layout">
 <?php $activePage = 'dashboard'; include __DIR__ . '/sidebar.php'; ?>
 
 <div class="bo-main-content">
@@ -136,5 +143,6 @@ foreach ($meals as $meal) {
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </div><!-- /bo-main-content -->
+</div><!-- /bo-layout -->
 </body>
 </html>

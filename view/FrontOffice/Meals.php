@@ -1,9 +1,15 @@
 <?php
 
 require_once __DIR__ . '/../../controller/MealController.php';
+require_once __DIR__ . '/../../model/Plan.php';
 
 $meals       = MealController::listMeals();
 $assetPrefix = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
+
+// Get active plan dates for day picker
+$plan = Plan::first();
+$planStart = $plan ? $plan->dateDebut : date('Y-m-d');
+$planEnd   = $plan ? $plan->dateFin   : date('Y-m-d', strtotime('+7 days'));
 
 // JOIN data: keyed by id_meal for O(1) lookup in the card loop
 $planData = [];
@@ -177,11 +183,29 @@ function resolveImageUrl(string $image, string $prefix): string {
     </div>
   </div>
 
+  <!-- Day picker modal -->
+  <div class="modal fade" id="dayPickerModal" tabindex="-1" aria-labelledby="dayPickerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+      <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="dayPickerLabel">Choose a day</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-2">
+          <p class="text-muted mb-3" style="font-size:.9rem;">Which day should <strong id="dp-meal-name"></strong> be added to?</p>
+          <div id="dp-days" class="d-flex flex-column gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/js/meals.js?v=<?php echo time(); ?>"></script>
   <script>
+    window.PLAN_START = '<?php echo $planStart; ?>';
+    window.PLAN_END   = '<?php echo $planEnd; ?>';
     console.log('Meals.php inline script loaded');
   </script>
+  <script src="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/js/meals.js?v=<?php echo time(); ?>"></script>
 
   <script>
     document.querySelectorAll('.meal-filter').forEach(function(btn) {

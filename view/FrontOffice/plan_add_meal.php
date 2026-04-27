@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $mealId   = (int) ($_POST['meal_id']   ?? 0);
 $mealType = trim($_POST['meal_type']   ?? '');
-$mealDate = date('Y-m-d'); // always today — never allow past or future
+$mealDate = trim($_POST['meal_date']   ?? date('Y-m-d')); // accept chosen date from front office
 
 $plan = Plan::first();
 if (!$plan) {
@@ -49,12 +49,12 @@ if (!$mealExists) {
     exit;
 }
 
-// Verify today is within the plan's active range
+// Verify date is within the plan's active range
 $planStart = $plan->dateDebut ? strtotime($plan->dateDebut) : 0;
 $planEnd   = $plan->dateFin   ? strtotime($plan->dateFin)   : PHP_INT_MAX;
-$todayTs   = strtotime($mealDate);
-if ($todayTs < $planStart || $todayTs > $planEnd) {
-    echo json_encode(['ok' => false, 'message' => 'Today (' . $mealDate . ') is outside your plan dates (' . $plan->dateDebut . ' to ' . $plan->dateFin . ').']);
+$chosenTs  = strtotime($mealDate);
+if ($chosenTs < $planStart || $chosenTs > $planEnd) {
+    echo json_encode(['ok' => false, 'message' => 'Date (' . $mealDate . ') is outside your plan dates (' . $plan->dateDebut . ' to ' . $plan->dateFin . ').']);
     exit;
 }
 

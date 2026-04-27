@@ -32,30 +32,41 @@ class PlanAdminController
     {
         $name     = trim((string) ($post['name']           ?? ''));
         $desc     = trim((string) ($post['description']    ?? ''));
-        $type     = trim((string) ($post['meal_type']      ?? ''));
-        $calRaw   = trim((string) ($post['total_calories'] ?? '0'));
         $obj      = trim((string) ($post['objective']      ?? ''));
         $dur      = (int) ($post['duration']       ?? 7);
-        $daysDone = (int) ($post['days_completed'] ?? 0);
-        $mPlanned = (int) ($post['meals_planned']  ?? 3);
-        $mDone    = (int) ($post['meals_completed'] ?? 0);
+        $calRaw   = trim((string) ($post['total_calories'] ?? '0'));
         $editId   = (int) ($post['editing_id']     ?? 0);
 
         $errors = [];
         if ($name === '') $errors[] = 'Name is required.';
-        if ($type === '') $errors[] = 'Plan type is required.';
         if (!preg_match('/^\d+$/', $calRaw)) $errors[] = 'Total calories must be a whole number.';
-
         if ($errors) return ['ok' => false, 'errors' => $errors, 'message' => ''];
 
-        $plan = new Plan(0, $name, $desc, $type, (int) $calRaw, $obj, $dur, $daysDone, $mPlanned, $mDone);
-
         if ($editId > 0) {
-            PlanDbStore::update($editId, $plan);
+            $existing = Plan::find($editId);
+            if (!$existing) return ['ok' => false, 'errors' => ['Plan not found.'], 'message' => ''];
+            PlanDbStore::update($editId, [
+                'nom'         => $name,
+                'duree'       => $dur,
+                'date_debut'  => $existing->dateDebut,
+                'date_fin'    => $existing->dateFin,
+                'objectif'    => $obj,
+                'description' => $desc,
+            ]);
             return ['ok' => true, 'errors' => [], 'message' => 'Plan updated.'];
         }
 
-        PlanDbStore::insert($plan);
+        // Insert new plan
+        $dateDebut = date('Y-m-d');
+        PlanDbStore::insert([
+            'nom'         => $name,
+            'duree'       => $dur,
+            'date_debut'  => $dateDebut,
+            'date_fin'    => date('Y-m-d', strtotime("+{$dur} days")),
+            'objectif'    => $obj,
+            'description' => $desc,
+            'user_id'     => 1,
+        ]);
         return ['ok' => true, 'errors' => [], 'message' => 'Plan added.'];
     }
 }

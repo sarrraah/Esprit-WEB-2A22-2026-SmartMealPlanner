@@ -12,23 +12,23 @@ $base = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
   <ul class="bo-sidebar__menu">
     <li>
       <a href="index.php" class="<?php echo $activePage === 'dashboard' ? 'active' : ''; ?>">
-        <i class="bi bi-speedometer2"></i> Dashboard
+        Dashboard
       </a>
     </li>
     <li>
       <a href="meals_admin.php" class="<?php echo $activePage === 'meals' ? 'active' : ''; ?>">
-        <i class="bi bi-egg-fried"></i> Meals
+        Meals
       </a>
     </li>
     <li>
       <a href="plans_admin.php" class="<?php echo $activePage === 'plans' ? 'active' : ''; ?>">
-        <i class="bi bi-calendar-check"></i> My Plans
+        My Plans
       </a>
     </li>
     <li class="bo-sidebar__divider"></li>
     <li>
       <a href="../FrontOffice/index.php">
-        <i class="bi bi-eye"></i> View Site
+        View Site
       </a>
     </li>
   </ul>

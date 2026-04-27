@@ -142,9 +142,8 @@ console.log('meals.js loaded - version:', new Date().getTime());
       const id       = addBtn.getAttribute('data-meal-id');
       const name     = modalEl.querySelector('[data-meal-detail="name"]').textContent;
       const mealType = addBtn.getAttribute('data-meal-type') || '';
-      const today    = new Date().toISOString().slice(0, 10);
 
-      console.log('Adding meal:', { id, name, mealType, today });
+      console.log('Adding meal:', { id, name, mealType });
 
       if (!mealType) {
         showToast('\u26a0 Error: Meal type is missing!');
@@ -152,42 +151,62 @@ console.log('meals.js loaded - version:', new Date().getTime());
         return;
       }
 
-      const fd = new FormData();
-      fd.append('meal_id',   id);
-      fd.append('meal_type', mealType);
-      fd.append('meal_date', today);
-
-      console.log('Sending request to plan_add_meal.php');
-
-      fetch('/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/FrontOffice/plan_add_meal.php', { method: 'POST', body: fd, credentials: 'same-origin' })
-        .then(function(r) { 
-          console.log('Response status:', r.status);
-          return r.json(); 
-        })
-        .then(function(data) {
-          console.log('Response data:', data);
-          modal.hide();
-          showToast(data.ok
-            ? '\u2714 "' + name + '" ' + (data.action || 'added') + ' to today\'s plan!'
-            : '\u26a0 ' + (data.message || 'Could not add meal.'));
-          
-          // Reload the page after 1.5 seconds if successful
-          if (data.ok) {
-            setTimeout(function() {
-              window.location.reload();
-            }, 1500);
-          }
-        })
-        .catch(function(err) {
-          console.error('Fetch error:', err);
-          modal.hide();
-          showToast('\u26a0 Network error: ' + err);
-        });
-
-      document.dispatchEvent(
-        new CustomEvent('mealPlanner:add', { detail: { mealId: id, mealType: mealType } })
-      );
+      // Hide meal detail modal and show day picker
+      modal.hide();
+      showDayPicker(id, name, mealType);
     });
+  }
+
+  function showDayPicker(mealId, mealName, mealType) {
+    const dpModal = new bootstrap.Modal(document.getElementById('dayPickerModal'));
+    document.getElementById('dp-meal-name').textContent = mealName;
+
+    const container = document.getElementById('dp-days');
+    container.innerHTML = '';
+
+    const start = new Date(window.PLAN_START || new Date());
+    const end   = new Date(window.PLAN_END   || new Date(start.getTime() + 13 * 86400000));
+    const today = new Date().toISOString().slice(0, 10);
+
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().slice(0, 10);
+      const isToday = dateStr === today;
+      const label = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.style.cssText = 'border:1.5px solid ' + (isToday ? '#ce1212' : '#eee') + ';background:' + (isToday ? '#fff8f8' : '#fff') + ';border-radius:10px;padding:.6rem 1rem;text-align:left;cursor:pointer;font-size:.9rem;font-weight:' + (isToday ? '700' : '500') + ';color:#212529;transition:.15s;';
+      btn.innerHTML = label + (isToday ? ' <span style="color:#ce1212;font-size:.8rem;margin-left:.4rem;">Today</span>' : '');
+
+      btn.addEventListener('click', function() {
+        dpModal.hide();
+        saveMealToDay(mealId, mealType, mealName, dateStr);
+      });
+      container.appendChild(btn);
+    }
+
+    dpModal.show();
+  }
+
+  function saveMealToDay(mealId, mealType, mealName, date) {
+    const fd = new FormData();
+    fd.append('meal_id',   mealId);
+    fd.append('meal_type', mealType);
+    fd.append('meal_date', date);
+
+    fetch('/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/FrontOffice/plan_add_meal.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        showToast(data.ok
+          ? '\u2714 "' + mealName + '" ' + (data.action || 'added') + ' to plan!'
+          : '\u26a0 ' + (data.message || 'Could not add meal.'));
+      })
+      .catch(function(err) {
+        showToast('\u26a0 Network error: ' + err);
+      });
   }
 
   function showToast(message) {
