@@ -26,13 +26,27 @@ if ($id_event_filter) {
 
 $allEvents = $evCtrl->listEvenements();
 
+// Construire map événements pour prix
+$eventMap = [];
+foreach ($allEvents as $ev) {
+    $eventMap[$ev->getIdEvent()] = $ev;
+}
+
 $msg   = $_GET['msg'] ?? '';
 $total = count($participations);
 
 $confirmes = count(array_filter($participations, fn($p) => strtolower($p->getStatut()) === 'confirmé'));
 $enAttente = count(array_filter($participations, fn($p) => strtolower($p->getStatut()) === 'en attente'));
 $annules   = count(array_filter($participations, fn($p) => strtolower($p->getStatut()) === 'annulé'));
-$revenue   = array_sum(array_map(fn($p) => (float)$p->getMontant(), $participations));
+
+// Calcul revenue basé sur prix événement × nombre de places
+$revenue = 0;
+foreach ($participations as $p) {
+    $evObj = $eventMap[$p->getIdEvent()] ?? null;
+    if ($evObj) {
+        $revenue += (float)$evObj->getPrix() * $p->getNombrePlacesReservees();
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -172,7 +186,7 @@ td b{font-weight:600;color:#7f1d1d}
     <a class="nav-link" href="listEvenements.php">📋 Événements</a>
     <a class="nav-link" href="addEvenement.php">➕ Nouvel événement</a>
     <a class="nav-link active" href="listParticipations.php">👥 Participants</a>
-    <a class="nav-link" href="interfaceevent.php">🌐 Vue front</a>
+    <a class="nav-link" href="../front/interfaceevent.php">🌐 Vue front</a>
   </div>
   <div class="nav-user">
     <div class="nav-avatar">AD</div>
@@ -276,34 +290,38 @@ td b{font-weight:600;color:#7f1d1d}
           <th>Événement</th>
           <th class="sortable" data-col="3" onclick="sortTable(3)">Date <span class="sort-arrow"></span></th>
           <th class="sortable" data-col="4" onclick="sortTable(4)">Montant <span class="sort-arrow"></span></th>
+          <th>Mode Paiement</th>
           <th>Statut</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-      <?php
-        $eventMap = [];
-        foreach ($allEvents as $ev) $eventMap[$ev->getIdEvent()] = $ev->getTitre();
-
-        foreach ($participations as $p):
+      <?php foreach ($participations as $p):
           $s = strtolower($p->getStatut());
           $badgeClass = match(true) {
               str_contains($s, 'confirm') => 'badge-confirme',
               str_contains($s, 'attente') => 'badge-attente',
               default                     => 'badge-annule',
           };
-          $isFree  = (float)$p->getMontant() == 0;
+
+          // Calcul montant depuis le prix de l'événement
+          $evObj   = $eventMap[$p->getIdEvent()] ?? null;
+          $prix    = $evObj ? (float)$evObj->getPrix() : 0;
+          $montant = $prix * $p->getNombrePlacesReservees();
+          $isFree  = ($montant == 0);
           $mClass  = $isFree ? 'montant-free' : 'montant-cell';
-          $mLabel  = $isFree ? 'Gratuit' : number_format($p->getMontant(), 2) . ' TND';
-          $evName  = $eventMap[$p->getIdEvent()] ?? '—';
+          $mLabel  = $isFree ? 'Gratuit' : number_format($montant, 2) . ' TND';
+
+          $evName  = $evObj ? $evObj->getTitre() : '—';
       ?>
         <tr data-statut="<?= htmlspecialchars($p->getStatut()) ?>"
             data-event="<?= $p->getIdEvent() ?>">
           <td><?= $p->getIdParticipation() ?></td>
-          <td><b><?= htmlspecialchars($p->getNomParticipant()) ?></b></td>
+          <td><b><?= htmlspecialchars($p->getNom() . ' ' . $p->getPrenom()) ?></b></td>
           <td><?= htmlspecialchars($evName) ?></td>
           <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
           <td><span class="<?= $mClass ?>"><?= $mLabel ?></span></td>
+          <td><?= htmlspecialchars($p->getModePaiement()) ?></td>
           <td><span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($p->getStatut()) ?></span></td>
           <td>
             <div class="actions">
@@ -366,110 +384,4 @@ function applyFilters() {
   const evId   = document.getElementById('filterEvent').value;
 
   let visible = allRows.filter(row => {
-    const text      = row.textContent.toLowerCase();
-    const rowStatut = (row.dataset.statut || '').toLowerCase();
-    const rowEvent  = (row.dataset.event  || '');
-    return (!q      || text.includes(q))
-        && (!statut || rowStatut === statut)
-        && (!evId   || rowEvent  === evId);
-  });
-
-  if (sortCol >= 0) {
-    visible.sort((a, b) => {
-      let va = getCellText(a, sortCol);
-      let vb = getCellText(b, sortCol);
-      const na = parseFloat(va.replace(/[^\d.]/g,''));
-      const nb = parseFloat(vb.replace(/[^\d.]/g,''));
-      if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
-      return va.localeCompare(vb, 'fr') * sortDir;
-    });
-  }
-
-  renderPage(visible, currentPage);
-}
-
-function renderPage(rows, page) {
-  const pgSize     = parseInt(document.getElementById('pgSize').value);
-  const total      = rows.length;
-  const totalPages = Math.max(1, Math.ceil(total / pgSize));
-  if (page > totalPages) page = totalPages;
-  currentPage = page;
-  const start = (page - 1) * pgSize;
-  const end   = Math.min(start + pgSize, total);
-
-  allRows.forEach(r => r.style.display = 'none');
-  rows.slice(start, end).forEach(r => r.style.display = '');
-
-  document.getElementById('paginationInfo').textContent =
-    total === 0 ? 'Aucun résultat'
-    : `Affichage ${start + 1}–${end} sur ${total} participation${total > 1 ? 's' : ''}`;
-
-  const container = document.getElementById('pgButtons');
-  container.innerHTML = '';
-  const mkBtn = (label, p, disabled, active) => {
-    const b = document.createElement('button');
-    b.className = 'pg-btn' + (active ? ' active' : '');
-    b.textContent = label;
-    b.disabled = disabled;
-    b.onclick = () => goPage(p);
-    return b;
-  };
-  container.appendChild(mkBtn('‹', page - 1, page <= 1, false));
-  let pages = [];
-  if (totalPages <= 7) { for (let i=1;i<=totalPages;i++) pages.push(i); }
-  else {
-    pages = [1];
-    if (page > 3) pages.push('…');
-    for (let i=Math.max(2,page-1);i<=Math.min(totalPages-1,page+1);i++) pages.push(i);
-    if (page < totalPages-2) pages.push('…');
-    pages.push(totalPages);
-  }
-  pages.forEach(p => {
-    if (p === '…') {
-      const span = document.createElement('span');
-      span.textContent = '…';
-      span.style.cssText='padding:0 4px;color:#9a3535;font-size:13px;line-height:34px';
-      container.appendChild(span);
-    } else {
-      container.appendChild(mkBtn(p, p, false, p === page));
-    }
-  });
-  container.appendChild(mkBtn('›', page + 1, page >= totalPages, false));
-}
-
-function goPage(p) { currentPage = p; applyFilters(); }
-
-function exportCSV() {
-  const headers = ['#','Participant','Événement','Date','Montant','Statut'];
-  const q      = document.getElementById('searchInput').value.toLowerCase();
-  const statut = document.getElementById('filterStatut').value.toLowerCase();
-  const evId   = document.getElementById('filterEvent').value;
-
-  const rows = allRows.filter(row => {
-    const text      = row.textContent.toLowerCase();
-    const rowStatut = (row.dataset.statut || '').toLowerCase();
-    const rowEvent  = (row.dataset.event  || '');
-    return (!q      || text.includes(q))
-        && (!statut || rowStatut === statut)
-        && (!evId   || rowEvent  === evId);
-  });
-
-  const escape = v => '"' + v.replace(/"/g,'""') + '"';
-  const lines  = [headers.map(escape).join(',')];
-  rows.forEach(row => {
-    const cols = [];
-    for (let i=0;i<row.cells.length-1;i++) cols.push(escape(row.cells[i].textContent.trim()));
-    lines.push(cols.join(','));
-  });
-
-  const blob = new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = 'participations_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
-}
-
-applyFilters();
-</script>
-</body>
-</html>
+    const text

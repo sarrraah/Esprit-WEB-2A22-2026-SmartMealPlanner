@@ -6,21 +6,23 @@ class ParticipationController
 {
     function listParticipations()
     {
-        $db = config::getConnexion();
+        $db    = config::getConnexion();
         $query = $db->query("SELECT * FROM participation ORDER BY date_participation DESC");
-        $rows = $query->fetchAll();
-        $participations = [];
-        foreach ($rows as $row) {
-            $participations[] = new Participation(
+        $list  = [];
+        foreach ($query->fetchAll() as $row) {
+            $list[] = new Participation(
                 $row['id_participation'],
                 $row['id_event'],
-                $row['nom_participant'],
+                $row['nom'],
+                $row['prenom'],
+                $row['email'],
+                $row['nombre_places_reservees'],
+                $row['mode_paiement'],
                 $row['statut'],
-                $row['montant'],
                 $row['date_participation']
             );
         }
-        return $participations;
+        return $list;
     }
 
     function listParticipationsByEvent($id_event)
@@ -29,26 +31,27 @@ class ParticipationController
         $req = $db->prepare("SELECT * FROM participation WHERE id_event = :id ORDER BY date_participation DESC");
         $req->bindValue(':id', $id_event);
         $req->execute();
-        $rows = $req->fetchAll();
-        $participations = [];
-        foreach ($rows as $row) {
-            $participations[] = new Participation(
+        $list = [];
+        foreach ($req->fetchAll() as $row) {
+            $list[] = new Participation(
                 $row['id_participation'],
                 $row['id_event'],
-                $row['nom_participant'],
+                $row['nom'],
+                $row['prenom'],
+                $row['email'],
+                $row['nombre_places_reservees'],
+                $row['mode_paiement'],
                 $row['statut'],
-                $row['montant'],
                 $row['date_participation']
             );
         }
-        return $participations;
+        return $list;
     }
 
     function getParticipationById($id)
     {
-        $sql = "SELECT * FROM participation WHERE id_participation = :id";
         $db  = config::getConnexion();
-        $req = $db->prepare($sql);
+        $req = $db->prepare("SELECT * FROM participation WHERE id_participation = :id");
         $req->bindValue(':id', $id);
         try {
             $req->execute();
@@ -57,9 +60,12 @@ class ParticipationController
             return new Participation(
                 $row['id_participation'],
                 $row['id_event'],
-                $row['nom_participant'],
+                $row['nom'],
+                $row['prenom'],
+                $row['email'],
+                $row['nombre_places_reservees'],
+                $row['mode_paiement'],
                 $row['statut'],
-                $row['montant'],
                 $row['date_participation']
             );
         } catch (Exception $e) {
@@ -70,16 +76,20 @@ class ParticipationController
     function addParticipation($participation)
     {
         $sql = "INSERT INTO participation
-                VALUES (NULL, :id_event, :nom_participant, :statut, :montant, :date_participation)";
+                (id_event, nom, prenom, email, nombre_places_reservees, mode_paiement, statut, date_participation)
+                VALUES (:id_event, :nom, :prenom, :email, :nombre_places_reservees, :mode_paiement, :statut, :date_participation)";
         $db = config::getConnexion();
         try {
             $query = $db->prepare($sql);
             $query->execute([
-                'id_event'           => $participation->getIdEvent(),
-                'nom_participant'    => $participation->getNomParticipant(),
-                'statut'             => $participation->getStatut(),
-                'montant'            => $participation->getMontant(),
-                'date_participation' => $participation->getDateParticipation(),
+                'id_event'                => $participation->getIdEvent(),
+                'nom'                     => $participation->getNom(),
+                'prenom'                  => $participation->getPrenom(),
+                'email'                   => $participation->getEmail(),
+                'nombre_places_reservees' => $participation->getNombrePlacesReservees(),
+                'mode_paiement'           => $participation->getModePaiement(),
+                'statut'                  => $participation->getStatut(),
+                'date_participation'      => $participation->getDateParticipation(),
             ]);
         } catch (Exception $e) {
             echo 'Error: ' . $e->getMessage();
@@ -89,34 +99,39 @@ class ParticipationController
     function updateParticipation($participation, $id)
     {
         try {
-            $db = config::getConnexion();
+            $db    = config::getConnexion();
             $query = $db->prepare(
                 'UPDATE participation SET
-                    id_event           = :id_event,
-                    nom_participant    = :nom_participant,
-                    statut             = :statut,
-                    montant            = :montant,
-                    date_participation = :date_participation
+                    id_event                = :id_event,
+                    nom                     = :nom,
+                    prenom                  = :prenom,
+                    email                   = :email,
+                    nombre_places_reservees = :nombre_places_reservees,
+                    mode_paiement           = :mode_paiement,
+                    statut                  = :statut,
+                    date_participation      = :date_participation
                 WHERE id_participation = :id'
             );
             $query->execute([
-                'id'                 => $id,
-                'id_event'           => $participation->getIdEvent(),
-                'nom_participant'    => $participation->getNomParticipant(),
-                'statut'             => $participation->getStatut(),
-                'montant'            => $participation->getMontant(),
-                'date_participation' => $participation->getDateParticipation(),
+                'id'                      => $id,
+                'id_event'                => $participation->getIdEvent(),
+                'nom'                     => $participation->getNom(),
+                'prenom'                  => $participation->getPrenom(),
+                'email'                   => $participation->getEmail(),
+                'nombre_places_reservees' => $participation->getNombrePlacesReservees(),
+                'mode_paiement'           => $participation->getModePaiement(),
+                'statut'                  => $participation->getStatut(),
+                'date_participation'      => $participation->getDateParticipation(),
             ]);
         } catch (PDOException $e) {
-            $e->getMessage();
+            echo $e->getMessage();
         }
     }
 
     function deleteParticipation($id)
     {
-        $sql = "DELETE FROM participation WHERE id_participation = :id";
         $db  = config::getConnexion();
-        $req = $db->prepare($sql);
+        $req = $db->prepare("DELETE FROM participation WHERE id_participation = :id");
         $req->bindValue(':id', $id);
         try {
             $req->execute();
@@ -125,7 +140,15 @@ class ParticipationController
         }
     }
 
-    // ── JOINTURE : participations avec infos de l'événement ─────────────
+    function countParticipationsByEvent($id_event)
+    {
+        $db  = config::getConnexion();
+        $req = $db->prepare("SELECT COUNT(*) FROM participation WHERE id_event = :id");
+        $req->bindValue(':id', $id_event);
+        $req->execute();
+        return (int) $req->fetchColumn();
+    }
+
     function getParticipationsAvecEvenement($id_event)
     {
         $db  = config::getConnexion();

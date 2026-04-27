@@ -17,41 +17,55 @@ $participation = $ctrl->getParticipationById($id);
 
 if (!$participation) { header('Location: listParticipations.php'); exit; }
 
+// Construire map événements pour prix
+$eventMap = [];
+foreach ($allEvents as $ev) {
+    $eventMap[$ev->getIdEvent()] = $ev;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_event          = $_POST['id_event'];
-    $nom_participant   = trim($_POST['nom_participant']);
-    $statut            = $_POST['statut'];
-    $montant           = $_POST['montant'];
-    $date_participation= $_POST['date_participation'];
+    $id_event           = $_POST['id_event']           ?? '';
+    $nom                = trim($_POST['nom']            ?? '');
+    $prenom             = trim($_POST['prenom']         ?? '');
+    $email              = trim($_POST['email']          ?? '');
+    $places             = (int)($_POST['nombre_places_reservees'] ?? 1);
+    $mode_paiement      = $_POST['mode_paiement']       ?? '';
+    $statut             = $_POST['statut']              ?? '';
+    $date_participation = $_POST['date_participation']  ?? '';
 
     if (empty($id_event) || !is_numeric($id_event))
         $errors[] = "Veuillez sélectionner un événement.";
-    if (strlen($nom_participant) < 2)
-        $errors[] = "Le nom du participant doit contenir au moins 2 caractères.";
-    if (!in_array($statut, ['confirmé', 'en attente', 'annulé']))
+    if (strlen($nom) < 2)
+        $errors[] = "Le nom doit contenir au moins 2 caractères.";
+    if (strlen($prenom) < 2)
+        $errors[] = "Le prénom doit contenir au moins 2 caractères.";
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+        $errors[] = "L'adresse email est invalide.";
+    if ($places < 1 || $places > 10)
+        $errors[] = "Le nombre de places doit être entre 1 et 10.";
+    if (!in_array($mode_paiement, ['espèces', 'carte', 'virement', 'gratuit']))
+        $errors[] = "Veuillez choisir un mode de paiement valide.";
+    if (!in_array($statut, ['confirmé', 'en attente', 'annulé', 'en_attente']))
         $errors[] = "Veuillez choisir un statut valide.";
-    if (!is_numeric($montant) || (float)$montant < 0)
-        $errors[] = "Le montant doit être un nombre positif (0 pour gratuit).";
     if (empty($date_participation))
         $errors[] = "La date de participation est obligatoire.";
 
     if (empty($errors)) {
-        $participation->setIdEvent((int)$id_event);
-        $participation->setNomParticipant($nom_participant);
-        $participation->setStatut($statut);
-        $participation->setMontant((float)$montant);
-        $participation->setDateParticipation($date_participation);
-        $ctrl->updateParticipation($participation, $id);
+        $updated = new Participation(
+            $id,
+            (int)$id_event,
+            $nom,
+            $prenom,
+            $email,
+            $places,
+            $mode_paiement,
+            $statut,
+            $date_participation
+        );
+        $ctrl->updateParticipation($updated, $id);
         header('Location: listParticipations.php?msg=updated');
         exit;
     }
-
-    // Keep user input on error
-    $participation->setIdEvent($id_event);
-    $participation->setNomParticipant($nom_participant);
-    $participation->setStatut($statut);
-    $participation->setMontant($montant);
-    $participation->setDateParticipation($date_participation);
 }
 
 function formatDateTimeLocal($dateStr) {
@@ -61,6 +75,11 @@ function formatDateTimeLocal($dateStr) {
 }
 
 $dp = formatDateTimeLocal($participation->getDateParticipation());
+
+// Calcul montant actuel
+$evObj   = $eventMap[$participation->getIdEvent()] ?? null;
+$prix    = $evObj ? (float)$evObj->getPrix() : 0;
+$montant = $prix * $participation->getNombrePlacesReservees();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -87,6 +106,10 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .container{max-width:780px;margin:0 auto;padding:32px 24px 60px}
 .card{background:#fff;border:1px solid #fde8e8;border-radius:16px;padding:32px;box-shadow:0 2px 12px rgba(185,28,28,0.06)}
 .card h2{font-size:18px;font-weight:600;color:#1a0505;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid #fce8e8}
+
+.montant-info{background:#fce8e8;border:1px solid #f7c1c1;border-radius:10px;padding:12px 16px;
+              font-size:14px;color:#7f1d1d;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.montant-info strong{color:#b91c1c;font-size:16px}
 
 .alert{padding:12px 16px;border-radius:10px;margin-bottom:12px;font-size:14px}
 .alert-danger{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595}
@@ -137,7 +160,7 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 <body>
 
 <nav>
-  <a href="interfaceevent.php" class="logo">Event <span>Management</span></a>
+  <a href="../front/interfaceevent.php" class="logo">Event <span>Management</span></a>
   <div class="nav-links">
     <a href="listEvenements.php">Événements</a>
     <a href="listParticipations.php">Participants</a>
@@ -153,6 +176,15 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
   <div class="card">
     <h2>Informations de la participation</h2>
 
+    <!-- Montant calculé (informatif) -->
+    <div class="montant-info">
+      💰 Montant total calculé :
+      <strong>
+        <?= $montant == 0 ? 'Gratuit' : number_format($montant, 2) . ' TND' ?>
+      </strong>
+      &nbsp;(<?= $participation->getNombrePlacesReservees() ?> place(s) × <?= number_format($prix, 2) ?> TND)
+    </div>
+
     <?php foreach ($errors as $err): ?>
       <div class="alert alert-danger">❌ <?= htmlspecialchars($err) ?></div>
     <?php endforeach; ?>
@@ -160,6 +192,7 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
     <form method="POST" action="" id="partForm">
       <input type="hidden" name="id" value="<?= $id ?>">
 
+      <!-- ÉVÉNEMENT -->
       <div class="form-group">
         <label>Événement *</label>
         <select name="id_event" id="id_event">
@@ -173,35 +206,66 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
         </select>
       </div>
 
+      <!-- NOM & PRÉNOM -->
       <div class="form-row">
         <div class="form-group">
-          <label>Nom du participant *</label>
-          <input type="text" name="nom_participant" id="nom_participant"
-                 value="<?= htmlspecialchars($participation->getNomParticipant()) ?>">
+          <label>Nom *</label>
+          <input type="text" name="nom" id="nom"
+                 placeholder="Ben Ali"
+                 value="<?= htmlspecialchars($_POST['nom'] ?? $participation->getNom()) ?>">
+        </div>
+        <div class="form-group">
+          <label>Prénom *</label>
+          <input type="text" name="prenom" id="prenom"
+                 placeholder="Ahmed"
+                 value="<?= htmlspecialchars($_POST['prenom'] ?? $participation->getPrenom()) ?>">
+        </div>
+      </div>
+
+      <!-- EMAIL & PLACES -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" name="email" id="email"
+                 placeholder="ahmed@email.com"
+                 value="<?= htmlspecialchars($_POST['email'] ?? $participation->getEmail()) ?>">
+        </div>
+        <div class="form-group">
+          <label>Nombre de places *</label>
+          <input type="number" name="nombre_places_reservees" id="places"
+                 min="1" max="10"
+                 value="<?= htmlspecialchars($_POST['nombre_places_reservees'] ?? $participation->getNombrePlacesReservees()) ?>">
+        </div>
+      </div>
+
+      <!-- MODE PAIEMENT & STATUT -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mode de paiement *</label>
+          <select name="mode_paiement" id="mode_paiement">
+            <option value="">-- Choisir --</option>
+            <option value="gratuit"  <?= ($participation->getModePaiement() === 'gratuit')  ? 'selected' : '' ?>>Gratuit</option>
+            <option value="espèces"  <?= ($participation->getModePaiement() === 'espèces')  ? 'selected' : '' ?>>Espèces 💵</option>
+            <option value="carte"    <?= ($participation->getModePaiement() === 'carte')    ? 'selected' : '' ?>>Carte 💳</option>
+            <option value="virement" <?= ($participation->getModePaiement() === 'virement') ? 'selected' : '' ?>>Virement 🏦</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Statut *</label>
           <select name="statut" id="statut">
             <option value="">-- Choisir --</option>
-            <option value="confirmé"   <?= $participation->getStatut() === 'confirmé'   ? 'selected' : '' ?>>Confirmé</option>
-            <option value="en attente" <?= $participation->getStatut() === 'en attente' ? 'selected' : '' ?>>En attente</option>
-            <option value="annulé"     <?= $participation->getStatut() === 'annulé'     ? 'selected' : '' ?>>Annulé</option>
+            <option value="confirmé"   <?= $participation->getStatut() === 'confirmé'   ? 'selected' : '' ?>>✅ Confirmé</option>
+            <option value="en attente" <?= ($participation->getStatut() === 'en attente' || $participation->getStatut() === 'en_attente') ? 'selected' : '' ?>>⏳ En attente</option>
+            <option value="annulé"     <?= $participation->getStatut() === 'annulé'     ? 'selected' : '' ?>>❌ Annulé</option>
           </select>
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Montant (TND) *</label>
-          <input type="number" name="montant" id="montant"
-                 step="0.01" min="0"
-                 value="<?= htmlspecialchars($participation->getMontant()) ?>">
-        </div>
-        <div class="form-group">
-          <label>Date de participation *</label>
-          <input type="datetime-local" name="date_participation" id="date_participation"
-                 value="<?= $dp ?>">
-        </div>
+      <!-- DATE -->
+      <div class="form-group">
+        <label>Date de participation *</label>
+        <input type="datetime-local" name="date_participation" id="date_participation"
+               value="<?= $dp ?>">
       </div>
 
       <div class="form-actions">
@@ -217,22 +281,23 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('partForm').addEventListener('submit', function (e) {
     var errors = [];
 
-    var id_event          = document.getElementById('id_event').value;
-    var nom_participant   = document.getElementById('nom_participant').value.trim();
-    var statut            = document.getElementById('statut').value;
-    var montant           = document.getElementById('montant').value;
-    var date_participation= document.getElementById('date_participation').value;
+    var id_event  = document.getElementById('id_event').value;
+    var nom       = document.getElementById('nom').value.trim();
+    var prenom    = document.getElementById('prenom').value.trim();
+    var email     = document.getElementById('email').value.trim();
+    var places    = parseInt(document.getElementById('places').value);
+    var mode      = document.getElementById('mode_paiement').value;
+    var statut    = document.getElementById('statut').value;
+    var date      = document.getElementById('date_participation').value;
 
-    if (!id_event)
-      errors.push("Veuillez sélectionner un événement.");
-    if (nom_participant.length < 2)
-      errors.push("Le nom doit contenir au moins 2 caractères.");
-    if (!statut)
-      errors.push("Veuillez choisir un statut.");
-    if (montant === '' || isNaN(montant) || parseFloat(montant) < 0)
-      errors.push("Le montant doit être un nombre positif (0 pour gratuit).");
-    if (!date_participation)
-      errors.push("La date de participation est obligatoire.");
+    if (!id_event)                           errors.push("Veuillez sélectionner un événement.");
+    if (nom.length < 2)                      errors.push("Le nom doit contenir au moins 2 caractères.");
+    if (prenom.length < 2)                   errors.push("Le prénom doit contenir au moins 2 caractères.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Email invalide.");
+    if (isNaN(places)||places<1||places>10)  errors.push("Le nombre de places doit être entre 1 et 10.");
+    if (!mode)                               errors.push("Veuillez choisir un mode de paiement.");
+    if (!statut)                             errors.push("Veuillez choisir un statut.");
+    if (!date)                               errors.push("La date de participation est obligatoire.");
 
     var errorDiv = document.getElementById('js-errors');
     if (!errorDiv) {
