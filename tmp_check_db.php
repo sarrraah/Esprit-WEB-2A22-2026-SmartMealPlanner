@@ -1,1 +1,0 @@
-<?php $pdo=new PDO("mysql:host=127.0.0.1;dbname=smart_meal_planner;charset=utf8mb4","root","",array(PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION)); $stmt=$pdo->query("SELECT id, nom FROM produit LIMIT 10"); foreach($stmt as $row){ echo $row["id"]."|".$row["nom"]."\n"; } ?>

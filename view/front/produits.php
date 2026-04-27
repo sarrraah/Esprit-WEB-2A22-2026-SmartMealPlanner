@@ -48,7 +48,7 @@ include("header.php");
     <div class="mb-4 d-flex flex-wrap gap-2">
         <a class="btn btn-sm btn-danger" href="produits.php">Tous</a>
         <?php foreach ($categories as $categorie): ?>
-            <a class="btn btn-sm btn-outline-secondary" href="produitsParCategorie.php?id=<?= (int) $categorie['id_categorie'] ?>">
+            <a class="btn btn-sm btn-outline-secondary" href="categories.php?id=<?= (int) $categorie['id_categorie'] ?>">
                 <?= htmlspecialchars($categorie['nom']) ?>
             </a>
         <?php endforeach; ?>
