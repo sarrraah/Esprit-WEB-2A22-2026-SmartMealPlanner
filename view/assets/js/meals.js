@@ -1,6 +1,8 @@
 /**
  * Meals module + minimal Yummy header chrome (avoids full main.js AOS/Swiper deps).
  */
+console.log('meals.js loaded - version:', new Date().getTime());
+
 (function () {
   'use strict';
 
@@ -112,7 +114,8 @@
       recipeBtn.setAttribute('aria-label', `Open recipe for ${name}`);
     }
     if (addBtn) {
-      addBtn.setAttribute('data-meal-id', card.getAttribute('data-meal-id') || '');
+      addBtn.setAttribute('data-meal-id',   card.getAttribute('data-meal-id') || '');
+      addBtn.setAttribute('data-meal-type', card.getAttribute('data-meal-type') || '');
     }
   }
 
@@ -136,13 +139,54 @@
 
   if (addBtn) {
     addBtn.addEventListener('click', function () {
-      const id = addBtn.getAttribute('data-meal-id');
-      const name = modalEl.querySelector('[data-meal-detail="name"]').textContent;
+      const id       = addBtn.getAttribute('data-meal-id');
+      const name     = modalEl.querySelector('[data-meal-detail="name"]').textContent;
+      const mealType = addBtn.getAttribute('data-meal-type') || '';
+      const today    = new Date().toISOString().slice(0, 10);
+
+      console.log('Adding meal:', { id, name, mealType, today });
+
+      if (!mealType) {
+        showToast('\u26a0 Error: Meal type is missing!');
+        console.error('Meal type is empty!');
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('meal_id',   id);
+      fd.append('meal_type', mealType);
+      fd.append('meal_date', today);
+
+      console.log('Sending request to plan_add_meal.php');
+
+      fetch('/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/FrontOffice/plan_add_meal.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function(r) { 
+          console.log('Response status:', r.status);
+          return r.json(); 
+        })
+        .then(function(data) {
+          console.log('Response data:', data);
+          modal.hide();
+          showToast(data.ok
+            ? '\u2714 "' + name + '" ' + (data.action || 'added') + ' to today\'s plan!'
+            : '\u26a0 ' + (data.message || 'Could not add meal.'));
+          
+          // Reload the page after 1.5 seconds if successful
+          if (data.ok) {
+            setTimeout(function() {
+              window.location.reload();
+            }, 1500);
+          }
+        })
+        .catch(function(err) {
+          console.error('Fetch error:', err);
+          modal.hide();
+          showToast('\u26a0 Network error: ' + err);
+        });
+
       document.dispatchEvent(
-        new CustomEvent('mealPlanner:add', { detail: { mealId: id } })
+        new CustomEvent('mealPlanner:add', { detail: { mealId: id, mealType: mealType } })
       );
-      modal.hide();
-      showToast('\u2714 "' + name + '" added to your plan!');
     });
   }
 

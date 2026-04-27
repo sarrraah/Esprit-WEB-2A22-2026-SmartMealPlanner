@@ -29,6 +29,19 @@ CREATE TABLE IF NOT EXISTS plans (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Alias table for backward compatibility
+CREATE TABLE IF NOT EXISTS mealplan (
+    id_plan       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    nom           VARCHAR(300) NOT NULL,
+    duree         TINYINT UNSIGNED NOT NULL DEFAULT 7,
+    date_debut    DATE         NOT NULL,
+    date_fin      DATE         NOT NULL,
+    objectif      VARCHAR(200) NOT NULL DEFAULT '',
+    description   TEXT         NOT NULL,
+    user_id       INT UNSIGNED NOT NULL DEFAULT 1,
+    PRIMARY KEY (id_plan)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT INTO meals (name, calories, description, image, recipeUrl, mealType) VALUES
 ('Mediterranean Chickpea Salad with Feta & Herbs', 398, 'Chickpeas, cucumber, tomato, feta, and olive oil vinaigrette. Fresh and filling for lunch.', 'assets/img/menu/menu-item-2.png', 'https://example.com/recipes/chickpea-salad', 'lunch'),
 ('Ginger-Soy Turkey Stir-Fry with Market Vegetables', 524, 'Lean turkey strips with bell peppers, broccoli, and light soy-ginger sauce over brown rice.', 'assets/img/menu/menu-item-3.png', 'https://example.com/recipes/turkey-stir-fry', 'dinner'),
@@ -53,3 +66,18 @@ INSERT INTO meals (name, calories, description, image, recipeUrl, mealType) VALU
 ('Gulf Shrimp & Broccoli in Light Garlic Sauce', 356, 'Juicy shrimp and bright broccoli in a light savory, peppery stir-fry sauce.', 'assets/img/meals/meal-22.png', 'https://example.com/recipes/shrimp-broccoli-stir-fry', 'dinner'),
 ('Antioxidant Berry Smoothie Bowl with Nut Butter', 418, 'Purple berry smoothie base with banana, kiwi, pomegranate, blueberries, citrus, and nut butter.', 'assets/img/meals/meal-23.png', 'https://example.com/recipes/berry-smoothie-bowl', 'snack'),
 ('Slow-Braised Beef with Root Vegetables in Herb Broth', 465, 'Slow-cooked beef with corn, carrots, potato or yuca, and herb-infused broth.', 'assets/img/meals/meal-24.png', 'https://example.com/recipes/beef-vegetable-stew', 'dinner');
+
+-- Stores meal overrides per plan day and meal type
+CREATE TABLE IF NOT EXISTS plan_meals (
+    id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    plan_id    INT UNSIGNED NOT NULL,
+    meal_date  DATE         NOT NULL,
+    meal_type  VARCHAR(20)  NOT NULL,
+    meal_id    INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_plan_date_type (plan_id, meal_date, meal_type),
+    KEY idx_plan_date (plan_id, meal_date),
+    FOREIGN KEY (plan_id) REFERENCES mealplan(id_plan) ON DELETE CASCADE,
+    FOREIGN KEY (meal_id) REFERENCES meals(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

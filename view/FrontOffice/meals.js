@@ -108,6 +108,7 @@
     }
     if (addBtn) {
       addBtn.setAttribute('data-meal-id', card.getAttribute('data-meal-id') || '');
+      addBtn.setAttribute('data-meal-type', mealType);
     }
   }
 
@@ -132,11 +133,50 @@
   if (addBtn) {
     addBtn.addEventListener('click', function () {
       const id = addBtn.getAttribute('data-meal-id');
+      const mealType = addBtn.getAttribute('data-meal-type');
       document.dispatchEvent(
-        new CustomEvent('mealPlanner:add', { detail: { mealId: id } })
+        new CustomEvent('mealPlanner:add', { detail: { mealId: id, mealType: mealType } })
       );
       modal.hide();
     });
   }
 })();
+
+// Handle adding meals to plan
+(function () {
+  'use strict';
+
+  document.addEventListener('mealPlanner:add', function (e) {
+    const { mealId, mealType } = e.detail;
+    
+    if (!mealId || !mealType) {
+      alert('Invalid meal data');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('meal_id', mealId);
+    formData.append('meal_type', mealType);
+
+    fetch('plan_add_meal.php', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        alert(data.message || 'Meal added to your plan!');
+        // Redirect to today's plan to see the updated meal
+        window.location.href = 'day_plan.php?date=' + new Date().toISOString().split('T')[0];
+      } else {
+        alert(data.message || 'Failed to add meal');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while adding the meal');
+    });
+  });
+})();
+
 

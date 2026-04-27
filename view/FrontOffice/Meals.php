@@ -2,8 +2,17 @@
 
 require_once __DIR__ . '/../../controller/MealController.php';
 
-$meals = MealController::listMeals();
+$meals       = MealController::listMeals();
 $assetPrefix = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
+
+// JOIN data: keyed by id_meal for O(1) lookup in the card loop
+$planData = [];
+foreach (MealController::listMealsWithPlan() as $row) {
+    $planData[(int)$row['id_meal']] = [
+        'plan_name' => (string)($row['plan_name'] ?? ''),
+        'objectif'  => (string)($row['objectif']  ?? ''),
+    ];
+}
 
 function resolveImageUrl(string $image, string $prefix): string {
     return $prefix . ltrim(preg_replace('#^assets/#', '', $image), '/');
@@ -77,12 +86,16 @@ function resolveImageUrl(string $image, string $prefix): string {
 
         <div class="row g-4" id="meal-grid">
           <?php foreach ($meals as $meal) :
-            $imgSrc = htmlspecialchars(resolveImageUrl($meal->image, $assetPrefix), ENT_QUOTES, 'UTF-8');
-            $safeName = htmlspecialchars($meal->name, ENT_QUOTES, 'UTF-8');
-            $safeDesc = htmlspecialchars($meal->description, ENT_QUOTES, 'UTF-8');
-            $safeRecipe = htmlspecialchars($meal->recipeUrl, ENT_QUOTES, 'UTF-8');
-            $safeType = htmlspecialchars($meal->mealType, ENT_QUOTES, 'UTF-8');
+            $imgSrc       = htmlspecialchars(resolveImageUrl($meal->image, $assetPrefix), ENT_QUOTES, 'UTF-8');
+            $safeName     = htmlspecialchars($meal->name, ENT_QUOTES, 'UTF-8');
+            $safeDesc     = htmlspecialchars($meal->description, ENT_QUOTES, 'UTF-8');
+            $safeRecipe   = htmlspecialchars($meal->recipeUrl, ENT_QUOTES, 'UTF-8');
+            $safeType     = htmlspecialchars($meal->mealType, ENT_QUOTES, 'UTF-8');
             $safeTypeLabel = htmlspecialchars($meal->mealTypeLabel(), ENT_QUOTES, 'UTF-8');
+            // JOIN data — gracefully empty if meal has no id_plan
+            $pd           = $planData[$meal->id] ?? ['plan_name' => '', 'objectif' => ''];
+            $safePlanName = htmlspecialchars($pd['plan_name'], ENT_QUOTES, 'UTF-8');
+            $safeObjectif = htmlspecialchars($pd['objectif'],  ENT_QUOTES, 'UTF-8');
           ?>
             <div class="col-lg-3 col-md-4 col-sm-6">
               <article
@@ -102,6 +115,14 @@ function resolveImageUrl(string $image, string $prefix): string {
                 <div class="meal-card__body">
                   <h3 class="meal-card__name"><?php echo $safeName; ?></h3>
                   <p class="meal-card__calories"><strong><?php echo (int) $meal->calories; ?></strong> kcal</p>
+                  <?php if ($safePlanName !== '') : ?>
+                  <p class="meal-card__plan" style="font-size:.8rem;color:#888;margin:0;">
+                    Plan: <?php echo $safePlanName; ?>
+                    <?php if ($safeObjectif !== '') : ?>
+                    &nbsp;· Goal: <?php echo $safeObjectif; ?>
+                    <?php endif; ?>
+                  </p>
+                  <?php endif; ?>
                 </div>
               </article>
             </div>
@@ -157,7 +178,10 @@ function resolveImageUrl(string $image, string $prefix): string {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/js/meals.js"></script>
+  <script src="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/js/meals.js?v=<?php echo time(); ?>"></script>
+  <script>
+    console.log('Meals.php inline script loaded');
+  </script>
 
   <script>
     document.querySelectorAll('.meal-filter').forEach(function(btn) {

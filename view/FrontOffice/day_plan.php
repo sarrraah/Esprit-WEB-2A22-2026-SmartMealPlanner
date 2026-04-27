@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../model/Plan.php';
 require_once __DIR__ . '/../../model/Meal.php';
 
@@ -30,9 +31,27 @@ $objectifLabels = [
 ];
 $objectifLabel = $objectifLabels[$plan->objectif] ?? ucfirst($plan->objectif);
 
-// Pick one meal per type — seed by day number for variety
+// Pick one meal per type — check DB overrides first, then seed by day number
 $allMeals = Meal::all();
-function pickMeal(array $meals, string $type, int $seed): ?Meal {
+
+// Load overrides for this date from plan_meals table
+$overrides = [];
+try {
+    $pdo = Database::pdo();
+    $stmt = $pdo->prepare('SELECT meal_type, meal_id FROM plan_meals WHERE plan_id=:pid AND meal_date=:dt');
+    $stmt->execute([':pid' => $plan->id, ':dt' => $dateStr]);
+    foreach ($stmt->fetchAll() as $row) {
+        $overrides[strtolower($row['meal_type'])] = (int) $row['meal_id'];
+    }
+} catch (Throwable $e) {}
+
+function pickMeal(array $meals, string $type, int $seed, array $overrides): ?Meal {
+    // Use override if set
+    if (isset($overrides[$type])) {
+        foreach ($meals as $m) {
+            if ($m->id === $overrides[$type]) return $m;
+        }
+    }
     $filtered = array_values(array_filter($meals, fn($m) => $m->mealType === $type));
     if (!$filtered) return null;
     return $filtered[$seed % count($filtered)];
@@ -47,7 +66,7 @@ $slots = [
 
 $suggested = [];
 foreach ($slots as $i => $slot) {
-    $meal = pickMeal($allMeals, $slot['type'], $dayNum + $i);
+    $meal = pickMeal($allMeals, $slot['type'], $dayNum + $i, $overrides);
     $suggested[] = array_merge($slot, ['meal' => $meal]);
 }
 
