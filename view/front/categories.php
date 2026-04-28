@@ -103,7 +103,7 @@ include("header.php");
   </div>
   <div class="container">
     <div class="mb-4">
-      <a href="categories.php" class="btn-back"><i class="bi bi-arrow-left"></i> Retour aux catégories</a>
+      <a href="categories.php" class="btn-back"><i class="bi bi-arrow-left"></i> Back to Categories</a>
     </div>
 
     <!-- TOAST -->
@@ -126,6 +126,8 @@ include("header.php");
         else                                      $imgSrc = UPLOAD_URL . $img;
         $statut   = determinerStatut($produit['quantiteStock'], $produit['dateExpiration']);
         $badgeCls = match($statut) { 'Disponible'=>'badge-dispo','Rupture'=>'badge-rupture',default=>'badge-epuise' };
+        $isMealPrep = (int)($produit['categorie'] ?? $produit['id_categorie'] ?? 0) === 3
+                   || strtolower($produit['categorie_nom'] ?? '') === 'meal prep packs';
         ?>
         <div class="col-lg-4 col-md-6">
           <div class="product-card" onclick="openProductModal(<?= (int)$produit['id'] ?>)" style="cursor:pointer;">
@@ -151,10 +153,14 @@ include("header.php");
                         data-nom="<?= htmlspecialchars($produit['nom'],ENT_QUOTES) ?>"
                         data-prix="<?= (float)$produit['prix'] ?>"
                         data-image="<?= htmlspecialchars($imgSrc,ENT_QUOTES) ?>">
-                  <i class="bi bi-cart-plus me-2"></i>Ajouter au panier
+                  <?php if ($isMealPrep): ?>
+                    <i class="bi bi-basket2 me-2"></i>Get Ingredients
+                  <?php else: ?>
+                    <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                  <?php endif; ?>
                 </button>
               <?php else: ?>
-                <button class="btn-cart" disabled onclick="event.stopPropagation();"><i class="bi bi-x-circle me-2"></i>Rupture de stock</button>
+                <button class="btn-cart" disabled onclick="event.stopPropagation();"><i class="bi bi-x-circle me-2"></i>Out of Stock</button>
               <?php endif; ?>
             </div>
           </div>
@@ -183,16 +189,16 @@ include("header.php");
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">🛒 Mon Panier</h5>
+        <h5 class="modal-title">🛒 My Cart</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="panier-contenu"><p class="text-muted text-center">Votre panier est vide.</p></div>
+      <div class="modal-body" id="panier-contenu"><p class="text-muted text-center">Your cart is empty.</p></div>
       <div class="modal-footer d-flex justify-content-between align-items-center">
-        <strong>Total : <span id="panier-total">0,00</span> DT</strong>
+        <strong>Total: <span id="panier-total">0.00</span> DT</strong>
         <div class="d-flex gap-2">
-          <button class="btn btn-outline-danger btn-sm" onclick="viderPanier()">Vider</button>
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Continuer</button>
-          <button class="btn btn-danger" onclick="acheter()"><i class="bi bi-bag-check me-2"></i>Acheter</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="viderPanier()">Clear</button>
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Continue Shopping</button>
+          <button class="btn btn-danger" onclick="acheter()"><i class="bi bi-bag-check me-2"></i>Checkout</button>
         </div>
       </div>
     </div>
@@ -228,7 +234,7 @@ updateBadge();
           <div class="col-md-7 p-4 d-flex flex-column" style="max-height:90vh;overflow-y:auto;">
             <button type="button" class="btn-close ms-auto mb-2" data-bs-dismiss="modal"></button>
             <h4 id="modal-nom" style="font-family:'Amatic SC',cursive;font-size:1.6rem;font-weight:700;color:#2d2d2d;margin-bottom:6px;"></h4>
-            <p id="modal-desc" style="font-size:0.85rem;color:#888;margin-bottom:14px;"></p>
+            <div id="modal-desc-wrap" style="margin-bottom:14px;"></div>
 
             <div style="display:flex;flex-direction:column;gap:0;margin-bottom:16px;">
               <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;">
@@ -285,9 +291,9 @@ updateBadge();
 
             <div class="mt-auto d-flex gap-2">
               <button id="modal-btn-cart" class="btn-cart" style="flex:1;">
-                <i class="bi bi-cart-plus me-2"></i>Ajouter au panier
+                <i class="bi bi-cart-plus me-2"></i>Add to Cart
               </button>
-              <button class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius:25px;padding:9px 20px;font-size:13px;">Fermer</button>
+              <button class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius:25px;padding:9px 20px;font-size:13px;">Close</button>
             </div>
           </div>
         </div>
@@ -307,7 +313,20 @@ function openProductModal(id) {
   var carb=data.dataset.glucides, fat=data.dataset.lipides;
 
   document.getElementById('modal-nom').textContent  = nom;
-  document.getElementById('modal-desc').textContent = desc;
+
+  // Description — adapt for Meal Prep
+  var isMealPrepDesc = (cat.toLowerCase().indexOf('meal prep') !== -1);
+  var cleanDesc = desc.replace(/\s*—\s*(repas|breakfast|lunch|dinner|préparez|dégustez).*/i, '');
+  var descWrap = document.getElementById('modal-desc-wrap');
+  if (isMealPrepDesc) {
+    descWrap.innerHTML =
+      '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#ce1212;margin-bottom:4px;">' +
+      '<i class="bi bi-basket2-fill me-1"></i>Ingredients included:</div>' +
+      '<p style="font-size:0.85rem;color:#888;margin:0;">' + cleanDesc + '</p>';
+  } else {
+    descWrap.innerHTML = '<p style="font-size:0.85rem;color:#888;margin:0;">' + desc + '</p>';
+  }
+
   document.getElementById('modal-cat').textContent  = cat;
   document.getElementById('modal-exp').textContent  = exp || '—';
   document.getElementById('modal-price').textContent = prix.toFixed(2).replace('.',',')+' DT';
@@ -331,7 +350,10 @@ function openProductModal(id) {
   else       { img.style.display='none'; ph.style.display='flex'; }
 
   var btn = document.getElementById('modal-btn-cart');
-  btn.innerHTML = '<i class="bi bi-cart-plus me-2"></i>Ajouter au panier';
+  var isMealPrep = (cat.toLowerCase().indexOf('meal prep') !== -1);
+  btn.innerHTML = isMealPrep
+    ? '<i class="bi bi-basket2 me-2"></i>Get Ingredients'
+    : '<i class="bi bi-cart-plus me-2"></i>Add to Cart';
   if (statut==='Disponible') {
     btn.disabled=false; btn.style.background='#ce1212';
     btn.onclick = function() {
@@ -345,7 +367,7 @@ function openProductModal(id) {
     };
   } else {
     btn.disabled=true; btn.style.background='#ccc';
-    btn.innerHTML='<i class="bi bi-x-circle me-2"></i>Rupture de stock';
+    btn.innerHTML='<i class="bi bi-x-circle me-2"></i>Out of Stock';
   }
   new bootstrap.Modal(document.getElementById('modalProduitDetail')).show();
 }
