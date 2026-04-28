@@ -23,8 +23,9 @@ class ProduitController
             ");
         } else {
             $query = $db->query("
-                SELECT p.*, p.categorie AS categorie_nom
+                SELECT p.*, COALESCE(c.nom, p.categorie) AS categorie_nom
                 FROM produit p
+                LEFT JOIN categorieproduit c ON c.id_categorie = CAST(p.categorie AS UNSIGNED)
                 ORDER BY p.id DESC
             ");
         }
@@ -45,9 +46,10 @@ class ProduitController
             $query->execute(['id_categorie' => $idCategorie]);
         } else {
             $query = $db->prepare("
-                SELECT p.*, p.categorie AS categorie_nom
+                SELECT p.*, COALESCE(c.nom, p.categorie) AS categorie_nom
                 FROM produit p
-                WHERE p.categorie = (SELECT nom FROM categorieproduit WHERE id_categorie = :id_categorie LIMIT 1)
+                LEFT JOIN categorieproduit c ON c.id_categorie = CAST(p.categorie AS UNSIGNED)
+                WHERE c.id_categorie = :id_categorie
                 ORDER BY p.id DESC
             ");
             $query->execute(['id_categorie' => $idCategorie]);
@@ -66,8 +68,9 @@ class ProduitController
             ";
         } else {
             $sql = "
-                SELECT p.*, p.categorie AS categorie_nom
+                SELECT p.*, COALESCE(c.nom, p.categorie) AS categorie_nom
                 FROM produit p
+                LEFT JOIN categorieproduit c ON c.id_categorie = CAST(p.categorie AS UNSIGNED)
                 WHERE 1 = 1
             ";
         }
@@ -151,7 +154,7 @@ class ProduitController
             'dateExpiration' => $produit->getDateExpiration(),
             'image' => $produit->getImage(),
             'statut' => $produit->getStatut(),
-            'categorie' => $categorieNom,
+            'categorie' => $produit->getIdCategorie(), // store the numeric ID
         ]);
     }
 
@@ -211,7 +214,7 @@ class ProduitController
             'description' => $produit->getDescription(),
             'quantiteStock' => $produit->getQuantiteStock(),
             'dateExpiration' => $produit->getDateExpiration(),
-            'categorie' => $categorieNom,
+            'categorie' => $produit->getIdCategorie(), // store the numeric ID
             'prix' => $produit->getPrix(),
             'image' => $produit->getImage(),
             'statut' => $produit->getStatut(),
