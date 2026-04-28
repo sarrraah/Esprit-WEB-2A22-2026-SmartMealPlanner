@@ -42,15 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         $ctrl = new ParticipationController();
         $p = new Participation(
-            null,
-            $id_event,
-            $nom,
-            $prenom,
-            $email,
-            $places,
-            $mode,
-            'en_attente',
-            date('Y-m-d H:i:s')
+            null, $id_event, $nom, $prenom, $email,
+            $places, $mode, 'en_attente', date('Y-m-d H:i:s')
         );
         $ctrl->addParticipation($p);
         $success = true;
@@ -63,89 +56,157 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inscription – <?= htmlspecialchars($evenement->getTitre()) ?></title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
-nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;height:60px;
-    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}
-.logo span{color:#b91c1c}
-.back{font-size:13px;color:#9a3535;text-decoration:none;font-weight:500}
-.back:hover{color:#b91c1c}
-.hero{background:linear-gradient(135deg,#7f1d1d,#b91c1c);padding:40px 32px;text-align:center;color:#fff}
-.hero h1{font-size:22px;font-weight:600;margin-bottom:6px}
-.hero p{font-size:14px;opacity:.7}
-.container{max-width:580px;margin:0 auto;padding:32px 16px 60px}
-.recap{background:#fff;border:1px solid #fde8e8;border-radius:14px;padding:18px 20px;
-       margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
-.recap-icon{font-size:28px}
-.recap-title{font-size:15px;font-weight:600;color:#1a0505;margin-bottom:4px}
-.recap-meta{font-size:13px;color:#9a3535;display:flex;flex-direction:column;gap:3px}
-.price-tag{display:inline-block;margin-top:8px;background:#fce8e8;color:#b91c1c;
-           font-weight:700;font-size:13px;padding:4px 12px;border-radius:20px}
-.card{background:#fff;border:1px solid #fde8e8;border-radius:16px;padding:28px;
-      box-shadow:0 2px 12px rgba(185,28,28,0.06)}
-.card h2{font-size:16px;font-weight:600;color:#1a0505;margin-bottom:20px;
-         padding-bottom:14px;border-bottom:1.5px solid #fce8e8}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-.form-group label{font-size:13px;font-weight:500;color:#7f1d1d}
-.form-group input,.form-group select{
-    padding:10px 14px;border:1px solid #f7c1c1;border-radius:10px;
-    background:#fff;color:#1a0505;font-size:14px;font-family:'Inter',sans-serif;
-    outline:none;transition:border-color .2s,box-shadow .2s;width:100%}
-.form-group input:focus,.form-group select:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,0.1)}
-.form-group input::placeholder{color:#c9a0a0}
-.form-group input.err,.form-group select.err{border-color:#b91c1c}
-.field-error{font-size:12px;color:#b91c1c;margin-top:2px;display:none}
-.field-error.show{display:block}
-.pay-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.pay-card input{display:none}
-.pay-card label{display:flex;flex-direction:column;align-items:center;gap:6px;
-                padding:14px 8px;border:1.5px solid #f7c1c1;border-radius:12px;
-                cursor:pointer;font-size:12px;font-weight:500;color:#9a3535;
-                transition:all .15s;text-align:center}
-.pay-card label:hover{border-color:#b91c1c;background:#fce8e8;color:#7f1d1d}
-.pay-card input:checked + label{border-color:#b91c1c;background:#fce8e8;color:#b91c1c;font-weight:600}
-.pay-icon{font-size:22px}
-.alert-danger{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595;
-              padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:14px}
-.btn-submit{width:100%;background:#b91c1c;color:#fff;border:none;border-radius:10px;
-            padding:13px;font-size:15px;font-weight:600;cursor:pointer;
-            font-family:'Inter',sans-serif;transition:background .15s;margin-top:4px}
-.btn-submit:hover{background:#991b1b}
-.note{font-size:12px;color:#9a3535;text-align:center;margin-top:14px;line-height:1.6}
-.success-box{background:#fff;border:1px solid #fde8e8;border-radius:16px;padding:44px 28px;
-             text-align:center;box-shadow:0 2px 12px rgba(185,28,28,0.06)}
-.success-icon{font-size:60px;margin-bottom:16px}
-.success-title{font-size:22px;font-weight:600;color:#1a0505;margin-bottom:10px}
-.success-sub{font-size:14px;color:#9a3535;line-height:1.8;margin-bottom:28px}
-.success-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.btn-red{display:inline-block;background:#b91c1c;color:#fff;padding:12px 28px;
-         border-radius:10px;text-decoration:none;font-weight:500;font-size:14px;transition:background .15s}
-.btn-red:hover{background:#991b1b}
-.btn-outline{display:inline-block;background:#fff;color:#b91c1c;padding:11px 24px;
-             border-radius:10px;text-decoration:none;font-weight:500;font-size:14px;
-             border:1.5px solid #f7c1c1;transition:all .15s}
-.btn-outline:hover{background:#fce8e8}
-@media(max-width:500px){.form-row{grid-template-columns:1fr}.pay-options{grid-template-columns:1fr 1fr}.hero{padding:28px 16px}}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #fff;
+    color: #1a1a1a;
+    min-height: 100vh;
+    font-size: 16px;
+}
+
+/* ── NAV ── */
+nav {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px; position: sticky; top: 0; z-index: 100;
+}
+.logo { font-size: 20px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
+.logo span { color: #dc2626; }
+.back {
+    font-size: 14px; color: #555; text-decoration: none; font-weight: 500;
+    padding-bottom: 2px; border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+}
+.back:hover { color: #dc2626; border-bottom-color: #dc2626; }
+
+/* ── LAYOUT ── */
+.section { padding: 16px 0 24px; }
+.container { max-width: 100%; margin: 0; padding: 0 20px; }
+
+h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
+
+/* ── RECAP CARD ── */
+.recap {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex; gap: 14px; align-items: flex-start;
+}
+.recap-icon { font-size: 26px; }
+.recap-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+.recap-meta { font-size: 13px; color: #888; display: flex; flex-direction: column; gap: 3px; }
+.price-tag {
+    display: inline-block; margin-top: 8px;
+    background: #dc2626; color: #fff;
+    font-weight: 700; font-size: 13px;
+    padding: 4px 12px; border-radius: 999px;
+}
+
+/* ── ALERTS ── */
+.alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
+.alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.alert-success { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+
+/* ── FORM GRID ── */
+.row { display: flex; flex-wrap: wrap; gap: 20px; }
+.col-md-6 { flex: 1 1 calc(50% - 10px); min-width: 260px; }
+.col-12 { flex: 0 0 100%; }
+
+/* ── LABELS & INPUTS ── */
+.form-label { display: block; font-size: 14px; font-weight: 500; color: #333; margin-bottom: 6px; }
+.form-control,
+.form-select {
+    width: 100%; padding: 13px 16px;
+    border: 1px solid #d1d5db; border-radius: 8px;
+    background: #fff; color: #1a1a1a;
+    font-size: 15px; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+}
+.form-control::placeholder { color: #aaa; }
+.form-control.err { border-color: #dc2626; }
+.field-error { font-size: 12px; color: #dc2626; margin-top: 4px; display: none; }
+.field-error.show { display: block; }
+
+/* ── PAYMENT OPTIONS ── */
+.pay-options { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.pay-card input { display: none; }
+.pay-card label {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 14px 8px; border: 1.5px solid #d1d5db; border-radius: 8px;
+    cursor: pointer; font-size: 13px; font-weight: 500; color: #555;
+    transition: all .15s; text-align: center;
+}
+.pay-card label:hover { border-color: #dc2626; background: #fef2f2; color: #dc2626; }
+.pay-card input:checked + label { border-color: #dc2626; background: #fef2f2; color: #dc2626; font-weight: 600; }
+.pay-icon { font-size: 22px; }
+
+/* ── FREE BADGE ── */
+.free-badge {
+    padding: 13px 16px; background: #f0fdf4;
+    border: 1px solid #86efac; border-radius: 8px;
+    font-size: 14px; color: #15803d; font-weight: 500;
+}
+
+/* ── BUTTONS ── */
+.d-flex { display: flex; }
+.gap-2 { gap: 10px; }
+.btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 22px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; border: none; text-decoration: none; transition: all .15s;
+}
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-full { width: 100%; justify-content: center; padding: 13px; font-size: 15px; }
+.btn-outline-secondary { background: #fff; color: #555; border: 1px solid #d1d5db; }
+.btn-outline-secondary:hover { background: #f9fafb; }
+
+/* ── SUCCESS BOX ── */
+.success-box {
+    background: #fff; border: 1px solid #e5e5e5;
+    border-radius: 12px; padding: 48px 32px;
+    text-align: center; max-width: 560px;
+}
+.success-icon { font-size: 60px; margin-bottom: 16px; }
+.success-title { font-size: 24px; font-weight: 700; color: #1a1a1a; margin-bottom: 10px; }
+.success-sub { font-size: 15px; color: #555; line-height: 1.8; margin-bottom: 28px; }
+
+/* ── NOTE ── */
+.note { font-size: 12px; color: #aaa; text-align: center; margin-top: 14px; line-height: 1.6; }
+
+@media (max-width: 500px) {
+    nav { padding: 0 16px; }
+    .col-md-6 { flex: 0 0 100%; }
+    .pay-options { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="../front/interfaceevent.php" class="logo">Event <span>Management</span></a>
+  <a href="../front/interfaceevent.php" class="logo">Smart Event<span>.</span></a>
   <a href="../front/detailEvent.php?id=<?= $id_event ?>" class="back">← Retour à l'événement</a>
 </nav>
 
-<div class="hero">
-  <h1>📝 Inscription à l'événement</h1>
-  <p>Complétez le formulaire pour réserver votre place</p>
-</div>
-
+<section class="section">
 <div class="container">
 
+  <h2>Inscription à l'événement</h2>
+
+  <!-- Récap événement -->
   <div class="recap">
     <div class="recap-icon">📅</div>
     <div>
@@ -160,6 +221,7 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;height:60px
 
   <?php if ($success): ?>
 
+  <!-- Succès -->
   <div class="success-box">
     <div class="success-icon">🎉</div>
     <div class="success-title">Inscription enregistrée !</div>
@@ -169,104 +231,98 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;height:60px
       a bien été reçue. Votre statut est <strong>« en attente »</strong> —
       vous serez notifié(e) par email dès confirmation.
     </div>
-    <div class="success-actions">
-      <a href="../front/interfaceevent.php" class="btn-red">
-        🗓️ Voir tous les événements
-      </a>
-      <a href="../front/detailEvent.php?id=<?= $id_event ?>" class="btn-outline">
-        ↩ Retour à l'événement
-      </a>
+    <div class="d-flex gap-2" style="justify-content:center;flex-wrap:wrap">
+      <a href="../front/interfaceevent.php" class="btn btn-danger">🗓️ Voir tous les événements</a>
+      <a href="../front/detailEvent.php?id=<?= $id_event ?>" class="btn btn-outline-secondary">↩ Retour à l'événement</a>
     </div>
   </div>
 
   <?php else: ?>
 
-  <div class="card">
-    <h2>Vos informations</h2>
+  <?php foreach ($errors as $err): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($err) ?></div>
+  <?php endforeach; ?>
 
-    <?php foreach ($errors as $err): ?>
-      <div class="alert-danger">❌ <?= htmlspecialchars($err) ?></div>
-    <?php endforeach; ?>
+  <form method="POST" action="" id="regForm" novalidate class="row">
 
-    <form method="POST" action="" id="regForm" novalidate>
+    <!-- Nom -->
+    <div class="col-md-6">
+      <label class="form-label">Nom *</label>
+      <input type="text" name="nom" id="nom" class="form-control"
+             placeholder="Ben Ali"
+             value="<?= htmlspecialchars($_POST['nom'] ?? '') ?>">
+      <span class="field-error" id="err-nom"></span>
+    </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Nom *</label>
-          <input type="text" name="nom" id="nom"
-                 placeholder="Ben Ali"
-                 value="<?= htmlspecialchars($_POST['nom'] ?? '') ?>">
-          <span class="field-error" id="err-nom"></span>
-        </div>
-        <div class="form-group">
-          <label>Prénom *</label>
-          <input type="text" name="prenom" id="prenom"
-                 placeholder="Ahmed"
-                 value="<?= htmlspecialchars($_POST['prenom'] ?? '') ?>">
-          <span class="field-error" id="err-prenom"></span>
-        </div>
-      </div>
+    <!-- Prénom -->
+    <div class="col-md-6">
+      <label class="form-label">Prénom *</label>
+      <input type="text" name="prenom" id="prenom" class="form-control"
+             placeholder="Ahmed"
+             value="<?= htmlspecialchars($_POST['prenom'] ?? '') ?>">
+      <span class="field-error" id="err-prenom"></span>
+    </div>
 
-      <div class="form-group">
-        <label>Adresse email *</label>
-        <input type="email" name="email" id="email"
-               placeholder="ahmed.benali@email.com"
-               value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
-        <span class="field-error" id="err-email"></span>
-      </div>
+    <!-- Email -->
+    <div class="col-md-6">
+      <label class="form-label">Adresse email *</label>
+      <input type="email" name="email" id="email" class="form-control"
+             placeholder="ahmed.benali@email.com"
+             value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+      <span class="field-error" id="err-email"></span>
+    </div>
 
-      <div class="form-group">
-        <label>Nombre de places *</label>
-        <input type="number" name="nombre_places_reservees" id="places"
-               min="1" max="10"
-               value="<?= htmlspecialchars($_POST['nombre_places_reservees'] ?? '1') ?>">
-        <span class="field-error" id="err-places"></span>
-      </div>
+    <!-- Places -->
+    <div class="col-md-6">
+      <label class="form-label">Nombre de places *</label>
+      <input type="number" name="nombre_places_reservees" id="places" class="form-control"
+             min="1" max="10"
+             value="<?= htmlspecialchars($_POST['nombre_places_reservees'] ?? '1') ?>">
+      <span class="field-error" id="err-places"></span>
+    </div>
 
+    <!-- Mode de paiement -->
+    <div class="col-12">
+      <label class="form-label">Mode de paiement<?= $isFree ? '' : ' *' ?></label>
       <?php if ($isFree): ?>
         <input type="hidden" name="mode_paiement" value="gratuit">
-        <div class="form-group">
-          <label>Mode de paiement</label>
-          <div style="padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;
-                      border-radius:10px;font-size:13px;color:#15803d;font-weight:500">
-            ✅ Cet événement est gratuit — aucun paiement requis
-          </div>
-        </div>
+        <div class="free-badge">✅ Cet événement est gratuit — aucun paiement requis</div>
       <?php else: ?>
-        <div class="form-group">
-          <label>Mode de paiement *</label>
-          <div class="pay-options">
-            <div class="pay-card">
-              <input type="radio" name="mode_paiement" id="pay-especes" value="espèces"
-                     <?= (($_POST['mode_paiement'] ?? '') === 'espèces') ? 'checked' : '' ?>>
-              <label for="pay-especes"><span class="pay-icon">💵</span>Espèces</label>
-            </div>
-            <div class="pay-card">
-              <input type="radio" name="mode_paiement" id="pay-carte" value="carte"
-                     <?= (($_POST['mode_paiement'] ?? '') === 'carte') ? 'checked' : '' ?>>
-              <label for="pay-carte"><span class="pay-icon">💳</span>Carte</label>
-            </div>
-            <div class="pay-card">
-              <input type="radio" name="mode_paiement" id="pay-virement" value="virement"
-                     <?= (($_POST['mode_paiement'] ?? '') === 'virement') ? 'checked' : '' ?>>
-              <label for="pay-virement"><span class="pay-icon">🏦</span>Virement</label>
-            </div>
+        <div class="pay-options">
+          <div class="pay-card">
+            <input type="radio" name="mode_paiement" id="pay-especes" value="espèces"
+                   <?= (($_POST['mode_paiement'] ?? '') === 'espèces') ? 'checked' : '' ?>>
+            <label for="pay-especes"><span class="pay-icon">💵</span>Espèces</label>
           </div>
-          <span class="field-error" id="err-mode"></span>
+          <div class="pay-card">
+            <input type="radio" name="mode_paiement" id="pay-carte" value="carte"
+                   <?= (($_POST['mode_paiement'] ?? '') === 'carte') ? 'checked' : '' ?>>
+            <label for="pay-carte"><span class="pay-icon">💳</span>Carte</label>
+          </div>
+          <div class="pay-card">
+            <input type="radio" name="mode_paiement" id="pay-virement" value="virement"
+                   <?= (($_POST['mode_paiement'] ?? '') === 'virement') ? 'checked' : '' ?>>
+            <label for="pay-virement"><span class="pay-icon">🏦</span>Virement</label>
+          </div>
         </div>
+        <span class="field-error" id="err-mode"></span>
       <?php endif; ?>
+    </div>
 
-      <button type="submit" class="btn-submit">🎟️ Confirmer mon inscription</button>
-
+    <!-- Submit -->
+    <div class="col-12">
+      <button type="submit" class="btn btn-danger btn-full">🎟️ Confirmer mon inscription</button>
       <p class="note">
         Votre inscription sera marquée <strong>« en attente »</strong> jusqu'à confirmation.<br>
         <?= $isFree ? 'Aucun frais pour cet événement.' : 'Montant total calculé selon le nombre de places.' ?>
       </p>
-    </form>
-  </div>
+    </div>
+
+  </form>
 
   <?php endif; ?>
 </div>
+</section>
 
 <script>
 document.getElementById('regForm')?.addEventListener('submit', function(e) {

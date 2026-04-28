@@ -17,7 +17,6 @@ $participation = $ctrl->getParticipationById($id);
 
 if (!$participation) { header('Location: listParticipations.php'); exit; }
 
-// Construire map événements pour prix
 $eventMap = [];
 foreach ($allEvents as $ev) {
     $eventMap[$ev->getIdEvent()] = $ev;
@@ -76,7 +75,6 @@ function formatDateTimeLocal($dateStr) {
 
 $dp = formatDateTimeLocal($participation->getDateParticipation());
 
-// Calcul montant actuel
 $evObj   = $eventMap[$participation->getIdEvent()] ?? null;
 $prix    = $evObj ? (float)$evObj->getPrix() : 0;
 $montant = $prix * $participation->getNombrePlacesReservees();
@@ -86,231 +84,328 @@ $montant = $prix * $participation->getNombrePlacesReservees();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Modifier la Participation #<?= $id ?> – Event Management</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Modifier la Participation #<?= $id ?></title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}
-.logo span{color:#b91c1c}
-.nav-links{display:flex;gap:28px}
-.nav-links a{font-size:14px;color:#9a3535;text-decoration:none;font-weight:500;transition:color .2s}
-.nav-links a:hover{color:#b91c1c}
-
-.page-hero{background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 100%);padding:36px 32px;text-align:center;color:#fff}
-.page-hero h1{font-size:24px;font-weight:600;margin-bottom:6px}
-.page-hero p{font-size:14px;color:rgba(255,255,255,0.6)}
-
-.container{max-width:780px;margin:0 auto;padding:32px 24px 60px}
-.card{background:#fff;border:1px solid #fde8e8;border-radius:16px;padding:32px;box-shadow:0 2px 12px rgba(185,28,28,0.06)}
-.card h2{font-size:18px;font-weight:600;color:#1a0505;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid #fce8e8}
-
-.montant-info{background:#fce8e8;border:1px solid #f7c1c1;border-radius:10px;padding:12px 16px;
-              font-size:14px;color:#7f1d1d;margin-bottom:20px;display:flex;align-items:center;gap:8px}
-.montant-info strong{color:#b91c1c;font-size:16px}
-
-.alert{padding:12px 16px;border-radius:10px;margin-bottom:12px;font-size:14px}
-.alert-danger{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595}
-
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
-.form-group label{font-size:13px;font-weight:500;color:#7f1d1d}
-.form-group input,
-.form-group select{
-  padding:10px 14px;
-  border:1px solid #f7c1c1;
-  border-radius:10px;
-  background:#fff;
-  color:#1a0505;
-  font-size:14px;
-  font-family:'Inter',sans-serif;
-  outline:none;
-  transition:border-color .2s,box-shadow .2s;
-  width:100%
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #fff;
+    color: #1a1a1a;
+    min-height: 100vh;
+    font-size: 16px;
 }
-.form-group input:focus,
-.form-group select:focus{
-  border-color:#b91c1c;
-  box-shadow:0 0 0 3px rgba(185,28,28,0.1)
-}
-.form-group select{
-  appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a3535' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position:right 14px center;
-  padding-right:36px
-}
-.form-actions{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;border:none;text-decoration:none;transition:all .15s}
-.btn-save{background:#b91c1c;color:#fff}
-.btn-save:hover{background:#991b1b}
-.btn-back{background:#fff;color:#9a3535;border:1px solid #f7c1c1}
-.btn-back:hover{background:#fce8e8;border-color:#f09595;color:#7f1d1d}
 
-@media(max-width:600px){
-  .form-row{grid-template-columns:1fr}
-  .card{padding:20px}
-  nav{padding:0 16px}
-  .page-hero{padding:24px 16px}
+/* ── NAV ── */
+nav {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-decoration: none;
+}
+.logo span { color: #dc2626; }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a {
+    font-size: 14px;
+    color: #555;
+    text-decoration: none;
+    font-weight: 500;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+}
+.nav-links a:hover,
+.nav-links a.active { color: #1a1a1a; border-bottom-color: #dc2626; }
+.btn-nav {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+/* ── PAGE LAYOUT ── */
+.section { padding: 16px 0 24px; }
+.container { max-width: 100%; margin: 0; padding: 0 20px; }
+
+h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 28px;
+}
+
+/* ── MONTANT INFO ── */
+.montant-info {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 13px 16px;
+    font-size: 15px;
+    color: #991b1b;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.montant-info strong { color: #dc2626; font-size: 17px; }
+
+/* ── ALERTS ── */
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+.alert-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* ── FORM GRID ── */
+.row { display: flex; flex-wrap: wrap; gap: 20px; }
+.col-md-6 { flex: 1 1 calc(50% - 10px); min-width: 260px; }
+.col-12 { flex: 0 0 100%; }
+
+/* ── FORM CONTROLS ── */
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 6px;
+}
+.form-control,
+.form-select {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #1a1a1a;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+}
+
+/* ── BUTTONS ── */
+.d-flex { display: flex; }
+.gap-2 { gap: 10px; }
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all .15s;
+}
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-outline-secondary {
+    background: #fff;
+    color: #555;
+    border: 1px solid #d1d5db;
+}
+.btn-outline-secondary:hover { background: #f9fafb; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    .col-md-6 { flex: 0 0 100%; }
 }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="../front/interfaceevent.php" class="logo">Event <span>Management</span></a>
+  <a href="../front/interfaceevent.php" class="logo">Smart Event<span>.</span></a>
   <div class="nav-links">
     <a href="listEvenements.php">Événements</a>
-    <a href="listParticipations.php">Participants</a>
+    <a href="listParticipations.php" class="active">Participants</a>
   </div>
+  <a href="addParticipation.php" class="btn-nav">Ajouter Participation</a>
 </nav>
 
-<div class="page-hero">
-  <h1>✏️ Modifier la Participation #<?= $id ?></h1>
-  <p>Modifiez les informations de la participation</p>
-</div>
-
+<section class="section">
 <div class="container">
-  <div class="card">
-    <h2>Informations de la participation</h2>
 
-    <!-- Montant calculé (informatif) -->
-    <div class="montant-info">
-      💰 Montant total calculé :
-      <strong>
-        <?= $montant == 0 ? 'Gratuit' : number_format($montant, 2) . ' TND' ?>
-      </strong>
-      &nbsp;(<?= $participation->getNombrePlacesReservees() ?> place(s) × <?= number_format($prix, 2) ?> TND)
+  <h2>Modifier la Participation</h2>
+
+  <!-- Montant calculé -->
+  <div class="montant-info">
+    💰 Montant total calculé :
+    <strong>
+      <?= $montant == 0 ? 'Gratuit' : number_format($montant, 2) . ' TND' ?>
+    </strong>
+    &nbsp;(<?= $participation->getNombrePlacesReservees() ?> place(s) × <?= number_format($prix, 2) ?> TND)
+  </div>
+
+  <?php foreach ($errors as $err): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($err) ?></div>
+  <?php endforeach; ?>
+
+  <form method="POST" action="" id="partForm" class="row">
+    <input type="hidden" name="id" value="<?= $id ?>">
+
+    <!-- Événement (pleine largeur) -->
+    <div class="col-12">
+      <label class="form-label">Événement *</label>
+      <select name="id_event" id="id_event" class="form-select">
+        <option value="">-- Choisir un événement --</option>
+        <?php foreach ($allEvents as $ev): ?>
+          <option value="<?= $ev->getIdEvent() ?>"
+            <?= $participation->getIdEvent() == $ev->getIdEvent() ? 'selected' : '' ?>>
+            <?= htmlspecialchars($ev->getTitre()) ?> (<?= htmlspecialchars($ev->getLieu()) ?>)
+          </option>
+        <?php endforeach; ?>
+      </select>
     </div>
 
-    <?php foreach ($errors as $err): ?>
-      <div class="alert alert-danger">❌ <?= htmlspecialchars($err) ?></div>
-    <?php endforeach; ?>
+    <!-- Nom -->
+    <div class="col-md-6">
+      <label class="form-label">Nom *</label>
+      <input type="text" name="nom" id="nom" class="form-control"
+             placeholder="Ben Ali"
+             value="<?= htmlspecialchars($_POST['nom'] ?? $participation->getNom()) ?>">
+    </div>
 
-    <form method="POST" action="" id="partForm">
-      <input type="hidden" name="id" value="<?= $id ?>">
+    <!-- Prénom -->
+    <div class="col-md-6">
+      <label class="form-label">Prénom *</label>
+      <input type="text" name="prenom" id="prenom" class="form-control"
+             placeholder="Ahmed"
+             value="<?= htmlspecialchars($_POST['prenom'] ?? $participation->getPrenom()) ?>">
+    </div>
 
-      <!-- ÉVÉNEMENT -->
-      <div class="form-group">
-        <label>Événement *</label>
-        <select name="id_event" id="id_event">
-          <option value="">-- Choisir un événement --</option>
-          <?php foreach ($allEvents as $ev): ?>
-            <option value="<?= $ev->getIdEvent() ?>"
-              <?= $participation->getIdEvent() == $ev->getIdEvent() ? 'selected' : '' ?>>
-              <?= htmlspecialchars($ev->getTitre()) ?> (<?= htmlspecialchars($ev->getLieu()) ?>)
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
+    <!-- Email -->
+    <div class="col-md-6">
+      <label class="form-label">Email *</label>
+      <input type="email" name="email" id="email" class="form-control"
+             placeholder="ahmed@email.com"
+             value="<?= htmlspecialchars($_POST['email'] ?? $participation->getEmail()) ?>">
+    </div>
 
-      <!-- NOM & PRÉNOM -->
-      <div class="form-row">
-        <div class="form-group">
-          <label>Nom *</label>
-          <input type="text" name="nom" id="nom"
-                 placeholder="Ben Ali"
-                 value="<?= htmlspecialchars($_POST['nom'] ?? $participation->getNom()) ?>">
-        </div>
-        <div class="form-group">
-          <label>Prénom *</label>
-          <input type="text" name="prenom" id="prenom"
-                 placeholder="Ahmed"
-                 value="<?= htmlspecialchars($_POST['prenom'] ?? $participation->getPrenom()) ?>">
-        </div>
-      </div>
+    <!-- Nombre de places -->
+    <div class="col-md-6">
+      <label class="form-label">Nombre de places *</label>
+      <input type="number" name="nombre_places_reservees" id="places" class="form-control"
+             min="1" max="10"
+             value="<?= htmlspecialchars($_POST['nombre_places_reservees'] ?? $participation->getNombrePlacesReservees()) ?>">
+    </div>
 
-      <!-- EMAIL & PLACES -->
-      <div class="form-row">
-        <div class="form-group">
-          <label>Email *</label>
-          <input type="email" name="email" id="email"
-                 placeholder="ahmed@email.com"
-                 value="<?= htmlspecialchars($_POST['email'] ?? $participation->getEmail()) ?>">
-        </div>
-        <div class="form-group">
-          <label>Nombre de places *</label>
-          <input type="number" name="nombre_places_reservees" id="places"
-                 min="1" max="10"
-                 value="<?= htmlspecialchars($_POST['nombre_places_reservees'] ?? $participation->getNombrePlacesReservees()) ?>">
-        </div>
-      </div>
+    <!-- Mode de paiement -->
+    <div class="col-md-6">
+      <label class="form-label">Mode de paiement *</label>
+      <select name="mode_paiement" id="mode_paiement" class="form-select">
+        <option value="">-- Choisir --</option>
+        <option value="gratuit"  <?= ($participation->getModePaiement() === 'gratuit')  ? 'selected' : '' ?>>Gratuit</option>
+        <option value="espèces"  <?= ($participation->getModePaiement() === 'espèces')  ? 'selected' : '' ?>>Espèces 💵</option>
+        <option value="carte"    <?= ($participation->getModePaiement() === 'carte')    ? 'selected' : '' ?>>Carte 💳</option>
+        <option value="virement" <?= ($participation->getModePaiement() === 'virement') ? 'selected' : '' ?>>Virement 🏦</option>
+      </select>
+    </div>
 
-      <!-- MODE PAIEMENT & STATUT -->
-      <div class="form-row">
-        <div class="form-group">
-          <label>Mode de paiement *</label>
-          <select name="mode_paiement" id="mode_paiement">
-            <option value="">-- Choisir --</option>
-            <option value="gratuit"  <?= ($participation->getModePaiement() === 'gratuit')  ? 'selected' : '' ?>>Gratuit</option>
-            <option value="espèces"  <?= ($participation->getModePaiement() === 'espèces')  ? 'selected' : '' ?>>Espèces 💵</option>
-            <option value="carte"    <?= ($participation->getModePaiement() === 'carte')    ? 'selected' : '' ?>>Carte 💳</option>
-            <option value="virement" <?= ($participation->getModePaiement() === 'virement') ? 'selected' : '' ?>>Virement 🏦</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Statut *</label>
-          <select name="statut" id="statut">
-            <option value="">-- Choisir --</option>
-            <option value="confirmé"   <?= $participation->getStatut() === 'confirmé'   ? 'selected' : '' ?>>✅ Confirmé</option>
-            <option value="en attente" <?= ($participation->getStatut() === 'en attente' || $participation->getStatut() === 'en_attente') ? 'selected' : '' ?>>⏳ En attente</option>
-            <option value="annulé"     <?= $participation->getStatut() === 'annulé'     ? 'selected' : '' ?>>❌ Annulé</option>
-          </select>
-        </div>
-      </div>
+    <!-- Statut -->
+    <div class="col-md-6">
+      <label class="form-label">Statut *</label>
+      <select name="statut" id="statut" class="form-select">
+        <option value="">-- Choisir --</option>
+        <option value="confirmé"   <?= $participation->getStatut() === 'confirmé'   ? 'selected' : '' ?>>✅ Confirmé</option>
+        <option value="en attente" <?= ($participation->getStatut() === 'en attente' || $participation->getStatut() === 'en_attente') ? 'selected' : '' ?>>⏳ En attente</option>
+        <option value="annulé"     <?= $participation->getStatut() === 'annulé'     ? 'selected' : '' ?>>❌ Annulé</option>
+      </select>
+    </div>
 
-      <!-- DATE -->
-      <div class="form-group">
-        <label>Date de participation *</label>
-        <input type="datetime-local" name="date_participation" id="date_participation"
-               value="<?= $dp ?>">
-      </div>
+    <!-- Date de participation -->
+    <div class="col-12">
+      <label class="form-label">Date de participation *</label>
+      <input type="datetime-local" name="date_participation" id="date_participation"
+             class="form-control" value="<?= $dp ?>">
+    </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn-save">💾 Enregistrer les modifications</button>
-        <a href="listParticipations.php" class="btn btn-back">← Retour</a>
-      </div>
-    </form>
-  </div>
+    <!-- Actions -->
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-danger">Mettre à jour</button>
+      <a href="listParticipations.php" class="btn btn-outline-secondary">Annuler</a>
+    </div>
+
+  </form>
 </div>
+</section>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('partForm').addEventListener('submit', function (e) {
     var errors = [];
 
-    var id_event  = document.getElementById('id_event').value;
-    var nom       = document.getElementById('nom').value.trim();
-    var prenom    = document.getElementById('prenom').value.trim();
-    var email     = document.getElementById('email').value.trim();
-    var places    = parseInt(document.getElementById('places').value);
-    var mode      = document.getElementById('mode_paiement').value;
-    var statut    = document.getElementById('statut').value;
-    var date      = document.getElementById('date_participation').value;
+    var id_event = document.getElementById('id_event').value;
+    var nom      = document.getElementById('nom').value.trim();
+    var prenom   = document.getElementById('prenom').value.trim();
+    var email    = document.getElementById('email').value.trim();
+    var places   = parseInt(document.getElementById('places').value);
+    var mode     = document.getElementById('mode_paiement').value;
+    var statut   = document.getElementById('statut').value;
+    var date     = document.getElementById('date_participation').value;
 
-    if (!id_event)                           errors.push("Veuillez sélectionner un événement.");
-    if (nom.length < 2)                      errors.push("Le nom doit contenir au moins 2 caractères.");
-    if (prenom.length < 2)                   errors.push("Le prénom doit contenir au moins 2 caractères.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Email invalide.");
-    if (isNaN(places)||places<1||places>10)  errors.push("Le nombre de places doit être entre 1 et 10.");
-    if (!mode)                               errors.push("Veuillez choisir un mode de paiement.");
-    if (!statut)                             errors.push("Veuillez choisir un statut.");
-    if (!date)                               errors.push("La date de participation est obligatoire.");
+    if (!id_event)                                          errors.push("Veuillez sélectionner un événement.");
+    if (nom.length < 2)                                     errors.push("Le nom doit contenir au moins 2 caractères.");
+    if (prenom.length < 2)                                  errors.push("Le prénom doit contenir au moins 2 caractères.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))         errors.push("Email invalide.");
+    if (isNaN(places) || places < 1 || places > 10)        errors.push("Le nombre de places doit être entre 1 et 10.");
+    if (!mode)                                              errors.push("Veuillez choisir un mode de paiement.");
+    if (!statut)                                            errors.push("Veuillez choisir un statut.");
+    if (!date)                                              errors.push("La date de participation est obligatoire.");
 
     var errorDiv = document.getElementById('js-errors');
     if (!errorDiv) {
       errorDiv = document.createElement('div');
       errorDiv.id = 'js-errors';
-      errorDiv.style.cssText='background:#fce8e8;border:1px solid #f09595;padding:12px 16px;margin-bottom:15px;border-radius:10px;color:#7f1d1d;font-size:14px;';
+      errorDiv.className = 'alert alert-danger';
       document.getElementById('partForm').prepend(errorDiv);
     }
 
     if (errors.length > 0) {
       e.preventDefault();
       errorDiv.innerHTML = '<strong>Erreurs :</strong><ul style="margin:8px 0 0 16px">'
-        + errors.map(function(err){ return '<li>'+err+'</li>'; }).join('')
+        + errors.map(function(err){ return '<li>' + err + '</li>'; }).join('')
         + '</ul>';
       errorDiv.style.display = 'block';
       window.scrollTo(0, 0);

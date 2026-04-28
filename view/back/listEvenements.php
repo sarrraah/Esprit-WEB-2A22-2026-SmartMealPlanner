@@ -12,11 +12,6 @@ if (isset($_GET['delete'])) {
 $evenements = $controller->listEvenements();
 $msg = $_GET['msg'] ?? '';
 
-$total    = count($evenements);
-$actifs   = count(array_filter($evenements, fn($e) => str_contains(strtolower($e->getStatut()), 'actif')));
-$gratuits = count(array_filter($evenements, fn($e) => (float)$e->getPrix() == 0));
-$termines = count(array_filter($evenements, fn($e) => str_contains(strtolower($e->getStatut()), 'termin')));
-
 $participationCounts = [];
 foreach ($evenements as $e) {
     $participationCounts[$e->getIdEvent()] = $controller->countParticipationsByEvent($e->getIdEvent());
@@ -29,263 +24,387 @@ foreach ($evenements as $e) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Événements</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .stat-card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-        .table thead th { background-color: #f2f2f2; font-weight: 600; font-size: 13px; color: #495057; }
-        .table tbody tr:hover { background-color: #f8f9fa; }
-        .table td { font-size: 13px; vertical-align: middle; }
-        .badge-pill { font-size: 12px; padding: 5px 12px; border-radius: 20px; }
+        * { box-sizing: border-box; }
+        body { background: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+        /* ── Navbar ── */
+        .top-navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            height: 64px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-navbar .brand {
+            font-weight: 800;
+            font-size: 20px;
+            color: #111;
+            text-decoration: none;
+        }
+        .top-navbar .brand span { color: #e63946; }
+        .top-navbar .nav-links { display: flex; gap: 32px; list-style: none; margin: 0; padding: 0; }
+        .top-navbar .nav-links a {
+            text-decoration: none;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            padding-bottom: 4px;
+            border-bottom: 2px solid transparent;
+        }
+        .top-navbar .nav-links a.active,
+        .top-navbar .nav-links a:hover {
+            color: #111;
+            border-bottom: 2px solid #e63946;
+        }
+        .top-navbar .btn-add {
+            background: #e63946;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            padding: 9px 22px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .top-navbar .btn-add:hover { background: #c1121f; color: #fff; }
+
+        /* ── Page content ── */
+        .page-content { padding: 40px 40px 60px; }
+
+        .page-title {
+            font-size: 38px;
+            font-weight: 400;
+            color: #111;
+            margin-bottom: 24px;
+        }
+
+        /* ── Filters ── */
+        .filters-row {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr 1.2fr 1.5fr auto;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: center;
+            width: 100%;
+        }
+        .filters-row input,
+        .filters-row select {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 11px 16px;
+            font-size: 15px;
+            color: #333;
+            background: #fff;
+            outline: none;
+        }
+        .filters-row input:focus,
+        .filters-row select:focus { border-color: #aaa; }
+        .filters-row .btn-cancel {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 11px 18px;
+            font-size: 15px;
+            color: #555;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .filters-row .btn-cancel:hover { border-color: #aaa; color: #111; }
+
+        /* ── Table ── */
+        .table-wrap { border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 16px; }
+        thead th {
+            background: #fff;
+            font-weight: 700;
+            padding: 18px 20px;
+            border-bottom: 2px solid #e5e5e5;
+            white-space: nowrap;
+            font-size: 15px;
+        }
+        thead th:nth-child(1)  { color: #6c757d; }
+        thead th:nth-child(2)  { color: #111; }
+        thead th:nth-child(3)  { color: #0d6efd; }
+        thead th:nth-child(4)  { color: #6c757d; }
+        thead th:nth-child(5)  { color: #198754; }
+        thead th:nth-child(6)  { color: #198754; }
+        thead th:nth-child(7)  { color: #6c757d; }
+        thead th:nth-child(8)  { color: #0d6efd; }
+        thead th:nth-child(9)  { color: #dc3545; }
+        thead th:nth-child(10) { color: #6c757d; }
+        thead th:nth-child(11) { color: #6c757d; }
+
+        tbody tr { border-bottom: 1px solid #f0f0f0; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #fafafa; }
+        tbody td {
+            padding: 16px 20px;
+            color: #333;
+            font-size: 16px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        tbody td:nth-child(2) {
+            white-space: normal;
+            min-width: 160px;
+            font-size: 17px;
+            font-weight: 400;
+            color: #111;
+        }
+        tbody td:nth-child(4) { white-space: normal; min-width: 130px; }
+
+        /* ── Badges ── */
+        .badge-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #333;
+            color: #fff;
+        }
+        .badge-status.actif   { background: #198754; }
+        .badge-status.annule  { background: #ffc107; color: #333; }
+        .badge-status.termine { background: #6c757d; }
+
+        .badge-inscrit {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            text-decoration: none;
+        }
+        .badge-inscrit.ok     { background: #198754; }
+        .badge-inscrit.almost { background: #ffc107; color: #333; }
+        .badge-inscrit.full   { background: #dc3545; }
+
+        /* ── Action buttons ── */
+        .btn-modifier {
+            border: 1.5px solid #0d6efd;
+            color: #0d6efd;
+            background: #fff;
+            border-radius: 6px;
+            padding: 4px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-modifier:hover { background: #0d6efd; color: #fff; }
+
+        .btn-supprimer {
+            border: 1.5px solid #dc3545;
+            color: #dc3545;
+            background: #fff;
+            border-radius: 6px;
+            padding: 4px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-left: 6px;
+        }
+        .btn-supprimer:hover { background: #dc3545; color: #fff; }
+
+        .btn-participants {
+            border: 1.5px solid #0dcaf0;
+            color: #0dcaf0;
+            background: #fff;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 13px;
+            text-decoration: none;
+            margin-left: 6px;
+            transition: all 0.15s;
+        }
+        .btn-participants:hover { background: #0dcaf0; color: #fff; }
+
+        /* Prix */
+        .prix-gratuit { color: #198754; font-weight: 600; }
+        .prix-payant  { color: #dc3545; font-weight: 600; }
+
+        /* No result */
+        .no-result td { text-align: center; color: #aaa; padding: 30px; font-size: 14px; }
+
+        /* Alert */
+        .alert { border-radius: 8px; font-size: 14px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-success shadow-sm mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="#">
-            <i class="fas fa-calendar-alt me-2"></i>NutriPlanner — Back Office
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navMenu">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link active fw-semibold" href="listEvenements.php">
-                        <i class="fas fa-list me-1"></i>Événements
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="listParticipations.php">
-                        <i class="fas fa-users me-1"></i>Participants
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="afficherProduit.php">
-                        <i class="fas fa-box me-1"></i>Produits
-                    </a>
-                </li>
-            </ul>
-            <span class="navbar-text text-white">
-                <i class="fas fa-user-circle me-1"></i>Admin
-            </span>
-        </div>
-    </div>
+<nav class="top-navbar">
+    <a href="#" class="brand">Smart Meal Planner<span>.</span></a>
+    <ul class="nav-links">
+        <li><a href="listEvenements.php" class="active">Événements</a></li>
+        <li><a href="listParticipations.php">Participants</a></li>
+        <li><a href="afficherProduit.php">Produits</a></li>
+        <li><a href="afficherCategorie.php">Catégories</a></li>
+    </ul>
+    <a href="addEvenement.php" class="btn-add">Ajouter Événement</a>
 </nav>
 
-<div class="container-fluid px-4 pb-5">
+<!-- CONTENT -->
+<div class="page-content">
 
-    <!-- Titre + boutons -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0 fw-bold">
-            <i class="fas fa-calendar-alt me-2 text-success"></i>Gestion des Événements
-        </h4>
-        <div class="d-flex gap-2">
-            <a href="addEvenement.php" class="btn btn-success">
-                <i class="fas fa-plus me-1"></i>Nouvel Événement
-            </a>
-            <button class="btn btn-outline-secondary" onclick="exportCSV()">
-                <i class="fas fa-download me-1"></i>Export CSV
-            </button>
-        </div>
-    </div>
-
-    <!-- Statistiques -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card stat-card text-center p-3">
-                <div class="fs-2 fw-bold text-dark"><?= $total ?></div>
-                <div class="text-muted small text-uppercase fw-semibold">Total</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card text-center p-3">
-                <div class="fs-2 fw-bold text-success"><?= $actifs ?></div>
-                <div class="text-muted small text-uppercase fw-semibold">Actifs</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card text-center p-3">
-                <div class="fs-2 fw-bold text-primary"><?= $gratuits ?></div>
-                <div class="text-muted small text-uppercase fw-semibold">Gratuits</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card text-center p-3">
-                <div class="fs-2 fw-bold text-secondary"><?= $termines ?></div>
-                <div class="text-muted small text-uppercase fw-semibold">Terminés</div>
-            </div>
-        </div>
+    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+        <h1 class="page-title mb-0">Gestion des Événements</h1>
+        <button class="btn-cancel" onclick="exportCSV()" style="border-radius:8px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
     </div>
 
     <!-- Alertes -->
     <?php if ($msg === 'added'): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show">
             <i class="fas fa-check-circle me-1"></i>Événement ajouté avec succès.
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
     <?php if ($msg === 'updated'): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show">
             <i class="fas fa-check-circle me-1"></i>Événement mis à jour avec succès.
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
     <?php if ($msg === 'deleted'): ?>
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show">
             <i class="fas fa-trash me-1"></i>Événement supprimé.
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
     <!-- Filtres -->
-    <div class="row g-2 mb-3">
-        <div class="col-md-3">
-            <input type="text" id="search-event" class="form-control" placeholder="🔍 Rechercher un événement...">
-        </div>
-        <div class="col-md-2">
-            <select id="filter-type" class="form-select">
-                <option value="">Tous les types</option>
-                <?php
-                $types = array_unique(array_map(fn($e) => $e->getType(), $evenements));
-                sort($types);
-                foreach ($types as $t): ?>
-                    <option value="<?= htmlspecialchars(strtolower($t)) ?>"><?= htmlspecialchars($t) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <select id="filter-statut" class="form-select">
-                <option value="">Tous les statuts</option>
-                <?php
-                $statuts = array_unique(array_map(fn($e) => $e->getStatut(), $evenements));
-                sort($statuts);
-                foreach ($statuts as $s): ?>
-                    <option value="<?= htmlspecialchars(strtolower($s)) ?>"><?= htmlspecialchars($s) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <select id="filter-tri" class="form-select">
-                <option value="">— Trier —</option>
-                <option value="titre-asc">Titre A → Z</option>
-                <option value="titre-desc">Titre Z → A</option>
-                <option value="prix-asc">Prix croissant ↑</option>
-                <option value="prix-desc">Prix décroissant ↓</option>
-                <option value="date-asc">Date proche ↑</option>
-                <option value="date-desc">Date lointaine ↓</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button class="btn btn-outline-secondary w-100" onclick="annulerFiltres()">
-                <i class="fas fa-times me-1"></i>Annuler
-            </button>
-        </div>
+    <div class="filters-row">
+        <input type="text" id="search-event" placeholder="Rechercher un événement...">
+        <select id="filter-type">
+            <option value="">Tous les types</option>
+            <?php
+            $types = array_unique(array_map(fn($e) => $e->getType(), $evenements));
+            sort($types);
+            foreach ($types as $t): ?>
+                <option value="<?= htmlspecialchars(strtolower($t)) ?>"><?= htmlspecialchars($t) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <select id="filter-statut">
+            <option value="">Tous les statuts</option>
+            <?php
+            $statuts = array_unique(array_map(fn($e) => $e->getStatut(), $evenements));
+            sort($statuts);
+            foreach ($statuts as $s): ?>
+                <option value="<?= htmlspecialchars(strtolower($s)) ?>"><?= htmlspecialchars($s) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <select id="filter-tri">
+            <option value="">— Trier —</option>
+            <option value="titre-asc">Titre A → Z</option>
+            <option value="titre-desc">Titre Z → A</option>
+            <option value="prix-asc">Prix croissant ↑</option>
+            <option value="prix-desc">Prix décroissant ↓</option>
+            <option value="date-asc">Date proche ↑</option>
+            <option value="date-desc">Date lointaine ↓</option>
+        </select>
+        <button class="btn-cancel" onclick="annulerFiltres()">
+            <i class="bi bi-x-circle"></i> Annuler
+        </button>
     </div>
 
     <!-- Tableau -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle mb-0" id="table-evenements">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Titre</th>
-                            <th>Type</th>
-                            <th>Lieu</th>
-                            <th>Début</th>
-                            <th>Fin</th>
-                            <th>Capacité</th>
-                            <th>Participations</th>
-                            <th>Prix</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-evenements">
-                    <?php foreach ($evenements as $e):
-                        $s = strtolower($e->getStatut());
-                        $badgeClass = match(true) {
-                            str_contains($s, 'actif')  => 'bg-success',
-                            str_contains($s, 'annul')  => 'bg-warning text-dark',
-                            str_contains($s, 'termin') => 'bg-secondary',
-                            default => 'bg-secondary',
-                        };
-                        $isFree     = (float)$e->getPrix() == 0;
-                        $priceLabel = $isFree
-                            ? '<span class="text-success fw-semibold">Gratuit</span>'
-                            : '<span class="text-danger fw-semibold">' . number_format($e->getPrix(), 2) . ' TND</span>';
+    <div class="table-wrap">
+        <table id="table-evenements">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Titre</th>
+                    <th>Type</th>
+                    <th>Lieu</th>
+                    <th>Début</th>
+                    <th>Fin</th>
+                    <th>Cap.</th>
+                    <th>Inscrits</th>
+                    <th>Prix</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-evenements">
+            <?php foreach ($evenements as $e):
+                $s = strtolower($e->getStatut());
+                $badgeStatus = str_contains($s,'actif') ? 'actif' : (str_contains($s,'annul') ? 'annule' : 'termine');
 
-                        $count  = $participationCounts[$e->getIdEvent()] ?? 0;
-                        $cap    = (int)$e->getCapaciteMax();
-                        $full   = $cap > 0 && $count >= $cap;
-                        $almost = $cap > 0 && !$full && ($count / $cap) >= 0.8;
-                        $pillBadge = $full ? 'bg-danger' : ($almost ? 'bg-warning text-dark' : 'bg-success');
-                    ?>
-                        <tr
-                            data-titre="<?= htmlspecialchars(strtolower($e->getTitre()), ENT_QUOTES) ?>"
-                            data-type="<?= htmlspecialchars(strtolower($e->getType()), ENT_QUOTES) ?>"
-                            data-statut="<?= htmlspecialchars(strtolower($e->getStatut()), ENT_QUOTES) ?>"
-                            data-prix="<?= (float)$e->getPrix() ?>"
-                            data-date="<?= htmlspecialchars($e->getDateDebut() ?? '', ENT_QUOTES) ?>">
-                            <td><?= (int)$e->getIdEvent() ?></td>
-                            <td><strong><?= htmlspecialchars($e->getTitre()) ?></strong></td>
-                            <td><?= htmlspecialchars($e->getType()) ?></td>
-                            <td><?= htmlspecialchars($e->getLieu()) ?></td>
-                            <td><?= htmlspecialchars($e->getDateDebut()) ?></td>
-                            <td><?= htmlspecialchars($e->getDateFin()) ?></td>
-                            <td class="text-center"><?= $cap ?></td>
-                            <td class="text-center">
-                                <a href="listParticipations.php?id_event=<?= $e->getIdEvent() ?>"
-                                   class="badge badge-pill <?= $pillBadge ?> text-decoration-none">
-                                    👥 <?= $count ?> / <?= $cap ?>
-                                </a>
-                            </td>
-                            <td><?= $priceLabel ?></td>
-                            <td>
-                                <span class="badge badge-pill <?= $badgeClass ?>">
-                                    <?= htmlspecialchars($e->getStatut()) ?>
-                                </span>
-                            </td>
-                            <td>
-                                <a href="updateEvenement.php?id=<?= (int)$e->getIdEvent() ?>"
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-edit"></i> Modifier
-                                </a>
-                                <a href="listParticipations.php?id_event=<?= (int)$e->getIdEvent() ?>"
-                                   class="btn btn-sm btn-outline-info">
-                                    <i class="fas fa-users"></i>
-                                </a>
-                                <a href="listEvenements.php?delete=<?= (int)$e->getIdEvent() ?>"
-                                   class="btn btn-sm btn-outline-danger"
-                                   onclick="return confirm('Supprimer cet événement ?')">
-                                    <i class="fas fa-trash"></i> Supprimer
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    <tr id="no-result" style="display:none;">
-                        <td colspan="11" class="text-center text-muted py-4">
-                            <i class="fas fa-search me-2"></i>Aucun événement trouvé.
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                $isFree = (float)$e->getPrix() == 0;
+                $priceLabel = $isFree
+                    ? '<span class="prix-gratuit">Gratuit</span>'
+                    : '<span class="prix-payant">'.number_format($e->getPrix(),2).' TND</span>';
+
+                $count = $participationCounts[$e->getIdEvent()] ?? 0;
+                $cap   = (int)$e->getCapaciteMax();
+                $full  = $cap > 0 && $count >= $cap;
+                $almost = $cap > 0 && !$full && ($count / $cap) >= 0.8;
+                $inscritClass = $full ? 'full' : ($almost ? 'almost' : 'ok');
+
+                $debut = substr($e->getDateDebut(), 0, 16);
+                $fin   = substr($e->getDateFin(),   0, 16);
+            ?>
+                <tr
+                    data-titre="<?= htmlspecialchars(strtolower($e->getTitre()), ENT_QUOTES) ?>"
+                    data-type="<?= htmlspecialchars(strtolower($e->getType()), ENT_QUOTES) ?>"
+                    data-statut="<?= htmlspecialchars(strtolower($e->getStatut()), ENT_QUOTES) ?>"
+                    data-prix="<?= (float)$e->getPrix() ?>"
+                    data-date="<?= htmlspecialchars($e->getDateDebut() ?? '', ENT_QUOTES) ?>">
+                    <td><?= (int)$e->getIdEvent() ?></td>
+                    <td><?= htmlspecialchars($e->getTitre()) ?></td>
+                    <td><?= htmlspecialchars($e->getType()) ?></td>
+                    <td><?= htmlspecialchars($e->getLieu()) ?></td>
+                    <td><?= htmlspecialchars($debut) ?></td>
+                    <td><?= htmlspecialchars($fin) ?></td>
+                    <td><?= $cap ?></td>
+                    <td>
+                        <a href="listParticipations.php?id_event=<?= $e->getIdEvent() ?>" class="badge-inscrit <?= $inscritClass ?>">
+                            <?= $count ?> / <?= $cap ?>
+                        </a>
+                    </td>
+                    <td><?= $priceLabel ?></td>
+                    <td><span class="badge-status <?= $badgeStatus ?>"><?= htmlspecialchars($e->getStatut()) ?></span></td>
+                    <td>
+                        <a href="updateEvenement.php?id=<?= (int)$e->getIdEvent() ?>" class="btn-modifier">Modifier</a>
+                        <a href="listParticipations.php?id_event=<?= (int)$e->getIdEvent() ?>" class="btn-participants" title="Participants"><i class="fas fa-users"></i></a>
+                        <a href="listEvenements.php?delete=<?= (int)$e->getIdEvent() ?>" class="btn-supprimer"
+                           onclick="return confirm('Supprimer cet événement ?')">Supprimer</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            <tr id="no-result" class="no-result" style="display:none;">
+                <td colspan="11"><i class="fas fa-search me-2"></i>Aucun événement trouvé.</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 
-</div><!-- /container -->
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 var tbody = document.getElementById('tbody-evenements');
-Array.from(tbody.querySelectorAll('tr:not(#no-result)')).forEach(function(r, i) {
-    r.dataset.index = i;
-});
+Array.from(tbody.querySelectorAll('tr:not(#no-result)')).forEach(function(r,i){ r.dataset.index=i; });
 
 function filtrerEtTrier() {
     var q      = document.getElementById('search-event').value.toLowerCase().trim();
@@ -296,79 +415,48 @@ function filtrerEtTrier() {
     var visible = 0;
 
     rows.forEach(function(row) {
-        var titre = row.dataset.titre  || '';
-        var rType = row.dataset.type   || '';
-        var rStat = row.dataset.statut || '';
-        var matchSearch = !q      || titre.includes(q) || rType.includes(q);
-        var matchType   = !type   || rType === type;
-        var matchStatut = !statut || rStat === statut;
-        var show = matchSearch && matchType && matchStatut;
+        var show = (!q || (row.dataset.titre||'').includes(q) || (row.dataset.type||'').includes(q))
+                && (!type   || row.dataset.type   === type)
+                && (!statut || row.dataset.statut === statut);
         row.style.display = show ? '' : 'none';
         if (show) visible++;
     });
 
     if (tri) {
-        var field = tri.split('-')[0];
-        var dir   = tri.split('-')[1];
-        var visibleRows = rows.filter(function(r) { return r.style.display !== 'none'; });
-        visibleRows.sort(function(a, b) {
-            var va, vb;
-            if (field === 'titre') {
-                va = a.dataset.titre || ''; vb = b.dataset.titre || '';
-                return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-            }
-            if (field === 'prix') {
-                va = parseFloat(a.dataset.prix) || 0;
-                vb = parseFloat(b.dataset.prix) || 0;
-                return dir === 'asc' ? va - vb : vb - va;
-            }
-            if (field === 'date') {
-                va = a.dataset.date || ''; vb = b.dataset.date || '';
-                return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-            }
+        var field=tri.split('-')[0], dir=tri.split('-')[1];
+        var vis=rows.filter(function(r){ return r.style.display!=='none'; });
+        vis.sort(function(a,b){
+            if (field==='titre') return dir==='asc'?(a.dataset.titre||'').localeCompare(b.dataset.titre||''):(b.dataset.titre||'').localeCompare(a.dataset.titre||'');
+            if (field==='prix')  { var va=parseFloat(a.dataset.prix)||0,vb=parseFloat(b.dataset.prix)||0; return dir==='asc'?va-vb:vb-va; }
+            if (field==='date')  return dir==='asc'?(a.dataset.date||'').localeCompare(b.dataset.date||''):(b.dataset.date||'').localeCompare(a.dataset.date||'');
             return 0;
         });
-        visibleRows.forEach(function(r) {
-            tbody.insertBefore(r, document.getElementById('no-result'));
-        });
+        vis.forEach(function(r){ tbody.insertBefore(r,document.getElementById('no-result')); });
     } else {
-        var allRows = rows.slice().sort(function(a, b) {
-            return (parseInt(a.dataset.index) || 0) - (parseInt(b.dataset.index) || 0);
-        });
-        allRows.forEach(function(r) {
-            tbody.insertBefore(r, document.getElementById('no-result'));
-        });
+        rows.slice().sort(function(a,b){ return (parseInt(a.dataset.index)||0)-(parseInt(b.dataset.index)||0); })
+            .forEach(function(r){ tbody.insertBefore(r,document.getElementById('no-result')); });
     }
-
-    document.getElementById('no-result').style.display = visible === 0 ? '' : 'none';
+    document.getElementById('no-result').style.display = visible===0 ? '' : 'none';
 }
 
 function annulerFiltres() {
-    document.getElementById('search-event').value   = '';
-    document.getElementById('filter-type').value    = '';
-    document.getElementById('filter-statut').value  = '';
-    document.getElementById('filter-tri').value     = '';
+    ['search-event','filter-type','filter-statut','filter-tri'].forEach(function(id){ document.getElementById(id).value=''; });
     filtrerEtTrier();
 }
 
 function exportCSV() {
-    var headers = ['ID','Titre','Type','Lieu','Début','Fin','Capacité','Participations','Prix','Statut'];
-    var rows = Array.from(tbody.querySelectorAll('tr:not(#no-result)')).filter(function(r) {
-        return r.style.display !== 'none';
-    });
-    var escape = function(v) { return '"' + v.replace(/"/g, '""') + '"'; };
-    var lines  = [headers.map(escape).join(',')];
-    rows.forEach(function(row) {
-        var cols = [];
-        for (var i = 0; i < row.cells.length - 1; i++) {
-            cols.push(escape(row.cells[i].textContent.trim()));
-        }
+    var headers=['ID','Titre','Type','Lieu','Début','Fin','Capacité','Inscrits','Prix','Statut'];
+    var rows=Array.from(tbody.querySelectorAll('tr:not(#no-result)')).filter(function(r){ return r.style.display!=='none'; });
+    var esc=function(v){ return '"'+v.replace(/"/g,'""')+'"'; };
+    var lines=[headers.map(esc).join(',')];
+    rows.forEach(function(row){
+        var cols=[];
+        for(var i=0;i<row.cells.length-1;i++) cols.push(esc(row.cells[i].textContent.trim()));
         lines.push(cols.join(','));
     });
-    var blob = new Blob(['\uFEFF' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
-    var a    = document.createElement('a');
-    a.href   = URL.createObjectURL(blob);
-    a.download = 'evenements_' + new Date().toISOString().slice(0, 10) + '.csv';
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+    a.download='evenements_'+new Date().toISOString().slice(0,10)+'.csv';
     a.click();
 }
 
@@ -377,6 +465,5 @@ document.getElementById('filter-type').addEventListener('change', filtrerEtTrier
 document.getElementById('filter-statut').addEventListener('change', filtrerEtTrier);
 document.getElementById('filter-tri').addEventListener('change', filtrerEtTrier);
 </script>
-
 </body>
 </html>

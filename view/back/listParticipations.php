@@ -1,14 +1,15 @@
 <?php
 require '../../controller/ParticipationController.php';
 require '../../controller/EvenementController.php';
-$ctrl     = new ParticipationController();
-$evCtrl   = new EvenementController();
+$ctrl   = new ParticipationController();
+$evCtrl = new EvenementController();
 
 // DELETE
 if (isset($_GET['delete'])) {
     $ctrl->deleteParticipation($_GET['delete']);
-    $redir = isset($_GET['id_event']) ? 'listParticipations.php?id_event=' . (int)$_GET['id_event'] . '&msg=deleted'
-                                      : 'listParticipations.php?msg=deleted';
+    $redir = isset($_GET['id_event'])
+        ? 'listParticipations.php?id_event=' . (int)$_GET['id_event'] . '&msg=deleted'
+        : 'listParticipations.php?msg=deleted';
     header('Location: ' . $redir);
     exit;
 }
@@ -25,363 +26,407 @@ if ($id_event_filter) {
 }
 
 $allEvents = $evCtrl->listEvenements();
-
-// Construire map événements pour prix
-$eventMap = [];
+$eventMap  = [];
 foreach ($allEvents as $ev) {
     $eventMap[$ev->getIdEvent()] = $ev;
 }
 
-$msg   = $_GET['msg'] ?? '';
-$total = count($participations);
-
+$msg       = $_GET['msg'] ?? '';
+$total     = count($participations);
 $confirmes = count(array_filter($participations, fn($p) => strtolower($p->getStatut()) === 'confirmé'));
 $enAttente = count(array_filter($participations, fn($p) => strtolower($p->getStatut()) === 'en attente'));
 $annules   = count(array_filter($participations, fn($p) => strtolower($p->getStatut()) === 'annulé'));
 
-// Calcul revenue basé sur prix événement × nombre de places
 $revenue = 0;
 foreach ($participations as $p) {
     $evObj = $eventMap[$p->getIdEvent()] ?? null;
-    if ($evObj) {
-        $revenue += (float)$evObj->getPrix() * $p->getNombrePlacesReservees();
-    }
+    if ($evObj) $revenue += (float)$evObj->getPrix() * $p->getNombrePlacesReservees();
 }
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Liste des Participations</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Participations</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; }
 
-/* ── NAVBAR ── */
-.navbar{background:#7f1d1d;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.nav-logo{font-size:16px;font-weight:600;color:#fff;text-decoration:none}
-.nav-logo span{color:#fca5a5}
-.nav-logo sub{font-size:11px;color:rgba(255,255,255,0.4);margin-left:8px}
-.nav-links{display:flex;gap:6px;align-items:center}
-.nav-link{font-size:13px;color:rgba(255,255,255,0.7);text-decoration:none;font-weight:500;padding:7px 14px;border-radius:8px;transition:all .15s;display:flex;align-items:center;gap:6px}
-.nav-link:hover{background:rgba(255,255,255,0.1);color:#fff}
-.nav-link.active{background:rgba(255,255,255,0.18);color:#fff;font-weight:600}
-.nav-user{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:10px}
-.nav-avatar{width:30px;height:30px;border-radius:50%;background:#b91c1c;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff}
-.nav-user-name{font-size:12px;color:#fff;font-weight:500}
-.nav-user-role{font-size:10px;color:rgba(255,255,255,0.4)}
+        /* ── Navbar ── */
+        .top-navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            height: 64px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-navbar .brand { font-weight: 800; font-size: 20px; color: #111; text-decoration: none; }
+        .top-navbar .brand span { color: #e63946; }
+        .top-navbar .nav-links { display: flex; gap: 32px; list-style: none; margin: 0; padding: 0; }
+        .top-navbar .nav-links a {
+            text-decoration: none; color: #555; font-size: 14px; font-weight: 500;
+            padding-bottom: 4px; border-bottom: 2px solid transparent;
+        }
+        .top-navbar .nav-links a.active,
+        .top-navbar .nav-links a:hover { color: #111; border-bottom: 2px solid #e63946; }
+        .top-navbar .btn-add {
+            background: #e63946; color: #fff; border: none; border-radius: 25px;
+            padding: 9px 22px; font-size: 14px; font-weight: 600;
+            text-decoration: none; cursor: pointer; transition: background 0.2s;
+        }
+        .top-navbar .btn-add:hover { background: #c1121f; color: #fff; }
 
-/* ── TOPBAR ── */
-.topbar{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
-.topbar-title{font-size:15px;font-weight:600;color:#1a0505}
-.topbar-sub{font-size:12px;color:#9a3535}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.btn-new{display:inline-flex;align-items:center;gap:6px;background:#b91c1c;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;text-decoration:none;transition:background .15s}
-.btn-new:hover{background:#991b1b}
-.btn-csv{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#7f1d1d;border:1.5px solid #f7c1c1;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;transition:all .15s}
-.btn-csv:hover{background:#fce8e8;border-color:#f09595}
+        /* ── Page content ── */
+        .page-content { padding: 40px 40px 60px; }
 
-.content{padding:28px 28px 60px}
+        .page-title { font-size: 38px; font-weight: 400; color: #111; margin-bottom: 8px; }
 
-/* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
-.stat-card{background:#fff;border:1px solid #fde8e8;border-radius:14px;padding:16px 20px}
-.stat-num{font-size:26px;font-weight:700;color:#1a0505;line-height:1}
-.stat-lbl{font-size:11px;color:#9a3535;margin-top:5px;text-transform:uppercase;letter-spacing:.6px}
-.stat-card.s-confirme .stat-num{color:#15803d}
-.stat-card.s-attente  .stat-num{color:#b45309}
-.stat-card.s-revenue  .stat-num{color:#b91c1c}
+        /* ── Stats ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 18px 22px;
+        }
+        .stat-num { font-size: 28px; font-weight: 700; color: #111; line-height: 1; }
+        .stat-lbl { font-size: 11px; color: #888; margin-top: 6px; text-transform: uppercase; letter-spacing: .6px; }
+        .stat-card.green .stat-num { color: #198754; }
+        .stat-card.orange .stat-num { color: #f59e0b; }
+        .stat-card.red .stat-num   { color: #e63946; }
 
-/* ── ALERTS ── */
-.alert{padding:12px 16px;border-radius:10px;margin-bottom:18px;font-size:14px;font-weight:500}
-.alert-success{background:#fce8e8;color:#7f1d1d;border:1px solid #f09595}
-.alert-danger{background:#fff0e0;color:#7a4000;border:1px solid #fad99a}
+        /* ── Event banner ── */
+        .event-banner {
+            background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 10px;
+            padding: 12px 18px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 12px; font-size: 14px;
+        }
+        .event-banner strong { color: #111; }
+        .event-banner a {
+            margin-left: auto; font-size: 13px; color: #e63946;
+            text-decoration: none; font-weight: 500;
+            padding: 5px 14px; border: 1px solid #e63946; border-radius: 8px;
+        }
+        .event-banner a:hover { background: #fce8e8; }
 
-/* ── TOOLBAR ── */
-.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px}
-.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.search-wrap{position:relative}
-.search-wrap input{padding:9px 14px 9px 36px;border:1px solid #f7c1c1;border-radius:10px;background:#fff;color:#1a0505;font-size:13px;width:220px;outline:none;font-family:'Inter',sans-serif;transition:border-color .2s}
-.search-wrap input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,0.1)}
-.search-wrap input::placeholder{color:#c9a0a0}
-.search-wrap::before{content:'🔍';font-size:13px;position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none}
-.filter-select{padding:9px 14px;border:1px solid #f7c1c1;border-radius:10px;background:#fff;color:#1a0505;font-size:13px;outline:none;font-family:'Inter',sans-serif;cursor:pointer;transition:border-color .2s}
-.filter-select:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,0.1)}
+        /* ── Filters ── */
+        .filters-row {
+            display: grid;
+            grid-template-columns: 2fr 1.4fr 1.8fr auto;
+            gap: 12px;
+            margin-bottom: 24px;
+            width: 100%;
+            align-items: center;
+        }
+        .filters-row input,
+        .filters-row select {
+            width: 100%; border: 1px solid #ddd; border-radius: 8px;
+            padding: 11px 16px; font-size: 15px; color: #333;
+            background: #fff; outline: none;
+        }
+        .filters-row input:focus,
+        .filters-row select:focus { border-color: #aaa; }
+        .filters-row .btn-cancel {
+            background: #fff; border: 1px solid #ddd; border-radius: 8px;
+            padding: 11px 18px; font-size: 15px; color: #555; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+        .filters-row .btn-cancel:hover { border-color: #aaa; color: #111; }
 
-/* ── TABLE ── */
-.table-wrap{background:#fff;border:1px solid #fde8e8;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(185,28,28,0.06)}
-table{width:100%;border-collapse:collapse}
-thead{background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 100%)}
-thead th{padding:14px 12px;text-align:center;font-size:13px;font-weight:500;color:#fff;white-space:nowrap;user-select:none}
-thead th.sortable{cursor:pointer;transition:background .15s}
-thead th.sortable:hover{background:rgba(255,255,255,0.12)}
-thead th .sort-arrow{display:inline-block;margin-left:5px;font-size:10px;opacity:.5}
-thead th.asc .sort-arrow::after{content:'▲';opacity:1}
-thead th.desc .sort-arrow::after{content:'▼';opacity:1}
-thead th:not(.asc):not(.desc) .sort-arrow::after{content:'⇅';opacity:.4}
-tbody tr{border-bottom:1px solid #fce8e8;transition:background .15s}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#fff5f5}
-td{padding:13px 12px;text-align:center;font-size:13px;color:#1a0505}
-td b{font-weight:600;color:#7f1d1d}
+        /* ── Table ── */
+        .table-wrap { border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 16px; }
+        thead th {
+            background: #fff; font-weight: 700;
+            padding: 18px 20px; border-bottom: 2px solid #e5e5e5;
+            white-space: nowrap; font-size: 15px;
+        }
+        thead th:nth-child(1) { color: #6c757d; }
+        thead th:nth-child(2) { color: #111; }
+        thead th:nth-child(3) { color: #0d6efd; }
+        thead th:nth-child(4) { color: #198754; }
+        thead th:nth-child(5) { color: #e63946; }
+        thead th:nth-child(6) { color: #6c757d; }
+        thead th:nth-child(7) { color: #6c757d; }
+        thead th:nth-child(8) { color: #6c757d; }
 
-.badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
-.badge-confirme{background:#dcfce7;color:#166534;border:1px solid #86efac}
-.badge-attente{background:#fff0e0;color:#7a4000;border:1px solid #fad99a}
-.badge-annule{background:#f5e8e8;color:#7f1d1d;border:1px solid #f09595}
+        tbody tr { border-bottom: 1px solid #f0f0f0; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #fafafa; }
+        tbody td {
+            padding: 16px 20px; color: #333; font-size: 16px;
+            vertical-align: middle; white-space: nowrap;
+        }
+        tbody td:nth-child(2) {
+            font-size: 17px; font-weight: 400; color: #111;
+        }
+        tbody td:nth-child(3) { white-space: normal; min-width: 150px; }
 
-.montant-cell{font-weight:600;color:#b91c1c}
-.montant-free{font-weight:600;color:#15803d}
+        /* ── Badges statut ── */
+        .badge-status {
+            display: inline-block; padding: 4px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 600; background: #333; color: #fff;
+        }
+        .badge-status.confirme { background: #198754; }
+        .badge-status.attente  { background: #f59e0b; color: #fff; }
+        .badge-status.annule   { background: #6c757d; }
 
-.actions{display:flex;justify-content:center;align-items:center;gap:8px}
-.action-btn{width:36px;height:36px;border:none;border-radius:10px;cursor:pointer;font-size:15px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;transition:all .15s;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
-.action-btn:hover{transform:translateY(-2px)}
-.btn-edit{background:#f7c1c1;color:#7f1d1d}
-.btn-edit:hover{background:#f09595}
-.btn-delete{background:#b91c1c;color:#fff}
-.btn-delete:hover{background:#991b1b}
+        /* ── Prix ── */
+        .prix-gratuit { color: #198754; font-weight: 600; }
+        .prix-payant  { color: #e63946; font-weight: 600; }
 
-.empty{text-align:center;padding:50px 20px;color:#9a3535;font-size:14px}
-.empty-icon{font-size:36px;margin-bottom:10px}
+        /* ── Boutons actions ── */
+        .btn-modifier {
+            border: 1.5px solid #0d6efd; color: #0d6efd; background: #fff;
+            border-radius: 6px; padding: 4px 14px; font-size: 13px; font-weight: 500;
+            text-decoration: none; cursor: pointer; transition: all 0.15s;
+        }
+        .btn-modifier:hover { background: #0d6efd; color: #fff; }
+        .btn-supprimer {
+            border: 1.5px solid #dc3545; color: #dc3545; background: #fff;
+            border-radius: 6px; padding: 4px 14px; font-size: 13px; font-weight: 500;
+            text-decoration: none; cursor: pointer; transition: all 0.15s; margin-left: 6px;
+        }
+        .btn-supprimer:hover { background: #dc3545; color: #fff; }
 
-/* ── EVENT BANNER ── */
-.event-banner{background:#fff;border:1px solid #fde8e8;border-radius:14px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:13px}
-.event-banner-icon{font-size:22px}
-.event-banner-title{font-weight:600;color:#1a0505}
-.event-banner-sub{color:#9a3535;font-size:12px;margin-top:2px}
-.event-banner a{margin-left:auto;font-size:12px;color:#b91c1c;text-decoration:none;font-weight:500;padding:6px 14px;border:1px solid #f7c1c1;border-radius:8px;transition:all .15s}
-.event-banner a:hover{background:#fce8e8}
+        /* ── Alert ── */
+        .alert { border-radius: 8px; font-size: 14px; margin-bottom: 20px; }
 
-/* ── PAGINATION ── */
-.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px}
-.pagination-info{font-size:13px;color:#9a3535}
-.pagination-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pg-btn{width:34px;height:34px;border:1.5px solid #f7c1c1;border-radius:8px;background:#fff;color:#7f1d1d;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;display:inline-flex;align-items:center;justify-content:center}
-.pg-btn:hover{background:#fce8e8;border-color:#f09595}
-.pg-btn.active{background:#b91c1c;color:#fff;border-color:#b91c1c}
-.pg-btn:disabled{opacity:.35;cursor:default}
-.pg-size-wrap{display:flex;align-items:center;gap:8px;font-size:13px;color:#9a3535}
-.pg-size-wrap select{padding:5px 10px;border:1.5px solid #f7c1c1;border-radius:8px;background:#fff;color:#1a0505;font-size:13px;outline:none;font-family:'Inter',sans-serif;cursor:pointer}
+        /* ── No result ── */
+        .no-result td { text-align: center; color: #aaa; padding: 40px; font-size: 15px; }
 
-@media(max-width:900px){
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
-  .content{padding:16px}
-  .topbar{padding:0 16px}
-  .table-wrap{overflow-x:auto}
-  .nav-links{gap:2px}
-  .nav-link{padding:6px 10px;font-size:12px}
-  .nav-user{display:none}
-}
-</style>
+        /* ── Export btn ── */
+        .btn-export {
+            background: #fff; border: 1px solid #ddd; border-radius: 8px;
+            padding: 9px 18px; font-size: 14px; color: #555; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .btn-export:hover { border-color: #aaa; color: #111; }
+    </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar">
-  <a href="listEvenements.php" class="nav-logo">
-    Event <span>Manager</span><sub>Back Office</sub>
-  </a>
-  <div class="nav-links">
-    <a class="nav-link" href="listEvenements.php">📋 Événements</a>
-    <a class="nav-link" href="addEvenement.php">➕ Nouvel événement</a>
-    <a class="nav-link active" href="listParticipations.php">👥 Participants</a>
-    <a class="nav-link" href="../front/interfaceevent.php">🌐 Vue front</a>
-  </div>
-  <div class="nav-user">
-    <div class="nav-avatar">AD</div>
-    <div>
-      <div class="nav-user-name">Admin</div>
-      <div class="nav-user-role">Administrateur</div>
-    </div>
-  </div>
+<nav class="top-navbar">
+    <a href="#" class="brand">Smart Meal Planner<span>.</span></a>
+    <ul class="nav-links">
+        <li><a href="listEvenements.php">Événements</a></li>
+        <li><a href="listParticipations.php" class="active">Participants</a></li>
+        <li><a href="afficherProduit.php">Produits</a></li>
+        <li><a href="afficherCategorie.php">Catégories</a></li>
+    </ul>
+    <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-add">
+        Ajouter Participation
+    </a>
 </nav>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div>
-    <div class="topbar-title">👥 Liste des Participations</div>
-    <div class="topbar-sub">
-      <?= $id_event_filter ? 'Filtré par : ' . htmlspecialchars($eventTitle) : 'Toutes les participations' ?>
+<!-- CONTENT -->
+<div class="page-content">
+
+    <!-- Titre + export -->
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <h1 class="page-title mb-0">Gestion des Participations</h1>
+        <button class="btn-export" onclick="exportCSV()">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
     </div>
-  </div>
-  <div class="topbar-right">
-    <button class="btn-csv" onclick="exportCSV()">⬇ Export CSV</button>
-    <a class="btn-new" href="addParticipation.php<?= $id_event_filter ? '?id_event=' . $id_event_filter : '' ?>">+ Nouvelle Participation</a>
-  </div>
-</div>
 
-<div class="content">
-
-  <!-- STATS -->
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-num"><?= $total ?></div>
-      <div class="stat-lbl">Total</div>
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-num"><?= $total ?></div>
+            <div class="stat-lbl">Total</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-num"><?= $confirmes ?></div>
+            <div class="stat-lbl">Confirmés</div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-num"><?= $enAttente ?></div>
+            <div class="stat-lbl">En attente</div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-num"><?= number_format($revenue, 2) ?></div>
+            <div class="stat-lbl">Revenue (TND)</div>
+        </div>
     </div>
-    <div class="stat-card s-confirme">
-      <div class="stat-num"><?= $confirmes ?></div>
-      <div class="stat-lbl">Confirmés</div>
-    </div>
-    <div class="stat-card s-attente">
-      <div class="stat-num"><?= $enAttente ?></div>
-      <div class="stat-lbl">En attente</div>
-    </div>
-    <div class="stat-card s-revenue">
-      <div class="stat-num"><?= number_format($revenue, 2) ?></div>
-      <div class="stat-lbl">Revenue (TND)</div>
-    </div>
-  </div>
 
-  <!-- ALERTS -->
-  <?php if ($msg === 'added'):   ?><div class="alert alert-success">✅ Participation ajoutée avec succès.</div><?php endif; ?>
-  <?php if ($msg === 'updated'): ?><div class="alert alert-success">✅ Participation mise à jour.</div><?php endif; ?>
-  <?php if ($msg === 'deleted'): ?><div class="alert alert-danger">🗑️ Participation supprimée.</div><?php endif; ?>
-
-  <!-- EVENT BANNER -->
-  <?php if ($id_event_filter && $eventTitle): ?>
-  <div class="event-banner">
-    <span class="event-banner-icon">📋</span>
-    <div>
-      <div class="event-banner-title"><?= htmlspecialchars($eventTitle) ?></div>
-      <div class="event-banner-sub">Affichage des participations liées à cet événement</div>
-    </div>
-    <a href="listParticipations.php">Voir tout</a>
-  </div>
-  <?php endif; ?>
-
-  <!-- TOOLBAR -->
-  <div class="toolbar">
-    <div class="filters">
-      <div class="search-wrap">
-        <input type="text" id="searchInput" placeholder="Rechercher..." oninput="applyFilters()">
-      </div>
-      <select class="filter-select" id="filterStatut" onchange="applyFilters()">
-        <option value="">— Tous les statuts —</option>
-        <option value="confirmé">Confirmé</option>
-        <option value="en attente">En attente</option>
-        <option value="annulé">Annulé</option>
-      </select>
-      <select class="filter-select" id="filterEvent" onchange="applyFilters()">
-        <option value="">— Tous les événements —</option>
-        <?php foreach ($allEvents as $ev): ?>
-          <option value="<?= $ev->getIdEvent() ?>"
-            <?= ($id_event_filter == $ev->getIdEvent()) ? 'selected' : '' ?>>
-            <?= htmlspecialchars($ev->getTitre()) ?>
-          </option>
-        <?php endforeach; ?>
-      </select>
-    </div>
-  </div>
-
-  <!-- TABLE -->
-  <div class="table-wrap">
-    <?php if (empty($participations)): ?>
-      <div class="empty">
-        <div class="empty-icon">👥</div>
-        Aucune participation enregistrée.
-      </div>
-    <?php else: ?>
-    <table id="partTable">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th class="sortable" data-col="1" onclick="sortTable(1)">Participant <span class="sort-arrow"></span></th>
-          <th>Événement</th>
-          <th class="sortable" data-col="3" onclick="sortTable(3)">Date <span class="sort-arrow"></span></th>
-          <th class="sortable" data-col="4" onclick="sortTable(4)">Montant <span class="sort-arrow"></span></th>
-          <th>Mode Paiement</th>
-          <th>Statut</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php foreach ($participations as $p):
-          $s = strtolower($p->getStatut());
-          $badgeClass = match(true) {
-              str_contains($s, 'confirm') => 'badge-confirme',
-              str_contains($s, 'attente') => 'badge-attente',
-              default                     => 'badge-annule',
-          };
-
-          // Calcul montant depuis le prix de l'événement
-          $evObj   = $eventMap[$p->getIdEvent()] ?? null;
-          $prix    = $evObj ? (float)$evObj->getPrix() : 0;
-          $montant = $prix * $p->getNombrePlacesReservees();
-          $isFree  = ($montant == 0);
-          $mClass  = $isFree ? 'montant-free' : 'montant-cell';
-          $mLabel  = $isFree ? 'Gratuit' : number_format($montant, 2) . ' TND';
-
-          $evName  = $evObj ? $evObj->getTitre() : '—';
-      ?>
-        <tr data-statut="<?= htmlspecialchars($p->getStatut()) ?>"
-            data-event="<?= $p->getIdEvent() ?>">
-          <td><?= $p->getIdParticipation() ?></td>
-          <td><b><?= htmlspecialchars($p->getNom() . ' ' . $p->getPrenom()) ?></b></td>
-          <td><?= htmlspecialchars($evName) ?></td>
-          <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
-          <td><span class="<?= $mClass ?>"><?= $mLabel ?></span></td>
-          <td><?= htmlspecialchars($p->getModePaiement()) ?></td>
-          <td><span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($p->getStatut()) ?></span></td>
-          <td>
-            <div class="actions">
-              <a class="action-btn btn-edit"
-                 href="updateParticipation.php?id=<?= $p->getIdParticipation() ?>"
-                 title="Modifier">✏️</a>
-              <a class="action-btn btn-delete"
-                 href="listParticipations.php?delete=<?= $p->getIdParticipation() ?><?= $id_event_filter ? '&id_event=' . $id_event_filter : '' ?>"
-                 onclick="return confirm('Supprimer cette participation ?')"
-                 title="Supprimer">🗑️</a>
-            </div>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
+    <!-- Alertes -->
+    <?php if ($msg === 'added'): ?>
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle me-1"></i>Participation ajoutée avec succès.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     <?php endif; ?>
-  </div>
+    <?php if ($msg === 'updated'): ?>
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle me-1"></i>Participation mise à jour.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+    <?php if ($msg === 'deleted'): ?>
+        <div class="alert alert-warning alert-dismissible fade show">
+            <i class="fas fa-trash me-1"></i>Participation supprimée.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
-  <!-- PAGINATION -->
-  <div class="pagination" id="paginationBar">
-    <div class="pagination-info" id="paginationInfo"></div>
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div class="pg-size-wrap">
-        Lignes&nbsp;:
-        <select id="pgSize" onchange="goPage(1)">
-          <option value="10" selected>10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="9999">Tout</option>
-        </select>
-      </div>
-      <div class="pagination-btns" id="pgButtons"></div>
+    <!-- Bannière événement filtré -->
+    <?php if ($id_event_filter && $eventTitle): ?>
+    <div class="event-banner">
+        <i class="fas fa-calendar-alt text-success"></i>
+        <div>
+            <strong><?= htmlspecialchars($eventTitle) ?></strong>
+            <div style="font-size:12px;color:#888;margin-top:2px;">Participations liées à cet événement</div>
+        </div>
+        <a href="listParticipations.php">Voir tout</a>
     </div>
-  </div>
+    <?php endif; ?>
+
+    <!-- Filtres -->
+    <div class="filters-row">
+        <input type="text" id="search-input" placeholder="Rechercher un participant...">
+        <select id="filter-statut">
+            <option value="">Tous les statuts</option>
+            <option value="confirmé">Confirmé</option>
+            <option value="en attente">En attente</option>
+            <option value="annulé">Annulé</option>
+        </select>
+        <select id="filter-event">
+            <option value="">Tous les événements</option>
+            <?php foreach ($allEvents as $ev): ?>
+                <option value="<?= $ev->getIdEvent() ?>"
+                    <?= ($id_event_filter == $ev->getIdEvent()) ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($ev->getTitre()) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <button class="btn-cancel" onclick="annulerFiltres()">
+            <i class="bi bi-x-circle"></i> Annuler
+        </button>
+    </div>
+
+    <!-- Tableau -->
+    <div class="table-wrap">
+        <table id="table-participations">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Participant</th>
+                    <th>Événement</th>
+                    <th>Date</th>
+                    <th>Montant</th>
+                    <th>Mode Paiement</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-participations">
+            <?php foreach ($participations as $p):
+                $s = strtolower($p->getStatut());
+                $badgeClass = str_contains($s,'confirm') ? 'confirme' : (str_contains($s,'attente') ? 'attente' : 'annule');
+
+                $evObj   = $eventMap[$p->getIdEvent()] ?? null;
+                $prix    = $evObj ? (float)$evObj->getPrix() : 0;
+                $montant = $prix * $p->getNombrePlacesReservees();
+                $isFree  = ($montant == 0);
+                $mLabel  = $isFree ? '<span class="prix-gratuit">Gratuit</span>' : '<span class="prix-payant">'.number_format($montant,2).' TND</span>';
+                $evName  = $evObj ? $evObj->getTitre() : '—';
+            ?>
+                <tr
+                    data-nom="<?= htmlspecialchars(strtolower($p->getNom().' '.$p->getPrenom()), ENT_QUOTES) ?>"
+                    data-statut="<?= htmlspecialchars(strtolower($p->getStatut()), ENT_QUOTES) ?>"
+                    data-event="<?= $p->getIdEvent() ?>">
+                    <td><?= $p->getIdParticipation() ?></td>
+                    <td><?= htmlspecialchars($p->getNom().' '.$p->getPrenom()) ?></td>
+                    <td><?= htmlspecialchars($evName) ?></td>
+                    <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
+                    <td><?= $mLabel ?></td>
+                    <td><?= htmlspecialchars($p->getModePaiement()) ?></td>
+                    <td><span class="badge-status <?= $badgeClass ?>"><?= htmlspecialchars($p->getStatut()) ?></span></td>
+                    <td>
+                        <a href="updateParticipation.php?id=<?= $p->getIdParticipation() ?>" class="btn-modifier">Modifier</a>
+                        <a href="listParticipations.php?delete=<?= $p->getIdParticipation() ?><?= $id_event_filter ? '&id_event='.$id_event_filter : '' ?>"
+                           class="btn-supprimer"
+                           onclick="return confirm('Supprimer cette participation ?')">Supprimer</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            <tr id="no-result" style="display:none;" class="no-result">
+                <td colspan="8"><i class="fas fa-search me-2"></i>Aucune participation trouvée.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-const allRows = Array.from(document.querySelectorAll('#partTable tbody tr'));
-let sortCol = -1, sortDir = 1, currentPage = 1;
-
-function getCellText(row, col) {
-  return row.cells[col]?.textContent.trim() ?? '';
-}
-
-function sortTable(col) {
-  const ths = document.querySelectorAll('#partTable thead th');
-  if (sortCol === col) { sortDir *= -1; } else { sortCol = col; sortDir = 1; }
-  ths.forEach((th, i) => {
-    th.classList.remove('asc','desc');
-    if (i === col) th.classList.add(sortDir === 1 ? 'asc' : 'desc');
-  });
-  applyFilters();
-}
+var tbody = document.getElementById('tbody-participations');
+Array.from(tbody.querySelectorAll('tr:not(#no-result)')).forEach(function(r,i){ r.dataset.index=i; });
 
 function applyFilters() {
-  const q      = document.getElementById('searchInput').value.toLowerCase();
-  const statut = document.getElementById('filterStatut').value.toLowerCase();
-  const evId   = document.getElementById('filterEvent').value;
+    var q      = document.getElementById('search-input').value.toLowerCase().trim();
+    var statut = document.getElementById('filter-statut').value.toLowerCase();
+    var evId   = document.getElementById('filter-event').value;
+    var rows   = Array.from(tbody.querySelectorAll('tr:not(#no-result)'));
+    var visible = 0;
 
-  let visible = allRows.filter(row => {
-    const text
+    rows.forEach(function(row) {
+        var nom  = row.dataset.nom    || '';
+        var st   = row.dataset.statut || '';
+        var ev   = row.dataset.event  || '';
+        var show = (!q      || nom.includes(q))
+                && (!statut || st === statut)
+                && (!evId   || ev === evId);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    document.getElementById('no-result').style.display = visible === 0 ? '' : 'none';
+}
+
+function annulerFiltres() {
+    document.getElementById('search-input').value   = '';
+    document.getElementById('filter-statut').value  = '';
+    document.getElementById('filter-event').value   = '';
+    applyFilters();
+}
+
+function exportCSV() {
+    var headers = ['ID','Participant','Événement','Date','Montant','Mode Paiement','Statut'];
+    var rows = Array.from(tbody.querySelectorAll('tr:not(#no-result)')).filter(function(r){ return r.style.display !== 'none'; });
+    var esc  = function(v){ return '"'+v.replace(/"/g,'""')+'"'; };
+    var lines = [headers.map(esc).join(',')];
+    rows.forEach(function(row){
+        var cols = [];
+        for (var i = 0; i < row.cells.length - 1; i++) cols.push(esc(row.cells[i].textContent.trim()));
+        lines.push(cols.join(','));
+    });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+    a.download = 'participations_'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click();
+}
+
+document.getElementById('search-input').addEventListener('input', applyFilters);
+document.getElementById('filter-statut').addEventListener('change', applyFilters);
+document.getElementById('filter-event').addEventListener('change', applyFilters);
+</script>
+</body>
+</html>
