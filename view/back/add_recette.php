@@ -74,7 +74,8 @@ require_once __DIR__ . '/partials/sidebar.php';
                                 <div class="col-md-8">
                                     <label class="form-label fw-medium">Nom de la recette <span class="text-danger">*</span></label>
                                     <input type="text" name="nom" class="form-control"
-                                           placeholder="Ex: Poulet rôti aux herbes de Provence" required autofocus>
+                                           placeholder="Ex: Poulet rôti aux herbes de Provence">
+                                    <div class="invalid-feedback"></div>
                                     <small class="text-muted">Donnez un nom clair et descriptif.</small>
                                 </div>
                                 <div class="col-md-4">
@@ -88,23 +89,26 @@ require_once __DIR__ . '/partials/sidebar.php';
                                 <div class="col-md-4">
                                     <label class="form-label fw-medium"><i class="bi bi-clock me-1 text-primary"></i>Temps de préparation</label>
                                     <div class="input-group">
-                                        <input type="number" min="0" name="temps_prep" class="form-control" placeholder="Ex: 15">
+                                        <input type="text" name="temps_prep" class="form-control" placeholder="Ex: 15">
                                         <span class="input-group-text">min</span>
                                     </div>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-medium"><i class="bi bi-fire me-1 text-danger"></i>Temps de cuisson</label>
                                     <div class="input-group">
-                                        <input type="number" min="0" name="temps_cuisson" class="form-control" placeholder="Ex: 30">
+                                        <input type="text" name="temps_cuisson" class="form-control" placeholder="Ex: 30">
                                         <span class="input-group-text">min</span>
                                     </div>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-medium"><i class="bi bi-people me-1 text-success"></i>Nombre de personnes</label>
                                     <div class="input-group">
-                                        <input type="number" min="1" name="nb_personnes" class="form-control" value="2">
+                                        <input type="text" name="nb_personnes" class="form-control" value="2">
                                         <span class="input-group-text">pers.</span>
                                     </div>
+                                    <div class="invalid-feedback"></div>
                                 </div>
 
                                 <div class="col-12 mt-2">
@@ -121,28 +125,10 @@ require_once __DIR__ . '/partials/sidebar.php';
                                 </div>
 
                                 <div class="col-12 mt-2">
-                                    <h6 class="fw-bold text-muted mb-0" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;">
-                                        <i class="bi bi-camera me-1" style="color:var(--accent)"></i>Photo de la recette
-                                    </h6>
-                                    <hr class="mt-1 mb-2">
-                                </div>
-                                <div class="col-12">
-                                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('image_recette').click()"
-                                         ondragover="event.preventDefault();this.style.background='#fde8e8'"
-                                         ondragleave="this.style.background='#fff8f8'"
-                                         ondrop="handleDrop(event)">
-                                        <div id="dropContent">
-                                            <i class="bi bi-camera" style="font-size:2rem;color:var(--accent);"></i>
-                                            <p class="mb-1 fw-medium mt-2">Glissez une photo ici</p>
-                                            <p class="text-muted small mb-0">ou cliquez — JPG, PNG, WEBP</p>
-                                        </div>
-                                        <div id="prev1" class="d-none">
-                                            <img id="previewImg1" src="" style="max-height:160px;max-width:100%;border-radius:10px;object-fit:cover;">
-                                            <p class="text-muted small mt-2 mb-0" id="fileName1"></p>
-                                            <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="event.stopPropagation();clearImage()"><i class="bi bi-x-circle me-1"></i>Supprimer</button>
-                                        </div>
+                                    <div class="alert alert-info mb-0" style="font-size:.85rem;">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        La photo de la recette sera automatiquement copiée depuis la photo du repas associé.
                                     </div>
-                                    <input type="file" id="image_recette" name="image_recette" accept="image/*" class="d-none" onchange="previewImg(this)">
                                 </div>
                             </div>
                             <div class="d-flex gap-2 mt-4">
@@ -185,8 +171,7 @@ require_once __DIR__ . '/partials/sidebar.php';
                                 </label>
                                 <input type="text" name="nom_ingredient" class="form-control"
                                        placeholder="Ex: Poulet, Tomate, Farine, Huile d'olive..."
-                                       value="<?= htmlspecialchars($editIngredient['nom_ingredient'] ?? '') ?>"
-                                       required autofocus>
+                                       value="<?= htmlspecialchars($editIngredient['nom_ingredient'] ?? '') ?>">
                                 <small class="text-muted">Soyez précis : "Poulet" plutôt que "viande".</small>
                             </div>
 
@@ -195,7 +180,7 @@ require_once __DIR__ . '/partials/sidebar.php';
                                     <label class="form-label fw-medium">
                                         <i class="bi bi-123 me-1 text-primary"></i>Quantité
                                     </label>
-                                    <input type="number" step="0.01" min="0" name="quantite" class="form-control"
+                                    <input type="text" name="quantite" class="form-control"
                                            placeholder="Ex: 200"
                                            value="<?= htmlspecialchars($editIngredient['quantite'] ?? '') ?>">
                                 </div>

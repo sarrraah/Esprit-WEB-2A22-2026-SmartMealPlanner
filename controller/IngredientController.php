@@ -11,15 +11,12 @@ function ingredientBaseUrl(): string {
 }
 
 /**
- * Validation des champs d'un ingrédient.
- * Règles :
- *  - nom_ingredient : obligatoire, lettres uniquement, pas de chiffres
- *  - quantite       : nombre positif si renseigné, pas de lettres
+ * Validation ingrédient :
+ * - nom : lettres uniquement, pas de chiffres
+ * - quantite : nombre positif
  */
 function validateIngredientFields(string $nom, $quantite): array {
     $errors = [];
-
-    // Nom : obligatoire + lettres uniquement
     if ($nom === '') {
         $errors['nom_ingredient'] = "Le nom de l'ingrédient est obligatoire.";
     } elseif (preg_match('/\d/', $nom)) {
@@ -27,17 +24,15 @@ function validateIngredientFields(string $nom, $quantite): array {
     } elseif (!preg_match('/^[\p{L}\s\'\-\.]+$/u', $nom)) {
         $errors['nom_ingredient'] = "Le nom de l'ingrédient ne doit contenir que des lettres.";
     }
-
-    // Quantité : nombre positif si renseigné
     if ($quantite !== null && $quantite < 0) {
         $errors['quantite'] = "La quantité doit être un nombre positif.";
     }
-
     return $errors;
 }
 
 $model    = new Ingredient();
 $base     = ingredientBaseUrl();
+$pdo      = config::getConnexion();
 $action   = $_GET['action'] ?? ($_POST['action'] ?? '');
 $idRepas  = (int)($_GET['id_repas'] ?? $_POST['id_repas'] ?? 0);
 $redirect = $_GET['redirect'] ?? ($_POST['redirect'] ?? '');
@@ -62,12 +57,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add') {
     }
 
     if ($nom !== '' && $idRepas > 0) {
-        // SQL INSERT ingrédient
-        $pdo  = config::getConnexion();
-        $stmt = $pdo->prepare(
-            "INSERT INTO ingredient (nom_ingredient, quantite, unite, id_repas) VALUES (?, ?, ?, ?)"
-        );
-        $stmt->execute([$nom, $quantite, $unite, $idRepas]);
+        // Récupérer id_recette du repas → lier l'ingrédient à la recette
+        $stmtR = $pdo->prepare("SELECT id_recette FROM repas WHERE id_repas = ?");
+        $stmtR->execute([$idRepas]);
+        $row = $stmtR->fetch();
+        $idRecette = $row ? (int)$row['id_recette'] : 0;
+
+        if ($idRecette > 0) {
+            // SQL INSERT — ingrédient lié à la recette
+            $stmt = $pdo->prepare(
+                "INSERT INTO ingredient (nom_ingredient, quantite, unite, id_recette) VALUES (?, ?, ?, ?)"
+            );
+            $stmt->execute([$nom, $quantite, $unite, $idRecette]);
+        }
     }
 
     header('Location: ' . $back . '&success=1');
@@ -93,7 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'update') {
 
     if ($id > 0 && $nom !== '') {
         // SQL UPDATE ingrédient
-        $pdo  = config::getConnexion();
         $stmt = $pdo->prepare(
             "UPDATE ingredient SET nom_ingredient=?, quantite=?, unite=? WHERE id_ingredient=?"
         );
@@ -110,8 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'delete' && isset($_GET[
     $idRepas = (int)($_GET['id_repas'] ?? 0);
 
     if ($id > 0) {
-        // SQL DELETE ingrédient
-        $pdo  = config::getConnexion();
         $stmt = $pdo->prepare("DELETE FROM ingredient WHERE id_ingredient = ?");
         $stmt->execute([$id]);
     }

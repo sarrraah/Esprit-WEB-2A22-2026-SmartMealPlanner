@@ -1,13 +1,10 @@
 <?php
 defined('APP_ROOT') || require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../model/Repas.php';
-require_once __DIR__ . '/../../model/Recette.php';
 
-$repasModel   = new Repas();
-$recetteModel = new Recette();
-$repas        = $repasModel->getAllRepas();
-$recettes     = $recetteModel->getAllRecettes();
-$recMap       = array_column($recettes, 'nom_recette', 'id_recette');
+$repasModel = new Repas();
+// Jointure repas + recette_repas directement dans le model
+$repas      = $repasModel->getAllRepasWithRecette();
 
 $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $project = str_replace('\\', '/', dirname(__DIR__, 2));
@@ -82,8 +79,8 @@ require_once __DIR__ . '/partials/header.php';
                             <?php if (!empty($r['type_repas'])): ?>
                                 <span class="badge bg-secondary"><?= htmlspecialchars($r['type_repas']) ?></span>
                             <?php endif; ?>
-                            <?php if (!empty($recMap[$r['id_recette'] ?? 0])): ?>
-                                <span class="badge bg-primary"><?= htmlspecialchars($recMap[$r['id_recette']]) ?></span>
+                            <?php if (!empty($r['nom_recette'])): ?>
+                                <span class="badge bg-primary"><?= htmlspecialchars($r['nom_recette']) ?></span>
                             <?php endif; ?>
                         </div>
                         <?php if (!empty($r['proteines']) || !empty($r['glucides']) || !empty($r['lipides'])): ?>
@@ -100,14 +97,9 @@ require_once __DIR__ . '/partials/header.php';
                         <?php endif; ?>
                     </div>
                     <div class="card-footer bg-white border-0 d-flex gap-2 pb-3 px-3">
-                        <a href="edit_repas.php?id=<?= $r['id_repas'] ?>"
-                           class="btn btn-sm btn-outline-warning flex-fill">
-                            <i class="bi bi-pencil me-1"></i>Modifier
-                        </a>
-                        <a href="<?= htmlspecialchars($baseUrl.'/controller/RepasController.php?action=delete&id='.$r['id_repas'].'&from=front') ?>"
-                           class="btn btn-sm btn-outline-danger flex-fill"
-                           onclick="return confirm('Supprimer ce repas ?')">
-                            <i class="bi bi-trash me-1"></i>Supprimer
+                        <a href="detail_repas.php?id=<?= $r['id_repas'] ?>"
+                           class="btn btn-sm btn-danger flex-fill">
+                            <i class="bi bi-eye me-1"></i>Voir la recette
                         </a>
                     </div>
                 </div>

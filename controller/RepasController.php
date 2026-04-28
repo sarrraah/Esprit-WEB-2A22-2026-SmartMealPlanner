@@ -132,8 +132,52 @@ if ($method === 'POST' && $action === '') {
 
     $newId = (int) $pdo->lastInsertId();
 
+    // ── Synchronisation automatique avec la recette ───────────────────────────
+    // 1. Vérifier si une recette liée à id_recette existe
+    $stmtRec = $pdo->prepare("SELECT * FROM recette_repas WHERE id_recette = ?");
+    $stmtRec->execute([$f['id_recette']]);
+    $recette = $stmtRec->fetch();
+
+    if ($recette) {
+        // 2. Si la recette n'a pas encore de photo et qu'on vient d'uploader une image → copier
+        if (!empty($image) && empty($recette['image_recette'])) {
+            // Copier l'image dans uploads/recettes/
+            $srcPath  = __DIR__ . '/../' . $image;
+            $destDir  = __DIR__ . '/../uploads/recettes';
+            if (!is_dir($destDir)) mkdir($destDir, 0777, true);
+            $ext      = pathinfo($image, PATHINFO_EXTENSION);
+            $destFile = 'recette_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $destPath = $destDir . '/' . $destFile;
+            @copy($srcPath, $destPath);
+            $recetteImage = 'uploads/recettes/' . $destFile;
+
+            // Mettre à jour la photo de la recette
+            $pdo->prepare("UPDATE recette_repas SET image_recette=? WHERE id_recette=?")
+                ->execute([$recetteImage, $f['id_recette']]);
+        }
+    } else {
+        // 3. Créer automatiquement une recette si elle n'existe pas encore
+        $etapesAuto = "Recette générée automatiquement pour le repas : " . $f['nom'];
+        $recetteImage = null;
+
+        if (!empty($image)) {
+            $srcPath  = __DIR__ . '/../' . $image;
+            $destDir  = __DIR__ . '/../uploads/recettes';
+            if (!is_dir($destDir)) mkdir($destDir, 0777, true);
+            $ext      = pathinfo($image, PATHINFO_EXTENSION);
+            $destFile = 'recette_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            @copy($srcPath, $destDir . '/' . $destFile);
+            $recetteImage = 'uploads/recettes/' . $destFile;
+        }
+
+        $pdo->prepare("
+            INSERT INTO recette_repas (nom_recette, etapes, difficulte, nb_personnes, image_recette)
+            VALUES (?, ?, 'Facile', 2, ?)
+        ")->execute([$f['nom'], $etapesAuto, $recetteImage]);
+    }
+
     if ($from === 'back') {
-        header('Location: ' . $base . '/view/back/add_repas.php?id_repas=' . $newId);
+        header('Location: ' . $base . '/view/back/repas.php?success=1');
     } else {
         header('Location: ' . $front . '?success=1');
     }
@@ -189,6 +233,19 @@ if ($method === 'POST' && $action === 'update') {
     }
 
     if ($new && $current && $new !== $current) deleteRepasFile($current);
+
+    // ── Synchroniser la photo avec la recette ─────────────────────────────────
+    if ($new && $f['id_recette'] > 0) {
+        $srcPath = __DIR__ . '/../' . $new;
+        $destDir = __DIR__ . '/../uploads/recettes';
+        if (!is_dir($destDir)) mkdir($destDir, 0777, true);
+        $ext      = pathinfo($new, PATHINFO_EXTENSION);
+        $destFile = 'recette_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        @copy($srcPath, $destDir . '/' . $destFile);
+        $recetteImage = 'uploads/recettes/' . $destFile;
+        $pdo->prepare("UPDATE recette_repas SET image_recette=? WHERE id_recette=?")
+            ->execute([$recetteImage, $f['id_recette']]);
+    }
 
     header('Location: ' . $redir . '?success=1');
     exit;

@@ -15,7 +15,9 @@ if (!$repas) {
     exit;
 }
 
-$ingredients = $ingredientModel->getByRepas($idRepas);
+// Ingrédients via la recette du repas
+$idRecette   = (int)($repas['id_recette'] ?? 0);
+$ingredients = $idRecette > 0 ? $ingredientModel->getByRecette($idRecette) : [];
 
 // Edit mode
 $editIngredient = null;

@@ -26,9 +26,8 @@ require_once __DIR__ . '/partials/sidebar.php';
             <div class="col-lg-8">
                 <div class="admin-card card">
                     <div class="card-body p-4">
-                        <form action="<?= htmlspecialchars($baseUrl.'/controller/RecetteController.php?action=update') ?>" method="POST" enctype="multipart/form-data" id="formEditRecette" novalidate>
+                        <form action="<?= htmlspecialchars($baseUrl.'/controller/RecetteController.php?action=update') ?>" method="POST" id="formEditRecette" novalidate>
                             <input type="hidden" name="id" value="<?= $recette['id_recette'] ?>">
-                            <input type="hidden" name="current_image" value="<?= htmlspecialchars($recette['image_recette'] ?? '') ?>">
                             <div class="row g-3">
 
                                 <!-- Infos générales -->
@@ -41,7 +40,8 @@ require_once __DIR__ . '/partials/sidebar.php';
                                 <div class="col-md-8">
                                     <label class="form-label fw-medium">Nom de la recette <span class="text-danger">*</span></label>
                                     <input type="text" name="nom" class="form-control"
-                                           value="<?= htmlspecialchars($recette['nom_recette']) ?>" required>
+                                           value="<?= htmlspecialchars($recette['nom_recette']) ?>">
+                                    <div class="invalid-feedback"></div>
                                     <small class="text-muted">Donnez un nom clair et descriptif.</small>
                                 </div>
                                 <div class="col-md-4">
@@ -57,10 +57,11 @@ require_once __DIR__ . '/partials/sidebar.php';
                                         <i class="bi bi-clock me-1 text-primary"></i>Temps de préparation
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" min="0" name="temps_prep" class="form-control"
+                                        <input type="text" name="temps_prep" class="form-control"
                                                value="<?= htmlspecialchars($recette['temps_prep']??'') ?>">
                                         <span class="input-group-text">min</span>
                                     </div>
+                                    <div class="invalid-feedback"></div>
                                     <small class="text-muted">Découpe, marinade, mélange...</small>
                                 </div>
                                 <div class="col-md-4">
@@ -68,10 +69,11 @@ require_once __DIR__ . '/partials/sidebar.php';
                                         <i class="bi bi-fire me-1 text-danger"></i>Temps de cuisson
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" min="0" name="temps_cuisson" class="form-control"
+                                        <input type="text" name="temps_cuisson" class="form-control"
                                                value="<?= htmlspecialchars($recette['temps_cuisson']??'') ?>">
                                         <span class="input-group-text">min</span>
                                     </div>
+                                    <div class="invalid-feedback"></div>
                                     <small class="text-muted">Four, poêle, vapeur...</small>
                                 </div>
                                 <div class="col-md-4">
@@ -79,10 +81,11 @@ require_once __DIR__ . '/partials/sidebar.php';
                                         <i class="bi bi-people me-1 text-success"></i>Nombre de personnes
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" min="1" name="nb_personnes" class="form-control"
+                                        <input type="text" name="nb_personnes" class="form-control"
                                                value="<?= htmlspecialchars($recette['nb_personnes']??2) ?>">
                                         <span class="input-group-text">pers.</span>
                                     </div>
+                                    <div class="invalid-feedback"></div>
                                 </div>
 
                                 <!-- Étapes -->
@@ -101,32 +104,26 @@ require_once __DIR__ . '/partials/sidebar.php';
                                     <small class="text-muted">Numérotez chaque étape pour faciliter la lecture.</small>
                                 </div>
 
-                                <!-- Photo -->
+                                <!-- Photo automatique -->
                                 <div class="col-12 mt-2">
-                                    <h6 class="fw-bold text-muted mb-0" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;">
-                                        <i class="bi bi-camera me-1" style="color:var(--accent)"></i>Photo de la recette
-                                    </h6>
-                                    <hr class="mt-1 mb-2">
-                                </div>
                                     <?php if (!empty($recette['image_recette'])): ?>
-                                        <div class="mb-2"><img src="<?= htmlspecialchars($baseUrl.'/'.$recette['image_recette']) ?>" style="max-height:140px;border-radius:10px;object-fit:cover;"><p class="text-muted small mt-1">Laissez vide pour conserver.</p></div>
+                                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background:#f8f9fc;">
+                                            <img src="<?= htmlspecialchars($baseUrl.'/'.$recette['image_recette']) ?>"
+                                                 style="width:80px;height:80px;object-fit:cover;border-radius:10px;">
+                                            <div>
+                                                <div class="fw-medium">Photo actuelle</div>
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    La photo est synchronisée automatiquement depuis le repas associé.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="alert alert-info mb-0" style="font-size:.85rem;">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            La photo sera automatiquement copiée depuis la photo du repas associé.
+                                        </div>
                                     <?php endif; ?>
-                                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('image_recette').click()"
-                                         ondragover="event.preventDefault();this.style.background='#fde8e8'"
-                                         ondragleave="this.style.background='#fff8f8'"
-                                         ondrop="handleDrop(event)">
-                                        <div id="dropContent">
-                                            <i class="bi bi-camera" style="font-size:2rem;color:var(--accent);"></i>
-                                            <p class="mb-1 fw-medium mt-2">Nouvelle photo</p>
-                                            <p class="text-muted small mb-0">Glissez ou cliquez</p>
-                                        </div>
-                                        <div id="prev1" class="d-none">
-                                            <img id="previewImg1" src="" style="max-height:140px;max-width:100%;border-radius:10px;object-fit:cover;">
-                                            <p class="text-muted small mt-2 mb-0" id="fileName1"></p>
-                                            <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="event.stopPropagation();clearImage()"><i class="bi bi-x-circle me-1"></i>Supprimer</button>
-                                        </div>
-                                    </div>
-                                    <input type="file" id="image_recette" name="image_recette" accept="image/*" class="d-none" onchange="previewImg(this)">
                                 </div>
                             </div>
                             <div class="d-flex gap-2 mt-4">

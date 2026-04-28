@@ -104,7 +104,7 @@ try {
     }
     $steps[] = [1, "Structure complète et à jour."];
 
-    // Create ingredient table
+    // Create ingredient table — id_repas et id_recette sont tous les deux nullable
     $pdo->exec("CREATE TABLE IF NOT EXISTS ingredient (
         id_ingredient   INT           NOT NULL AUTO_INCREMENT,
         nom_ingredient  VARCHAR(150)  NOT NULL,
@@ -116,16 +116,19 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     $steps[] = [1, "Table <b>ingredient</b> créée."];
 
-    // Add id_recette column if missing
+    // Drop old FK if exists and add id_recette column if missing
+    try {
+        $pdo->exec("ALTER TABLE ingredient DROP FOREIGN KEY fk_ingredient_repas");
+    } catch (PDOException $e) { /* FK may not exist */ }
+
     $ingCols = $pdo->query("SHOW COLUMNS FROM ingredient")->fetchAll(PDO::FETCH_COLUMN);
     if (!in_array('id_recette', $ingCols)) {
         $pdo->exec("ALTER TABLE ingredient ADD COLUMN id_recette INT NULL");
         $steps[] = [1, "Colonne <b>id_recette</b> ajoutée à ingredient."];
     }
-    if (!in_array('id_repas', $ingCols)) {
-        $pdo->exec("ALTER TABLE ingredient ADD COLUMN id_repas INT NULL");
-        $steps[] = [1, "Colonne <b>id_repas</b> ajoutée à ingredient."];
-    }
+    // Make id_repas nullable if it isn't
+    $pdo->exec("ALTER TABLE ingredient MODIFY COLUMN id_repas INT NULL");
+    $steps[] = [1, "Contraintes ingredient mises à jour."];
 
 } catch (PDOException $e) {
     $steps[] = [0, "Erreur : " . htmlspecialchars($e->getMessage())];

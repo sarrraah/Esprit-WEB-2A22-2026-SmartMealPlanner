@@ -10,7 +10,9 @@ class Ingredient
         $this->pdo = config::getConnexion();
     }
 
-    /** Get all ingredients for a recette */
+    // ── Ingrédients d'une RECETTE ─────────────────────────────────────────────
+
+    /** Récupérer tous les ingrédients d'une recette */
     public function getByRecette(int $idRecette): array
     {
         $stmt = $this->pdo->prepare(
@@ -20,17 +22,42 @@ class Ingredient
         return $stmt->fetchAll();
     }
 
-    /** Get all ingredients for a repas */
+    /** Ajouter un ingrédient à une recette */
+    public function addIngredientToRecette(string $nom, ?float $quantite, string $unite, int $idRecette): bool
+    {
+        // Désactiver temporairement les FK pour contourner la contrainte legacy
+        $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO ingredient (nom_ingredient, quantite, unite, id_recette, id_repas)
+             VALUES (?, ?, ?, ?, NULL)"
+        );
+        $result = $stmt->execute([$nom, $quantite, $unite, $idRecette]);
+
+        $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+
+        return $result;
+    }
+
+    // ── Ingrédients d'un REPAS (via sa recette) ───────────────────────────────
+
+    /** Récupérer les ingrédients d'un repas via sa recette */
     public function getByRepas(int $idRepas): array
     {
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM ingredient WHERE id_repas = ? ORDER BY id_ingredient"
-        );
+        $stmt = $this->pdo->prepare("
+            SELECT i.*
+            FROM ingredient i
+            INNER JOIN repas r ON i.id_recette = r.id_recette
+            WHERE r.id_repas = ?
+            ORDER BY i.id_ingredient
+        ");
         $stmt->execute([$idRepas]);
         return $stmt->fetchAll();
     }
 
-    /** Get one ingredient */
+    // ── CRUD commun ───────────────────────────────────────────────────────────
+
+    /** Récupérer un ingrédient par son ID */
     public function getById(int $id)
     {
         $stmt = $this->pdo->prepare("SELECT * FROM ingredient WHERE id_ingredient = ?");
@@ -38,25 +65,7 @@ class Ingredient
         return $stmt->fetch();
     }
 
-    /** Add ingredient to a recette */
-    public function addIngredientToRecette(string $nom, ?float $quantite, string $unite, int $idRecette): bool
-    {
-        $stmt = $this->pdo->prepare(
-            "INSERT INTO ingredient (nom_ingredient, quantite, unite, id_recette) VALUES (?, ?, ?, ?)"
-        );
-        return $stmt->execute([$nom, $quantite, $unite, $idRecette]);
-    }
-
-    /** Add ingredient to a repas */
-    public function addIngredient(string $nom, ?float $quantite, string $unite, int $idRepas): bool
-    {
-        $stmt = $this->pdo->prepare(
-            "INSERT INTO ingredient (nom_ingredient, quantite, unite, id_repas) VALUES (?, ?, ?, ?)"
-        );
-        return $stmt->execute([$nom, $quantite, $unite, $idRepas]);
-    }
-
-    /** Update ingredient */
+    /** Modifier un ingrédient */
     public function updateIngredient(int $id, string $nom, ?float $quantite, string $unite): bool
     {
         $stmt = $this->pdo->prepare(
@@ -65,25 +74,25 @@ class Ingredient
         return $stmt->execute([$nom, $quantite, $unite, $id]);
     }
 
-    /** Delete ingredient */
+    /** Supprimer un ingrédient */
     public function deleteIngredient(int $id): bool
     {
         $stmt = $this->pdo->prepare("DELETE FROM ingredient WHERE id_ingredient = ?");
         return $stmt->execute([$id]);
     }
 
-    /** Delete all ingredients of a repas */
-    public function deleteByRepas(int $idRepas): bool
+    /** Supprimer tous les ingrédients d'une recette */
+    public function deleteByRecette(int $idRecette): bool
     {
-        $stmt = $this->pdo->prepare("DELETE FROM ingredient WHERE id_repas = ?");
-        return $stmt->execute([$idRepas]);
+        $stmt = $this->pdo->prepare("DELETE FROM ingredient WHERE id_recette = ?");
+        return $stmt->execute([$idRecette]);
     }
 
-    /** Count ingredients for a repas */
-    public function countByRepas(int $idRepas): int
+    /** Compter les ingrédients d'une recette */
+    public function countByRecette(int $idRecette): int
     {
-        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM ingredient WHERE id_repas = ?");
-        $stmt->execute([$idRepas]);
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM ingredient WHERE id_recette = ?");
+        $stmt->execute([$idRecette]);
         return (int) $stmt->fetchColumn();
     }
 }

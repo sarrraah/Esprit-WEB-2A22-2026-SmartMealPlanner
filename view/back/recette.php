@@ -3,7 +3,8 @@ defined('APP_ROOT') || require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../model/Recette.php';
 
 $recetteModel = new Recette();
-$recettes     = $recetteModel->getAllRecettes();
+// Jointure : recette + nombre de repas associés
+$recettes     = $recetteModel->getAllRecettesWithRepasCount();
 
 $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $project = str_replace('\\', '/', dirname(__DIR__, 2));
@@ -53,6 +54,11 @@ require_once __DIR__ . '/partials/sidebar.php';
                             ?>
                             <span class="badge <?= $bc ?>"><?= htmlspecialchars($rec['difficulte'] ?? 'Facile') ?></span>
                         </div>
+                        <div class="d-flex gap-2 mb-2">
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-bowl-hot me-1"></i><?= $rec['nb_repas'] ?? 0 ?> repas
+                            </span>
+                        </div>
                         <div class="d-flex gap-3 text-muted small mb-2">
                             <?php if (!empty($rec['temps_prep'])): ?><span><i class="bi bi-clock me-1"></i><?= $rec['temps_prep'] ?> min</span><?php endif; ?>
                             <?php if (!empty($rec['temps_cuisson'])): ?><span><i class="bi bi-fire me-1"></i><?= $rec['temps_cuisson'] ?> min</span><?php endif; ?>
@@ -63,6 +69,7 @@ require_once __DIR__ . '/partials/sidebar.php';
                         <?php endif; ?>
                     </div>
                     <div class="card-footer bg-white border-0 d-flex gap-2 pb-3 px-3">
+                        <a href="view_recette.php?id=<?= $rec['id_recette'] ?>" class="btn btn-sm btn-outline-primary flex-fill"><i class="bi bi-eye me-1"></i>Voir</a>
                         <a href="edit_recette.php?id=<?= $rec['id_recette'] ?>" class="btn btn-sm btn-outline-warning flex-fill"><i class="bi bi-pencil me-1"></i>Modifier</a>
                         <a href="../../controller/RecetteController.php?action=delete&id=<?= $rec['id_recette'] ?>" class="btn btn-sm btn-outline-danger flex-fill" onclick="return confirm('Supprimer ?')"><i class="bi bi-trash me-1"></i>Supprimer</a>
                     </div>

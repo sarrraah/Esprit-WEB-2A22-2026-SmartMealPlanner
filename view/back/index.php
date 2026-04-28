@@ -9,7 +9,7 @@ $totalRepas    = $repasModel->countRepas();
 $totalRecettes = $repasModel->countRecettes();
 $totalCal      = round($repasModel->totalCalories(), 1);
 $avgCal        = round($repasModel->avgCalories(), 1);
-$lastRepas     = array_slice($repasModel->getAllRepas(), 0, 6);
+$lastRepas     = array_slice($repasModel->getAllRepasWithRecette(), 0, 6);
 $statsByType   = $repasModel->statsByType();
 
 $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -112,7 +112,6 @@ require_once __DIR__ . '/partials/sidebar.php';
                                         <td><span class="badge bg-secondary"><?= htmlspecialchars($r['type_repas'] ?? '-') ?></span></td>
                                         <td><?= htmlspecialchars($r['calories'] ?? '-') ?> kcal</td>
                                         <td>
-                                            <a href="ingredients.php?id_repas=<?= $r['id_repas'] ?>" class="btn btn-sm btn-outline-success" title="Ingrédients"><i class="bi bi-list-ul"></i></a>
                                             <a href="edit_repas.php?id=<?= $r['id_repas'] ?>" class="btn btn-sm btn-outline-warning" title="Modifier"><i class="bi bi-pencil"></i></a>
                                             <a href="../../controller/RepasController.php?action=delete&id=<?= $r['id_repas'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer ?')"><i class="bi bi-trash"></i></a>
                                         </td>
