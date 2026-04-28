@@ -8,6 +8,7 @@ function sideActive(string $f): string { global $cur; return $cur === $f ? 'acti
     <ul class="nav flex-column px-2 py-3 flex-grow-1 gap-1">
         <li><a class="nav-link <?= sideActive('index.php') ?>" href="index.php"><i class="bi bi-speedometer2"></i>Tableau de Bord</a></li>
         <li><a class="nav-link <?= sideActive('repas.php') ?>" href="repas.php"><i class="bi bi-bowl-hot"></i>Gestion des Repas</a></li>
+        <li><a class="nav-link <?= sideActive('search_repas.php') ?>" href="search_repas.php"><i class="bi bi-search"></i>Repas par Recette</a></li>
         <li><a class="nav-link <?= sideActive('recette.php') ?>" href="recette.php"><i class="bi bi-journal-richtext"></i>Gestion des Recettes</a></li>
         <li><a class="nav-link <?= sideActive('statistiques.php') ?>" href="statistiques.php"><i class="bi bi-bar-chart-line"></i>Statistiques</a></li>
         <li><a class="nav-link <?= sideActive('utilisateurs.php') ?>" href="utilisateurs.php"><i class="bi bi-people"></i>Utilisateurs</a></li>

@@ -272,5 +272,21 @@ if ($method === 'GET' && $action === 'delete' && isset($_GET['id'])) {
     exit;
 }
 
+// ── SEARCH BY RECETTE ─────────────────────────────────────────────────────────
+// Equivalent workshop : afficherAlbums($idGenre)
+if ($method === 'GET' && $action === 'byRecette' && isset($_GET['id_recette'])) {
+    $idRecette = (int)$_GET['id_recette'];
+    $repasParRecette = $model->afficherRepasByRecette($idRecette);
+    $recettes        = $model->afficherToutesRecettes();
+
+    // Passer les données à la vue
+    $_SESSION['repas_par_recette'] = $repasParRecette;
+    $_SESSION['recettes_list']     = $recettes;
+    $_SESSION['recette_selectee']  = $idRecette;
+
+    header('Location: ' . $base . '/view/back/search_repas.php');
+    exit;
+}
+
 header('Location: ' . $back);
 exit;

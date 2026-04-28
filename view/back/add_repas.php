@@ -32,7 +32,7 @@ require_once __DIR__ . '/partials/sidebar.php';
                 <div class="admin-card card">
                     <div class="card-body p-4">
                         <?php if (empty($recettes)): ?>
-                            <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Aucune catégorie. <a href="add_recette.php">Créez-en une d'abord.</a></div>
+                            <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Aucune recette disponible. <a href="add_recette.php">Créez-en une d'abord.</a></div>
                         <?php endif; ?>
                         <?php if (!empty($formErrors)): ?>
                             <div class="alert alert-danger mb-3">
@@ -70,9 +70,9 @@ require_once __DIR__ . '/partials/sidebar.php';
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-medium">Catégorie <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-medium">Recette <span class="text-danger">*</span></label>
                                     <select name="id_recette" class="form-select" <?= empty($recettes)?'disabled':'' ?>>
-                                        <option value="">-- Sélectionnez une catégorie --</option>
+                                        <option value="">-- Sélectionnez une recette --</option>
                                         <?php foreach ($recettes as $rec): ?>
                                             <option value="<?= $rec['id_recette'] ?>"
                                                 <?= ($formOld['id_recette'] ?? '') == $rec['id_recette'] ? 'selected' : '' ?>>
@@ -173,12 +173,34 @@ $extraJs = <<<JS
 smAttachRealtime('formRepas', ['nom'], ['calories','proteines','glucides','lipides']);
 smAttachSubmit('formRepas', [
     { name: 'nom',        type: 'nom',    label: 'Le nom du repas' },
-    { name: 'id_recette', type: 'select', label: 'La catégorie' },
+    { name: 'id_recette', type: 'select', label: 'La recette' },
     { name: 'calories',   type: 'number', label: 'Les calories',  min: 0 },
     { name: 'proteines',  type: 'number', label: 'Les protéines', min: 0 },
     { name: 'glucides',   type: 'number', label: 'Les glucides',  min: 0 },
     { name: 'lipides',    type: 'number', label: 'Les lipides',   min: 0 },
 ]);
+
+// ── Remplir automatiquement le nom du repas avec le nom de la recette ─────────
+document.addEventListener('DOMContentLoaded', function () {
+    const selectRecette = document.querySelector('[name="id_recette"]');
+    const inputNom      = document.querySelector('[name="nom"]');
+
+    if (!selectRecette || !inputNom) return;
+
+    selectRecette.addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const nomRecette     = selectedOption.text.trim();
+
+        // Remplir seulement si le champ nom est vide ou correspond à l'ancienne recette
+        if (nomRecette && this.value !== '') {
+            inputNom.value = nomRecette;
+            smMarkValid(inputNom);
+        } else if (this.value === '') {
+            inputNom.value = '';
+            smClearFieldError(inputNom);
+        }
+    });
+});
 function previewImg(input) {
     if (!input.files||!input.files[0]) return;
     const file=input.files[0], reader=new FileReader();

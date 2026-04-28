@@ -30,7 +30,7 @@ class Repas
         return (int) $this->pdo->lastInsertId();
     }
 
-    // ── READ ALL (avec jointure recette) ──────────────────────────────────────
+    // ── READ ALL — JOIN repas + recette ──────────────────────────────────────
 
     public function getAllRepas(): array
     {
@@ -41,14 +41,21 @@ class Repas
                 rr.difficulte,
                 rr.temps_prep,
                 rr.temps_cuisson,
-                rr.nb_personnes
+                rr.nb_personnes,
+                rr.etapes,
+                rr.image_recette
             FROM repas r
             LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
             ORDER BY r.id_repas DESC
         ")->fetchAll();
     }
 
-    // ── READ ONE (avec jointure recette) ──────────────────────────────────────
+    public function getAllRepasWithRecette(): array
+    {
+        return $this->getAllRepas();
+    }
+
+    // ── READ ONE — JOIN repas + recette ───────────────────────────────────────
 
     public function getRepasById(int $id)
     {
@@ -60,13 +67,48 @@ class Repas
                 rr.temps_prep,
                 rr.temps_cuisson,
                 rr.nb_personnes,
-                rr.etapes
+                rr.etapes,
+                rr.image_recette
             FROM repas r
             LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
             WHERE r.id_repas = ?
         ");
         $stmt->execute([$id]);
         return $stmt->fetch();
+    }
+
+    // ── READ ONE — JOIN complet : repas + recette + ingrédients ──────────────
+
+    public function getRepasWithDetails(int $id): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT
+                r.*,
+                rr.nom_recette,
+                rr.difficulte,
+                rr.temps_prep,
+                rr.temps_cuisson,
+                rr.nb_personnes,
+                rr.etapes,
+                rr.image_recette
+            FROM repas r
+            LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
+            WHERE r.id_repas = ?
+        ");
+        $stmt->execute([$id]);
+        $repas = $stmt->fetch();
+
+        if (!$repas) return [];
+
+        $stmt2 = $this->pdo->prepare("
+            SELECT * FROM ingredient
+            WHERE id_recette = ?
+            ORDER BY id_ingredient
+        ");
+        $stmt2->execute([$repas['id_recette']]);
+        $repas['ingredients'] = $stmt2->fetchAll();
+
+        return $repas;
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -109,7 +151,7 @@ class Repas
         $stmt->execute([$id]);
     }
 
-    // ── Recettes (pour les dropdowns) ─────────────────────────────────────────
+    // ── Recettes pour les dropdowns ───────────────────────────────────────────
 
     public function getAllRecettes(): array
     {
@@ -118,12 +160,12 @@ class Repas
         )->fetchAll();
     }
 
-    // ── Recherche ─────────────────────────────────────────────────────────────
+    // ── RECHERCHE — JOIN repas + recette ─────────────────────────────────────
 
     public function searchRepas(string $query): array
     {
         $like = '%' . $query . '%';
-        return $this->pdo->prepare("
+        $stmt = $this->pdo->prepare("
             SELECT
                 r.*,
                 rr.nom_recette,
@@ -133,28 +175,37 @@ class Repas
                 rr.nb_personnes
             FROM repas r
             LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
-            WHERE r.nom           LIKE ?
-               OR r.description   LIKE ?
-               OR r.type_repas    LIKE ?
-               OR rr.nom_recette  LIKE ?
+            WHERE r.nom          LIKE ?
+               OR r.description  LIKE ?
+               OR r.type_repas   LIKE ?
+               OR rr.nom_recette LIKE ?
             ORDER BY r.id_repas DESC
-        ")->execute([$like, $like, $like, $like])
-          ? $this->pdo->prepare("
-            SELECT
-                r.*,
-                rr.nom_recette,
-                rr.difficulte,
-                rr.temps_prep,
-                rr.temps_cuisson,
-                rr.nb_personnes
+        ");
+        $stmt->execute([$like, $like, $like, $like]);
+        return $stmt->fetchAll();
+    }
+
+    // ── JOINTURE repas + recette ──────────────────────────────────────────────
+    // Equivalent workshop : SELECT * FROM album WHERE genre = :id
+    // Ici : SELECT * FROM repas WHERE id_recette = :id
+
+    public function afficherRepasByRecette(int $idRecette): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT r.*, rr.nom_recette, rr.difficulte, rr.temps_prep, rr.temps_cuisson
             FROM repas r
-            LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
-            WHERE r.nom           LIKE ?
-               OR r.description   LIKE ?
-               OR r.type_repas    LIKE ?
-               OR rr.nom_recette  LIKE ?
-            ORDER BY r.id_repas DESC
-        ") : [];
+            INNER JOIN recette_repas rr ON r.id_recette = rr.id_recette
+            WHERE r.id_recette = :id
+        ");
+        $stmt->execute(['id' => $idRecette]);
+        return $stmt->fetchAll();
+    }
+
+    public function afficherToutesRecettes(): array
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM recette_repas ORDER BY id_recette");
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     public function countRepas(): int
@@ -186,70 +237,5 @@ class Repas
         return $this->pdo->query(
             "SELECT type_repas, COUNT(*) AS total FROM repas GROUP BY type_repas"
         )->fetchAll();
-    }
-
-    // ── Jointure complète : repas + recette + ingrédients ────────────────────
-
-    public function getRepasWithDetails(int $id): array
-    {
-        // Repas + recette (jointure complète)
-        $stmt = $this->pdo->prepare("
-            SELECT
-                r.*,
-                rr.nom_recette,
-                rr.difficulte,
-                rr.temps_prep,
-                rr.temps_cuisson,
-                rr.nb_personnes,
-                rr.etapes,
-                rr.image_recette
-            FROM repas r
-            LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
-            WHERE r.id_repas = ?
-        ");
-        $stmt->execute([$id]);
-        $repas = $stmt->fetch();
-
-        if (!$repas) return [];
-
-        // Ingrédients via la recette (pas via le repas)
-        $stmt2 = $this->pdo->prepare("
-            SELECT i.*
-            FROM ingredient i
-            WHERE i.id_recette = ?
-            ORDER BY i.id_ingredient
-        ");
-        $stmt2->execute([$repas['id_recette']]);
-        $repas['ingredients'] = $stmt2->fetchAll();
-
-        return $repas;
-    }
-
-    // ── Tous les repas avec nom recette (pour les listes) ────────────────────
-
-    public function getAllRepasWithRecette(): array
-    {
-        return $this->pdo->query("
-            SELECT
-                r.id_repas,
-                r.nom,
-                r.calories,
-                r.proteines,
-                r.glucides,
-                r.lipides,
-                r.description,
-                r.type_repas,
-                r.image_repas,
-                r.created_at,
-                rr.id_recette,
-                rr.nom_recette,
-                rr.difficulte,
-                rr.temps_prep,
-                rr.temps_cuisson,
-                rr.nb_personnes
-            FROM repas r
-            LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
-            ORDER BY r.id_repas DESC
-        ")->fetchAll();
     }
 }

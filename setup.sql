@@ -60,3 +60,28 @@ INSERT IGNORE INTO recette_repas (id_recette, nom_recette, etapes, temps_prep, t
     (3, 'Tarte aux pommes',   '1. Préparer la pâte\n2. Éplucher les pommes\n3. Cuire 30 min', 20, 30, 'Moyen',   6),
     (4, 'Smoothie banane',    '1. Éplucher les fruits\n2. Mixer avec le lait\n3. Servir frais', 5,  0,  'Facile',  1),
     (5, 'Soupe de légumes',   '1. Couper les légumes\n2. Faire revenir\n3. Ajouter l\'eau et cuire 20 min', 10, 25, 'Facile', 4);
+
+-- ── Vue jointure repas + recette ─────────────────────────────
+-- Permet d'interroger repas et recette en une seule requête
+CREATE OR REPLACE VIEW vue_repas_recette AS
+SELECT
+    r.id_repas,
+    r.nom          AS nom_repas,
+    r.calories,
+    r.proteines,
+    r.glucides,
+    r.lipides,
+    r.description,
+    r.type_repas,
+    r.image_repas,
+    r.created_at,
+    rr.id_recette,
+    rr.nom_recette,
+    rr.etapes,
+    rr.difficulte,
+    rr.temps_prep,
+    rr.temps_cuisson,
+    rr.nb_personnes,
+    rr.image_recette
+FROM repas r
+LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette;
