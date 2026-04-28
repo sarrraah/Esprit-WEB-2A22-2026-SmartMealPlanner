@@ -33,21 +33,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $date_participation = $_POST['date_participation']  ?? '';
 
     if (empty($id_event) || !is_numeric($id_event))
-        $errors[] = "Veuillez sélectionner un événement.";
+        $errors[] = "Please select an event.";
     if (strlen($nom) < 2)
-        $errors[] = "Le nom doit contenir au moins 2 caractères.";
+        $errors[] = "Last name must be at least 2 characters.";
     if (strlen($prenom) < 2)
-        $errors[] = "Le prénom doit contenir au moins 2 caractères.";
+        $errors[] = "First name must be at least 2 characters.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL))
-        $errors[] = "L'adresse email est invalide.";
+        $errors[] = "Email address is invalid.";
     if ($places < 1 || $places > 10)
-        $errors[] = "Le nombre de places doit être entre 1 et 10.";
+        $errors[] = "Reserved seats must be between 1 and 10.";
     if (!in_array($mode_paiement, ['espèces', 'carte', 'virement', 'gratuit']))
-        $errors[] = "Veuillez choisir un mode de paiement valide.";
+        $errors[] = "Please choose a valid payment method.";
     if (!in_array($statut, ['confirmé', 'en attente', 'annulé', 'en_attente']))
-        $errors[] = "Veuillez choisir un statut valide.";
+        $errors[] = "Please choose a valid status.";
     if (empty($date_participation))
-        $errors[] = "La date de participation est obligatoire.";
+        $errors[] = "Participation date is required.";
 
     if (empty($errors)) {
         $updated = new Participation(
@@ -80,296 +80,156 @@ $prix    = $evObj ? (float)$evObj->getPrix() : 0;
 $montant = $prix * $participation->getNombrePlacesReservees();
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Modifier la Participation #<?= $id ?></title>
+<title>Edit Participation #<?= $id ?></title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-    font-family: 'DM Sans', sans-serif;
-    background: #fff;
-    color: #1a1a1a;
-    min-height: 100vh;
-    font-size: 16px;
-}
-
-/* ── NAV ── */
-nav {
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
-    padding: 0 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 60px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-.logo {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1a1a1a;
-    text-decoration: none;
-}
-.logo span { color: #dc2626; }
-.nav-links { display: flex; align-items: center; gap: 32px; }
-.nav-links a {
-    font-size: 14px;
-    color: #555;
-    text-decoration: none;
-    font-weight: 500;
-    padding-bottom: 2px;
-    border-bottom: 2px solid transparent;
-    transition: color .2s, border-color .2s;
-}
-.nav-links a:hover,
-.nav-links a.active { color: #1a1a1a; border-bottom-color: #dc2626; }
-.btn-nav {
-    background: #dc2626;
-    color: #fff;
-    border: none;
-    padding: 9px 20px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    font-family: inherit;
-}
-
-/* ── PAGE LAYOUT ── */
-.section { padding: 16px 0 24px; }
-.container { max-width: 100%; margin: 0; padding: 0 20px; }
-
-h2 {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 28px;
-}
-
-/* ── MONTANT INFO ── */
-.montant-info {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 8px;
-    padding: 13px 16px;
-    font-size: 15px;
-    color: #991b1b;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.montant-info strong { color: #dc2626; font-size: 17px; }
-
-/* ── ALERTS ── */
-.alert {
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    font-size: 14px;
-}
-.alert-danger {
-    background: #fef2f2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-}
-
-/* ── FORM GRID ── */
-.row { display: flex; flex-wrap: wrap; gap: 20px; }
-.col-md-6 { flex: 1 1 calc(50% - 10px); min-width: 260px; }
-.col-12 { flex: 0 0 100%; }
-
-/* ── FORM CONTROLS ── */
-.form-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 6px;
-}
-.form-control,
-.form-select {
-    width: 100%;
-    padding: 13px 16px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-    color: #1a1a1a;
-    font-size: 15px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color .2s, box-shadow .2s;
-}
-.form-control:focus,
-.form-select:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-.form-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
-}
-
-/* ── BUTTONS ── */
-.d-flex { display: flex; }
-.gap-2 { gap: 10px; }
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 22px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    border: none;
-    text-decoration: none;
-    transition: all .15s;
-}
-.btn-danger { background: #dc2626; color: #fff; }
-.btn-danger:hover { background: #b91c1c; }
-.btn-outline-secondary {
-    background: #fff;
-    color: #555;
-    border: 1px solid #d1d5db;
-}
-.btn-outline-secondary:hover { background: #f9fafb; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 600px) {
-    nav { padding: 0 16px; }
-    .col-md-6 { flex: 0 0 100%; }
-}
-</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
 
-<nav>
-  <a href="../front/interfaceevent.php" class="logo">Smart Event<span>.</span></a>
-  <div class="nav-links">
-    <a href="listEvenements.php">Événements</a>
-    <a href="listParticipations.php" class="active">Participants</a>
-  </div>
-  <a href="addParticipation.php" class="btn-nav">Ajouter Participation</a>
-</nav>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div class="brand-name">SmartMeal</div>
+    </div>
+    <div class="section-label">Dashboard</div>
+    <nav>
+      <a href="listEvenements.php"><i class="bi bi-calendar-event-fill"></i> Events</a>
+      <a href="listParticipations.php" class="active"><i class="bi bi-people-fill"></i> Participants</a>
+    </nav>
+    <div class="section-label">System</div>
+    <nav>
+      <a href="#"><i class="bi bi-bar-chart-fill"></i> Analytics</a>
+      <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
+    </nav>
+  </aside>
 
-<section class="section">
-<div class="container">
-
-  <h2>Modifier la Participation</h2>
-
-  <!-- Montant calculé -->
-  <div class="montant-info">
-    💰 Montant total calculé :
-    <strong>
-      <?= $montant == 0 ? 'Gratuit' : number_format($montant, 2) . ' TND' ?>
-    </strong>
-    &nbsp;(<?= $participation->getNombrePlacesReservees() ?> place(s) × <?= number_format($prix, 2) ?> TND)
-  </div>
-
-  <?php foreach ($errors as $err): ?>
-    <div class="alert alert-danger"><?= htmlspecialchars($err) ?></div>
-  <?php endforeach; ?>
-
-  <form method="POST" action="" id="partForm" class="row">
-    <input type="hidden" name="id" value="<?= $id ?>">
-
-    <!-- Événement (pleine largeur) -->
-    <div class="col-12">
-      <label class="form-label">Événement *</label>
-      <select name="id_event" id="id_event" class="form-select">
-        <option value="">-- Choisir un événement --</option>
-        <?php foreach ($allEvents as $ev): ?>
-          <option value="<?= $ev->getIdEvent() ?>"
-            <?= $participation->getIdEvent() == $ev->getIdEvent() ? 'selected' : '' ?>>
-            <?= htmlspecialchars($ev->getTitre()) ?> (<?= htmlspecialchars($ev->getLieu()) ?>)
-          </option>
-        <?php endforeach; ?>
-      </select>
+  <main class="main-area">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span class="label">Registration Management</span>
+        <h1>Edit Participation</h1>
+        <p>Update participant details, event selection, and payment status from the admin dashboard.</p>
+      </div>
+      <div class="topbar-action">
+        <a href="listParticipations.php" class="btn-primary"><i class="bi bi-arrow-left"></i> Back to participants</a>
+      </div>
     </div>
 
-    <!-- Nom -->
-    <div class="col-md-6">
-      <label class="form-label">Nom *</label>
-      <input type="text" name="nom" id="nom" class="form-control"
-             placeholder="Ben Ali"
-             value="<?= htmlspecialchars($_POST['nom'] ?? $participation->getNom()) ?>">
-    </div>
+    <div class="content-wrap">
+      <div class="dashboard-grid">
+        <section class="section-card">
+          <div class="section-card-title">
+            <span><i class="bi bi-pencil-square"></i> Registration details</span>
+          </div>
 
-    <!-- Prénom -->
-    <div class="col-md-6">
-      <label class="form-label">Prénom *</label>
-      <input type="text" name="prenom" id="prenom" class="form-control"
-             placeholder="Ahmed"
-             value="<?= htmlspecialchars($_POST['prenom'] ?? $participation->getPrenom()) ?>">
-    </div>
+          <div class="montant-info">
+            💰 Total amount calculated:
+            <strong><?= $montant == 0 ? 'Free' : number_format($montant, 2) . ' TND' ?></strong>
+            &nbsp;(<?= $participation->getNombrePlacesReservees() ?> seat(s) × <?= number_format($prix, 2) ?> TND)
+          </div>
 
-    <!-- Email -->
-    <div class="col-md-6">
-      <label class="form-label">Email *</label>
-      <input type="email" name="email" id="email" class="form-control"
-             placeholder="ahmed@email.com"
-             value="<?= htmlspecialchars($_POST['email'] ?? $participation->getEmail()) ?>">
-    </div>
+          <?php foreach ($errors as $err): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($err) ?></div>
+          <?php endforeach; ?>
 
-    <!-- Nombre de places -->
-    <div class="col-md-6">
-      <label class="form-label">Nombre de places *</label>
-      <input type="number" name="nombre_places_reservees" id="places" class="form-control"
-             min="1" max="10"
-             value="<?= htmlspecialchars($_POST['nombre_places_reservees'] ?? $participation->getNombrePlacesReservees()) ?>">
-    </div>
+          <form method="POST" action="" id="partForm" class="row g-3">
+            <input type="hidden" name="id" value="<?= $id ?>">
 
-    <!-- Mode de paiement -->
-    <div class="col-md-6">
-      <label class="form-label">Mode de paiement *</label>
-      <select name="mode_paiement" id="mode_paiement" class="form-select">
-        <option value="">-- Choisir --</option>
-        <option value="gratuit"  <?= ($participation->getModePaiement() === 'gratuit')  ? 'selected' : '' ?>>Gratuit</option>
-        <option value="espèces"  <?= ($participation->getModePaiement() === 'espèces')  ? 'selected' : '' ?>>Espèces 💵</option>
-        <option value="carte"    <?= ($participation->getModePaiement() === 'carte')    ? 'selected' : '' ?>>Carte 💳</option>
-        <option value="virement" <?= ($participation->getModePaiement() === 'virement') ? 'selected' : '' ?>>Virement 🏦</option>
-      </select>
-    </div>
+            <div class="col-12">
+              <label class="form-label">Event *</label>
+              <select name="id_event" id="id_event" class="form-select">
+                <option value="">-- Choose an event --</option>
+                <?php foreach ($allEvents as $ev): ?>
+                  <option value="<?= $ev->getIdEvent() ?>" <?= $participation->getIdEvent() == $ev->getIdEvent() ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($ev->getTitre()) ?> (<?= htmlspecialchars($ev->getLieu()) ?>)
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
 
-    <!-- Statut -->
-    <div class="col-md-6">
-      <label class="form-label">Statut *</label>
-      <select name="statut" id="statut" class="form-select">
-        <option value="">-- Choisir --</option>
-        <option value="confirmé"   <?= $participation->getStatut() === 'confirmé'   ? 'selected' : '' ?>>✅ Confirmé</option>
-        <option value="en attente" <?= ($participation->getStatut() === 'en attente' || $participation->getStatut() === 'en_attente') ? 'selected' : '' ?>>⏳ En attente</option>
-        <option value="annulé"     <?= $participation->getStatut() === 'annulé'     ? 'selected' : '' ?>>❌ Annulé</option>
-      </select>
-    </div>
+            <div class="col-md-6">
+              <label class="form-label">First name *</label>
+              <input type="text" name="prenom" id="prenom" class="form-control" placeholder="Ahmed" value="<?= htmlspecialchars($_POST['prenom'] ?? $participation->getPrenom()) ?>">
+            </div>
 
-    <!-- Date de participation -->
-    <div class="col-12">
-      <label class="form-label">Date de participation *</label>
-      <input type="datetime-local" name="date_participation" id="date_participation"
-             class="form-control" value="<?= $dp ?>">
-    </div>
+            <div class="col-md-6">
+              <label class="form-label">Last name *</label>
+              <input type="text" name="nom" id="nom" class="form-control" placeholder="Ben Ali" value="<?= htmlspecialchars($_POST['nom'] ?? $participation->getNom()) ?>">
+            </div>
 
-    <!-- Actions -->
-    <div class="col-12 d-flex gap-2">
-      <button type="submit" class="btn btn-danger">Mettre à jour</button>
-      <a href="listParticipations.php" class="btn btn-outline-secondary">Annuler</a>
-    </div>
+            <div class="col-md-6">
+              <label class="form-label">Email *</label>
+              <input type="email" name="email" id="email" class="form-control" placeholder="ahmed@email.com" value="<?= htmlspecialchars($_POST['email'] ?? $participation->getEmail()) ?>">
+            </div>
 
-  </form>
+            <div class="col-md-6">
+              <label class="form-label">Reserved seats *</label>
+              <input type="number" name="nombre_places_reservees" id="places" class="form-control" min="1" max="10" value="<?= htmlspecialchars($_POST['nombre_places_reservees'] ?? $participation->getNombrePlacesReservees()) ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Payment method *</label>
+              <select name="mode_paiement" id="mode_paiement" class="form-select">
+                <option value="">-- Choose --</option>
+                <option value="gratuit"  <?= ($participation->getModePaiement() === 'gratuit')  ? 'selected' : '' ?>>Free</option>
+                <option value="espèces"  <?= ($participation->getModePaiement() === 'espèces')  ? 'selected' : '' ?>>Cash 💵</option>
+                <option value="carte"    <?= ($participation->getModePaiement() === 'carte')    ? 'selected' : '' ?>>Card 💳</option>
+                <option value="virement" <?= ($participation->getModePaiement() === 'virement') ? 'selected' : '' ?>>Bank transfer 🏦</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Status *</label>
+              <select name="statut" id="statut" class="form-select">
+                <option value="">-- Choose --</option>
+                <option value="confirmé"   <?= $participation->getStatut() === 'confirmé'   ? 'selected' : '' ?>>✅ Confirmed</option>
+                <option value="en attente" <?= ($participation->getStatut() === 'en attente' || $participation->getStatut() === 'en_attente') ? 'selected' : '' ?>>⏳ Pending</option>
+                <option value="annulé"     <?= $participation->getStatut() === 'annulé'     ? 'selected' : '' ?>>❌ Canceled</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Participation date *</label>
+              <input type="datetime-local" name="date_participation" id="date_participation" class="form-control" value="<?= $dp ?>">
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-danger">Update participation</button>
+              <a href="listParticipations.php" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+
+          </form>
+        </section>
+
+        <aside class="side-panel">
+          <div class="small-card">
+            <h3>Participation summary</h3>
+            <ul>
+              <li><span>Participant</span><span><?= htmlspecialchars($participation->getPrenom() . ' ' . $participation->getNom()) ?></span></li>
+              <li><span>Event</span><span><?= htmlspecialchars($evObj ? $evObj->getTitre() : 'Unknown') ?></span></li>
+              <li><span>Seats reserved</span><span><?= htmlspecialchars($participation->getNombrePlacesReservees()) ?></span></li>
+              <li><span>Payment method</span><span><?= htmlspecialchars($participation->getModePaiement()) ?></span></li>
+              <li><span>Total amount</span><span><?= $montant == 0 ? 'Free' : number_format($montant, 2) . ' TND' ?></span></li>
+              <li><span>Status</span><span><?= htmlspecialchars($participation->getStatut()) ?></span></li>
+            </ul>
+          </div>
+          <div class="small-card">
+            <h3>Quick actions</h3>
+            <a href="listParticipations.php" class="btn-action-secondary"><i class="bi bi-list"></i> View registrations</a>
+            <a href="addParticipation.php" class="btn-action-secondary"><i class="bi bi-plus-circle"></i> Add registration</a>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
 </div>
-</section>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -385,14 +245,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var statut   = document.getElementById('statut').value;
     var date     = document.getElementById('date_participation').value;
 
-    if (!id_event)                                          errors.push("Veuillez sélectionner un événement.");
-    if (nom.length < 2)                                     errors.push("Le nom doit contenir au moins 2 caractères.");
-    if (prenom.length < 2)                                  errors.push("Le prénom doit contenir au moins 2 caractères.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))         errors.push("Email invalide.");
-    if (isNaN(places) || places < 1 || places > 10)        errors.push("Le nombre de places doit être entre 1 et 10.");
-    if (!mode)                                              errors.push("Veuillez choisir un mode de paiement.");
-    if (!statut)                                            errors.push("Veuillez choisir un statut.");
-    if (!date)                                              errors.push("La date de participation est obligatoire.");
+    if (!id_event)                 errors.push("Please select an event.");
+    if (nom.length < 2)             errors.push("Last name must be at least 2 characters.");
+    if (prenom.length < 2)          errors.push("First name must be at least 2 characters.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Please enter a valid email.");
+    if (isNaN(places) || places < 1 || places > 10) errors.push("Reserved seats must be between 1 and 10.");
+    if (!mode)                     errors.push("Please select a payment method.");
+    if (!statut)                   errors.push("Please select a status.");
+    if (!date)                     errors.push("Participation date is required.");
 
     var errorDiv = document.getElementById('js-errors');
     if (!errorDiv) {
@@ -404,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (errors.length > 0) {
       e.preventDefault();
-      errorDiv.innerHTML = '<strong>Erreurs :</strong><ul style="margin:8px 0 0 16px">'
+      errorDiv.innerHTML = '<strong>Errors:</strong><ul style="margin:8px 0 0 16px">'
         + errors.map(function(err){ return '<li>' + err + '</li>'; }).join('')
         + '</ul>';
       errorDiv.style.display = 'block';

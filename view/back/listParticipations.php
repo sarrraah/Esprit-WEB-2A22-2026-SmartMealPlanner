@@ -44,336 +44,219 @@ foreach ($participations as $p) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liste des Participations</title>
+    <title>Participation List</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { box-sizing: border-box; }
-        body { background: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; }
-
-        /* ── Navbar ── */
-        .top-navbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 40px;
-            height: 64px;
-            border-bottom: 1px solid #eee;
-            background: #fff;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .top-navbar .brand { font-weight: 800; font-size: 20px; color: #111; text-decoration: none; }
-        .top-navbar .brand span { color: #e63946; }
-        .top-navbar .nav-links { display: flex; gap: 32px; list-style: none; margin: 0; padding: 0; }
-        .top-navbar .nav-links a {
-            text-decoration: none; color: #555; font-size: 14px; font-weight: 500;
-            padding-bottom: 4px; border-bottom: 2px solid transparent;
-        }
-        .top-navbar .nav-links a.active,
-        .top-navbar .nav-links a:hover { color: #111; border-bottom: 2px solid #e63946; }
-        .top-navbar .btn-add {
-            background: #e63946; color: #fff; border: none; border-radius: 25px;
-            padding: 9px 22px; font-size: 14px; font-weight: 600;
-            text-decoration: none; cursor: pointer; transition: background 0.2s;
-        }
-        .top-navbar .btn-add:hover { background: #c1121f; color: #fff; }
-
-        /* ── Page content ── */
-        .page-content { padding: 40px 40px 60px; }
-
-        .page-title { font-size: 38px; font-weight: 400; color: #111; margin-bottom: 8px; }
-
-        /* ── Stats ── */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 28px;
-        }
-        .stat-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 12px;
-            padding: 18px 22px;
-        }
-        .stat-num { font-size: 28px; font-weight: 700; color: #111; line-height: 1; }
-        .stat-lbl { font-size: 11px; color: #888; margin-top: 6px; text-transform: uppercase; letter-spacing: .6px; }
-        .stat-card.green .stat-num { color: #198754; }
-        .stat-card.orange .stat-num { color: #f59e0b; }
-        .stat-card.red .stat-num   { color: #e63946; }
-
-        /* ── Event banner ── */
-        .event-banner {
-            background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 10px;
-            padding: 12px 18px; margin-bottom: 20px;
-            display: flex; align-items: center; gap: 12px; font-size: 14px;
-        }
-        .event-banner strong { color: #111; }
-        .event-banner a {
-            margin-left: auto; font-size: 13px; color: #e63946;
-            text-decoration: none; font-weight: 500;
-            padding: 5px 14px; border: 1px solid #e63946; border-radius: 8px;
-        }
-        .event-banner a:hover { background: #fce8e8; }
-
-        /* ── Filters ── */
-        .filters-row {
-            display: grid;
-            grid-template-columns: 2fr 1.4fr 1.8fr auto;
-            gap: 12px;
-            margin-bottom: 24px;
-            width: 100%;
-            align-items: center;
-        }
-        .filters-row input,
-        .filters-row select {
-            width: 100%; border: 1px solid #ddd; border-radius: 8px;
-            padding: 11px 16px; font-size: 15px; color: #333;
-            background: #fff; outline: none;
-        }
-        .filters-row input:focus,
-        .filters-row select:focus { border-color: #aaa; }
-        .filters-row .btn-cancel {
-            background: #fff; border: 1px solid #ddd; border-radius: 8px;
-            padding: 11px 18px; font-size: 15px; color: #555; cursor: pointer;
-            display: flex; align-items: center; gap: 6px; white-space: nowrap;
-        }
-        .filters-row .btn-cancel:hover { border-color: #aaa; color: #111; }
-
-        /* ── Table ── */
-        .table-wrap { border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 16px; }
-        thead th {
-            background: #fff; font-weight: 700;
-            padding: 18px 20px; border-bottom: 2px solid #e5e5e5;
-            white-space: nowrap; font-size: 15px;
-        }
-        thead th:nth-child(1) { color: #6c757d; }
-        thead th:nth-child(2) { color: #111; }
-        thead th:nth-child(3) { color: #0d6efd; }
-        thead th:nth-child(4) { color: #198754; }
-        thead th:nth-child(5) { color: #e63946; }
-        thead th:nth-child(6) { color: #6c757d; }
-        thead th:nth-child(7) { color: #6c757d; }
-        thead th:nth-child(8) { color: #6c757d; }
-
-        tbody tr { border-bottom: 1px solid #f0f0f0; }
-        tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: #fafafa; }
-        tbody td {
-            padding: 16px 20px; color: #333; font-size: 16px;
-            vertical-align: middle; white-space: nowrap;
-        }
-        tbody td:nth-child(2) {
-            font-size: 17px; font-weight: 400; color: #111;
-        }
-        tbody td:nth-child(3) { white-space: normal; min-width: 150px; }
-
-        /* ── Badges statut ── */
-        .badge-status {
-            display: inline-block; padding: 4px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 600; background: #333; color: #fff;
-        }
-        .badge-status.confirme { background: #198754; }
-        .badge-status.attente  { background: #f59e0b; color: #fff; }
-        .badge-status.annule   { background: #6c757d; }
-
-        /* ── Prix ── */
-        .prix-gratuit { color: #198754; font-weight: 600; }
-        .prix-payant  { color: #e63946; font-weight: 600; }
-
-        /* ── Boutons actions ── */
-        .btn-modifier {
-            border: 1.5px solid #0d6efd; color: #0d6efd; background: #fff;
-            border-radius: 6px; padding: 4px 14px; font-size: 13px; font-weight: 500;
-            text-decoration: none; cursor: pointer; transition: all 0.15s;
-        }
-        .btn-modifier:hover { background: #0d6efd; color: #fff; }
-        .btn-supprimer {
-            border: 1.5px solid #dc3545; color: #dc3545; background: #fff;
-            border-radius: 6px; padding: 4px 14px; font-size: 13px; font-weight: 500;
-            text-decoration: none; cursor: pointer; transition: all 0.15s; margin-left: 6px;
-        }
-        .btn-supprimer:hover { background: #dc3545; color: #fff; }
-
-        /* ── Alert ── */
-        .alert { border-radius: 8px; font-size: 14px; margin-bottom: 20px; }
-
-        /* ── No result ── */
-        .no-result td { text-align: center; color: #aaa; padding: 40px; font-size: 15px; }
-
-        /* ── Export btn ── */
-        .btn-export {
-            background: #fff; border: 1px solid #ddd; border-radius: 8px;
-            padding: 9px 18px; font-size: 14px; color: #555; cursor: pointer;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .btn-export:hover { border-color: #aaa; color: #111; }
-    </style>
+    <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
-
-<!-- NAVBAR -->
-<nav class="top-navbar">
-    <a href="#" class="brand">Smart Meal Planner<span>.</span></a>
-    <ul class="nav-links">
-        <li><a href="listEvenements.php">Événements</a></li>
-        <li><a href="listParticipations.php" class="active">Participants</a></li>
-        <li><a href="afficherProduit.php">Produits</a></li>
-        <li><a href="afficherCategorie.php">Catégories</a></li>
-    </ul>
-    <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-add">
-        Ajouter Participation
-    </a>
-</nav>
-
-<!-- CONTENT -->
-<div class="page-content">
-
-    <!-- Titre + export -->
-    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-        <h1 class="page-title mb-0">Gestion des Participations</h1>
-        <button class="btn-export" onclick="exportCSV()">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-num"><?= $total ?></div>
-            <div class="stat-lbl">Total</div>
+<div class="admin-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-name">SmartMeal</div>
         </div>
-        <div class="stat-card green">
-            <div class="stat-num"><?= $confirmes ?></div>
-            <div class="stat-lbl">Confirmés</div>
+        <div class="section-label">Dashboard</div>
+        <nav>
+            <a href="listEvenements.php"><i class="bi bi-calendar-event-fill"></i> Events</a>
+            <a href="listParticipations.php" class="active"><i class="bi bi-people-fill"></i> Participants</a>
+            <a href="afficherProduit.php"><i class="bi bi-bag-fill"></i> Products</a>
+            <a href="afficherCategorie.php"><i class="bi bi-tags-fill"></i> Categories</a>
+        </nav>
+        <div class="section-label">System</div>
+        <nav>
+            <a href="#"><i class="bi bi-bar-chart-fill"></i> Analytics</a>
+            <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
+        </nav>
+    </aside>
+    <main class="main-area">
+        <div class="topbar">
+            <div class="topbar-title">
+                <span class="label">Participation Dashboard</span>
+                <h1>Participant Management</h1>
+                <p>Track registrations and manage statuses clearly and quickly.</p>
+            </div>
+            <div class="topbar-action">
+                <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-primary">
+                    <i class="bi bi-plus-lg"></i> New Participation
+                </a>
+            </div>
         </div>
-        <div class="stat-card orange">
-            <div class="stat-num"><?= $enAttente ?></div>
-            <div class="stat-lbl">En attente</div>
-        </div>
-        <div class="stat-card red">
-            <div class="stat-num"><?= number_format($revenue, 2) ?></div>
-            <div class="stat-lbl">Revenue (TND)</div>
-        </div>
-    </div>
+        <div class="content-wrap">
+            <div class="dashboard-banner">
+                <h2>Welcome to <span>SmartMeal</span></h2>
+                <p>Manage registrations, track revenues and keep an eye on every event from a modern dashboard.</p>
+            </div>
 
-    <!-- Alertes -->
-    <?php if ($msg === 'added'): ?>
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle me-1"></i>Participation ajoutée avec succès.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fdecea;"><i class="bi bi-people-fill text-danger"></i></div>
+                    <div>
+                        <div class="stat-label">Total participations</div>
+                        <div class="stat-value"><?= $total ?></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#e8f5e9;"><i class="bi bi-check-circle text-success"></i></div>
+                    <div>
+                        <div class="stat-label">Confirmed</div>
+                        <div class="stat-value"><?= $confirmes ?></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fff8e1;"><i class="bi bi-hourglass-split text-warning"></i></div>
+                    <div>
+                        <div class="stat-label">Pending</div>
+                        <div class="stat-value"><?= $enAttente ?></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#e8f5e9;"><i class="bi bi-currency-dollar text-success"></i></div>
+                    <div>
+                        <div class="stat-label">Revenue (TND)</div>
+                        <div class="stat-value"><?= number_format($revenue, 2) ?></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <section class="section-card">
+                    <div class="section-card-title">
+                        <span><i class="bi bi-people-fill"></i> Recent Participations</span>
+                        <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-action-primary"><i class="bi bi-plus-circle"></i> Add</a>
+                    </div>
+
+                    <?php if ($msg === 'added'): ?>
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <i class="fas fa-check-circle me-1"></i> Participation added successfully.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($msg === 'updated'): ?>
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <i class="fas fa-check-circle me-1"></i> Participation updated successfully.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($msg === 'deleted'): ?>
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <i class="fas fa-trash me-1"></i> Participation deleted.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($id_event_filter && $eventTitle): ?>
+                        <div class="section-card mb-4" style="padding:18px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                                <div>
+                                    <strong><?= htmlspecialchars($eventTitle) ?></strong>
+                                    <p style="margin:6px 0 0;color:#6b7280;font-size:13px;">Participations linked to this event.</p>
+                                </div>
+                                <a href="listParticipations.php" class="btn-action-secondary">View all</a>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <input type="text" id="search-input" class="filter-input" placeholder="Search participant...">
+                        </div>
+                        <div class="col-md-4">
+                            <select id="filter-statut" class="filter-input">
+                                <option value="">All statuses</option>
+                                <option value="confirmé">Confirmed</option>
+                                <option value="en attente">Pending</option>
+                                <option value="annulé">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filter-event" class="filter-input">
+                                <option value="">All events</option>
+                                <?php foreach ($allEvents as $ev): ?>
+                                    <option value="<?= $ev->getIdEvent() ?>" <?= ($id_event_filter == $ev->getIdEvent()) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($ev->getTitre()) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="table-participations">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Participant</th>
+                                    <th>Event</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Payment Method</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-participations">
+                            <?php foreach ($participations as $p):
+                                $s = strtolower($p->getStatut());
+                                $badgeClass = str_contains($s,'confirm') ? 'confirme' : (str_contains($s,'attente') ? 'attente' : 'annule');
+
+                                $evObj   = $eventMap[$p->getIdEvent()] ?? null;
+                                $prix    = $evObj ? (float)$evObj->getPrix() : 0;
+                                $montant = $prix * $p->getNombrePlacesReservees();
+                                $isFree  = ($montant == 0);
+                                $mLabel  = $isFree ? '<span class="prix-gratuit">Gratuit</span>' : '<span class="prix-payant">'.number_format($montant,2).' TND</span>';
+                                $evName  = $evObj ? $evObj->getTitre() : '—';
+                            ?>
+                                <tr
+                                    data-nom="<?= htmlspecialchars(strtolower($p->getNom().' '.$p->getPrenom()), ENT_QUOTES) ?>"
+                                    data-statut="<?= htmlspecialchars(strtolower($p->getStatut()), ENT_QUOTES) ?>"
+                                    data-event="<?= $p->getIdEvent() ?>">
+                                    <td><?= $p->getIdParticipation() ?></td>
+                                    <td><?= htmlspecialchars($p->getNom().' '.$p->getPrenom()) ?></td>
+                                    <td><?= htmlspecialchars($evName) ?></td>
+                                    <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
+                                    <td><?= $mLabel ?></td>
+                                    <td><?= htmlspecialchars($p->getModePaiement()) ?></td>
+                                    <td><span class="badge-status <?= $badgeClass ?>"><?= htmlspecialchars($p->getStatut()) ?></span></td>
+                                    <td>
+                                        <a href="updateParticipation.php?id=<?= $p->getIdParticipation() ?>" class="btn-edit"><i class="bi bi-pencil"></i></a>
+                                        <a href="listParticipations.php?delete=<?= $p->getIdParticipation() ?><?= $id_event_filter ? '&id_event='.$id_event_filter : '' ?>" class="btn-delete ms-2" onclick="return confirm('Delete this participation?')"><i class="bi bi-trash"></i></a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <tr id="no-result" style="display:none;">
+                                <td colspan="8" class="text-center text-muted py-3">No participations found.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                <aside class="side-panel">
+                    <div class="section-card">
+                        <div class="section-card-title"><i class="bi bi-bar-chart-line"></i> Summary</div>
+                        <ul>
+                            <li><span>Total participations</span><span><?= $total ?></span></li>
+                            <li><span>Confirmed</span><span><?= $confirmes ?></span></li>
+                            <li><span>Pending</span><span><?= $enAttente ?></span></li>
+                            <li><span>Revenue</span><span><?= number_format($revenue,2) ?> TND</span></li>
+                        </ul>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-card-title"><i class="bi bi-lightning-charge"></i> Quick Actions</div>
+                        <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-action-primary"><i class="bi bi-plus-circle"></i> Add Participation</a>
+                        <a href="listEvenements.php" class="btn-action-secondary"><i class="bi bi-calendar-event"></i> View Events</a>
+                        <a href="listParticipations.php" class="btn-action-secondary"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+                        <button type="button" class="btn-action-secondary" onclick="exportCSV()"><i class="bi bi-download"></i> Export CSV</button>
+                    </div>
+                </aside>
+            </div>
         </div>
-    <?php endif; ?>
-    <?php if ($msg === 'updated'): ?>
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle me-1"></i>Participation mise à jour.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-    <?php if ($msg === 'deleted'): ?>
-        <div class="alert alert-warning alert-dismissible fade show">
-            <i class="fas fa-trash me-1"></i>Participation supprimée.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-
-    <!-- Bannière événement filtré -->
-    <?php if ($id_event_filter && $eventTitle): ?>
-    <div class="event-banner">
-        <i class="fas fa-calendar-alt text-success"></i>
-        <div>
-            <strong><?= htmlspecialchars($eventTitle) ?></strong>
-            <div style="font-size:12px;color:#888;margin-top:2px;">Participations liées à cet événement</div>
-        </div>
-        <a href="listParticipations.php">Voir tout</a>
-    </div>
-    <?php endif; ?>
-
-    <!-- Filtres -->
-    <div class="filters-row">
-        <input type="text" id="search-input" placeholder="Rechercher un participant...">
-        <select id="filter-statut">
-            <option value="">Tous les statuts</option>
-            <option value="confirmé">Confirmé</option>
-            <option value="en attente">En attente</option>
-            <option value="annulé">Annulé</option>
-        </select>
-        <select id="filter-event">
-            <option value="">Tous les événements</option>
-            <?php foreach ($allEvents as $ev): ?>
-                <option value="<?= $ev->getIdEvent() ?>"
-                    <?= ($id_event_filter == $ev->getIdEvent()) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($ev->getTitre()) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <button class="btn-cancel" onclick="annulerFiltres()">
-            <i class="bi bi-x-circle"></i> Annuler
-        </button>
-    </div>
-
-    <!-- Tableau -->
-    <div class="table-wrap">
-        <table id="table-participations">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Participant</th>
-                    <th>Événement</th>
-                    <th>Date</th>
-                    <th>Montant</th>
-                    <th>Mode Paiement</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="tbody-participations">
-            <?php foreach ($participations as $p):
-                $s = strtolower($p->getStatut());
-                $badgeClass = str_contains($s,'confirm') ? 'confirme' : (str_contains($s,'attente') ? 'attente' : 'annule');
-
-                $evObj   = $eventMap[$p->getIdEvent()] ?? null;
-                $prix    = $evObj ? (float)$evObj->getPrix() : 0;
-                $montant = $prix * $p->getNombrePlacesReservees();
-                $isFree  = ($montant == 0);
-                $mLabel  = $isFree ? '<span class="prix-gratuit">Gratuit</span>' : '<span class="prix-payant">'.number_format($montant,2).' TND</span>';
-                $evName  = $evObj ? $evObj->getTitre() : '—';
-            ?>
-                <tr
-                    data-nom="<?= htmlspecialchars(strtolower($p->getNom().' '.$p->getPrenom()), ENT_QUOTES) ?>"
-                    data-statut="<?= htmlspecialchars(strtolower($p->getStatut()), ENT_QUOTES) ?>"
-                    data-event="<?= $p->getIdEvent() ?>">
-                    <td><?= $p->getIdParticipation() ?></td>
-                    <td><?= htmlspecialchars($p->getNom().' '.$p->getPrenom()) ?></td>
-                    <td><?= htmlspecialchars($evName) ?></td>
-                    <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
-                    <td><?= $mLabel ?></td>
-                    <td><?= htmlspecialchars($p->getModePaiement()) ?></td>
-                    <td><span class="badge-status <?= $badgeClass ?>"><?= htmlspecialchars($p->getStatut()) ?></span></td>
-                    <td>
-                        <a href="updateParticipation.php?id=<?= $p->getIdParticipation() ?>" class="btn-modifier">Modifier</a>
-                        <a href="listParticipations.php?delete=<?= $p->getIdParticipation() ?><?= $id_event_filter ? '&id_event='.$id_event_filter : '' ?>"
-                           class="btn-supprimer"
-                           onclick="return confirm('Supprimer cette participation ?')">Supprimer</a>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            <tr id="no-result" style="display:none;" class="no-result">
-                <td colspan="8"><i class="fas fa-search me-2"></i>Aucune participation trouvée.</td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-
+    </main>
 </div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -409,7 +292,7 @@ function annulerFiltres() {
 }
 
 function exportCSV() {
-    var headers = ['ID','Participant','Événement','Date','Montant','Mode Paiement','Statut'];
+    var headers = ['ID','Participant','Event','Date','Amount','Payment Method','Status'];
     var rows = Array.from(tbody.querySelectorAll('tr:not(#no-result)')).filter(function(r){ return r.style.display !== 'none'; });
     var esc  = function(v){ return '"'+v.replace(/"/g,'""')+'"'; };
     var lines = [headers.map(esc).join(',')];

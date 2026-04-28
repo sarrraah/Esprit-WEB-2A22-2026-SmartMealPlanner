@@ -23,20 +23,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $type         = trim($_POST['type']);
     $imageName    = $evenement->getImage();
 
-    if (strlen($titre) < 3)         $errors[] = "Le titre doit contenir au moins 3 caractères.";
-    if (empty($description))        $errors[] = "La description est obligatoire.";
-    if (empty($date_debut))         $errors[] = "La date de début est obligatoire.";
-    if (empty($date_fin))           $errors[] = "La date de fin est obligatoire.";
+    if (strlen($titre) < 3)         $errors[] = "Title must be at least 3 characters.";
+    if (empty($description))        $errors[] = "Description is required.";
+    if (empty($date_debut))         $errors[] = "Start date is required.";
+    if (empty($date_fin))           $errors[] = "End date is required.";
     if (!empty($date_debut) && !empty($date_fin) && $date_fin <= $date_debut)
-                                    $errors[] = "La date de fin doit être postérieure à la date de début.";
-    if (empty($lieu))               $errors[] = "Le lieu est obligatoire.";
+                                    $errors[] = "End date must be after start date.";
+    if (empty($lieu))               $errors[] = "Location is required.";
     if (!is_numeric($capacite_max) || (int)$capacite_max < 1)
-                                    $errors[] = "La capacité maximale doit être un entier positif (≥ 1).";
+                                    $errors[] = "Max capacity must be a positive integer (>= 1).";
     if (!is_numeric($prix) || (float)$prix < 0)
-                                    $errors[] = "Le prix doit être un nombre positif.";
+                                    $errors[] = "Price must be a positive number.";
     if (!in_array($statut, ['actif', 'annulé', 'terminé']))
-                                    $errors[] = "Veuillez choisir un statut valide.";
-    if (empty($type))               $errors[] = "Le type est obligatoire.";
+                                    $errors[] = "Please choose a valid status.";
+    if (empty($type))               $errors[] = "Type is required.";
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
         $result = $controller->uploadImage($_FILES['image'], $evenement->getImage());
@@ -92,309 +92,152 @@ $df = formatDateForInput($evenement->getDateFin());
 $imageUrl = $evenement->getImage() ? '../../../uploads/evenements/' . $evenement->getImage() : null;
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Modifier l'Événement #<?= $id ?></title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-    font-family: 'DM Sans', sans-serif;
-    background: #fff;
-    color: #1a1a1a;
-    min-height: 100vh;
-}
-
-/* ── NAV (même style que produit) ── */
-nav {
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
-    padding: 0 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 60px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-.logo {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1a1a1a;
-    text-decoration: none;
-}
-.logo span { color: #dc2626; }
-.nav-links { display: flex; align-items: center; gap: 32px; }
-.nav-links a {
-    font-size: 14px;
-    color: #555;
-    text-decoration: none;
-    font-weight: 500;
-    padding-bottom: 2px;
-    border-bottom: 2px solid transparent;
-    transition: color .2s, border-color .2s;
-}
-.nav-links a:hover,
-.nav-links a.active { color: #1a1a1a; border-bottom-color: #dc2626; }
-.btn-nav {
-    background: #dc2626;
-    color: #fff;
-    border: none;
-    padding: 9px 20px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    font-family: inherit;
-}
-
-/* ── PAGE LAYOUT ── */
-.section { padding: 60px 0 100px; }
-.container { max-width: 100%; margin: 0; padding: 0 60px; }
-
-h2 {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 28px;
-}
-
-/* ── ALERTS ── */
-.alert {
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    font-size: 14px;
-}
-.alert-danger {
-    background: #fef2f2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-}
-
-/* ── FORM GRID ── */
-.row { display: flex; flex-wrap: wrap; gap: 20px; }
-.col-md-6 { flex: 1 1 calc(50% - 10px); min-width: 260px; }
-.col-12 { flex: 0 0 100%; }
-
-/* ── FORM CONTROLS ── */
-.form-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 6px;
-}
-.form-control,
-.form-select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-    color: #1a1a1a;
-    font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color .2s, box-shadow .2s;
-}
-.form-control:focus,
-.form-select:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-textarea.form-control { resize: vertical; min-height: 100px; }
-.form-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
-}
-
-/* ── IMAGE SECTION ── */
-.image-preview-box {
-    margin-top: 8px;
-}
-.image-preview-box img {
-    height: 120px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid #e5e5e5;
-    display: block;
-    margin-bottom: 10px;
-}
-.delete-img-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: #dc2626;
-    cursor: pointer;
-    margin-bottom: 12px;
-}
-.delete-img-label input {
-    width: 15px;
-    height: 15px;
-    cursor: pointer;
-    accent-color: #dc2626;
-}
-
-/* ── BUTTONS ── */
-.d-flex { display: flex; }
-.gap-2 { gap: 10px; }
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 22px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    border: none;
-    text-decoration: none;
-    transition: all .15s;
-}
-.btn-danger { background: #dc2626; color: #fff; }
-.btn-danger:hover { background: #b91c1c; }
-.btn-outline-secondary {
-    background: #fff;
-    color: #555;
-    border: 1px solid #d1d5db;
-}
-.btn-outline-secondary:hover { background: #f9fafb; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 600px) {
-    nav { padding: 0 16px; }
-    .col-md-6 { flex: 0 0 100%; }
-}
-</style>
+<title>Edit Event #<?= $id ?></title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a href="interfaceevent.php" class="logo">Smart Event<span>.</span></a>
-  <div class="nav-links">
-    <a href="listEvenements.php" class="active">Événements</a>
-    <a href="listParticipations.php">Participants</a>
-  </div>
-  <a href="addEvenement.php" class="btn-nav">Ajouter Événement</a>
-</nav>
-
-<!-- CONTENT -->
-<section class="section">
-<div class="container">
-
-  <h2>Modifier l'Événement</h2>
-
-  <?php foreach ($errors as $err): ?>
-    <div class="alert alert-danger"><?= htmlspecialchars($err) ?></div>
-  <?php endforeach; ?>
-
-  <form method="POST" action="" enctype="multipart/form-data" class="row" id="evenementForm">
-    <input type="hidden" name="id" value="<?= $id ?>">
-
-    <!-- Titre -->
-    <div class="col-md-6">
-      <label class="form-label">Titre *</label>
-      <input type="text" name="titre" class="form-control"
-             value="<?= htmlspecialchars($evenement->getTitre()) ?>">
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div class="brand-name">SmartMeal</div>
     </div>
-
-    <!-- Type -->
-    <div class="col-md-6">
-      <label class="form-label">Type *</label>
-      <input type="text" name="type" class="form-control"
-             value="<?= htmlspecialchars($evenement->getType()) ?>">
-    </div>
-
-    <!-- Date début -->
-    <div class="col-md-6">
-      <label class="form-label">Date de début *</label>
-      <input type="datetime-local" name="date_debut" class="form-control" value="<?= $dd ?>">
-    </div>
-
-    <!-- Date fin -->
-    <div class="col-md-6">
-      <label class="form-label">Date de fin *</label>
-      <input type="datetime-local" name="date_fin" class="form-control" value="<?= $df ?>">
-    </div>
-
-    <!-- Lieu -->
-    <div class="col-md-6">
-      <label class="form-label">Lieu *</label>
-      <input type="text" name="lieu" class="form-control"
-             value="<?= htmlspecialchars($evenement->getLieu()) ?>">
-    </div>
-
-    <!-- Capacité -->
-    <div class="col-md-6">
-      <label class="form-label">Capacité maximale *</label>
-      <input type="number" name="capacite_max" class="form-control"
-             value="<?= htmlspecialchars($evenement->getCapaciteMax()) ?>">
-    </div>
-
-    <!-- Prix -->
-    <div class="col-md-6">
-      <label class="form-label">Prix (TND) *</label>
-      <input type="number" name="prix" step="0.01" min="0" class="form-control"
-             value="<?= htmlspecialchars($evenement->getPrix()) ?>">
-    </div>
-
-    <!-- Statut -->
-    <div class="col-md-6">
-      <label class="form-label">Statut *</label>
-      <select name="statut" class="form-select">
-        <option value="">-- Sélectionner --</option>
-        <option value="actif"   <?= $evenement->getStatut()==='actif'   ? 'selected':'' ?>>Actif</option>
-        <option value="annulé"  <?= $evenement->getStatut()==='annulé'  ? 'selected':'' ?>>Annulé</option>
-        <option value="terminé" <?= $evenement->getStatut()==='terminé' ? 'selected':'' ?>>Terminé</option>
-      </select>
-    </div>
-
-    <!-- Image -->
-    <div class="col-md-6">
-      <label class="form-label">Image</label>
-      <input type="file" name="image" class="form-control" accept="image/*"
-             onchange="previewImage(this, 'previewImg')">
-      <div class="image-preview-box">
-        <?php if ($imageUrl): ?>
-          <img id="previewImg" src="<?= htmlspecialchars($imageUrl) ?>" alt="Image actuelle">
-          <label class="delete-img-label">
-            <input type="checkbox" name="delete_image" value="1"
-                   onchange="toggleUpload(this)">
-            Supprimer cette image
-          </label>
-        <?php else: ?>
-          <img id="previewImg" src="#" alt="Aperçu" style="display:none;">
-        <?php endif; ?>
+    <div class="section-label">Dashboard</div>
+    <nav>
+      <a href="listEvenements.php" class="active"><i class="bi bi-calendar-event-fill"></i> Events</a>
+      <a href="listParticipations.php"><i class="bi bi-people-fill"></i> Participants</a>
+      <a href="afficherProduit.php"><i class="bi bi-bag-fill"></i> Products</a>
+      <a href="afficherCategorie.php"><i class="bi bi-tags-fill"></i> Categories</a>
+    </nav>
+    <div class="section-label">System</div>
+    <nav>
+      <a href="#"><i class="bi bi-bar-chart-fill"></i> Analytics</a>
+      <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
+    </nav>
+  </aside>
+  <main class="main-area">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span class="label">Event Management</span>
+        <h1>Edit Event</h1>
+        <p>Update event details, schedule, and capacity from the admin dashboard.</p>
+      </div>
+      <div class="topbar-action">
+        <a href="listEvenements.php" class="btn-primary"><i class="bi bi-arrow-left"></i> Back to events</a>
       </div>
     </div>
+    <div class="content-wrap">
+      <div class="dashboard-grid">
+        <section class="section-card">
+          <div class="section-card-title">
+            <span><i class="bi bi-pencil-square"></i> Event details</span>
+          </div>
+          <form method="POST" action="" enctype="multipart/form-data" class="row g-3" id="evenementForm">
+            <input type="hidden" name="id" value="<?= $id ?>">
 
-    <!-- Description -->
-    <div class="col-12">
-      <label class="form-label">Description *</label>
-      <textarea name="description" class="form-control" rows="4"><?= htmlspecialchars($evenement->getDescription()) ?></textarea>
+            <div class="col-md-6">
+              <label class="form-label">Title *</label>
+              <input type="text" name="titre" class="form-control" value="<?= htmlspecialchars($evenement->getTitre()) ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Type *</label>
+              <input type="text" name="type" class="form-control" value="<?= htmlspecialchars($evenement->getType()) ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Start Date *</label>
+              <input type="datetime-local" name="date_debut" class="form-control" value="<?= $dd ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">End Date *</label>
+              <input type="datetime-local" name="date_fin" class="form-control" value="<?= $df ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Location *</label>
+              <input type="text" name="lieu" class="form-control" value="<?= htmlspecialchars($evenement->getLieu()) ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Max Capacity *</label>
+              <input type="number" name="capacite_max" class="form-control" value="<?= htmlspecialchars($evenement->getCapaciteMax()) ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Price (TND) *</label>
+              <input type="number" name="prix" step="0.01" min="0" class="form-control" value="<?= htmlspecialchars($evenement->getPrix()) ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Status *</label>
+              <select name="statut" class="form-select">
+                <option value="">-- Select --</option>
+                <option value="actif"   <?= $evenement->getStatut()==='actif'   ? 'selected':'' ?>>Active</option>
+                <option value="annulé"  <?= $evenement->getStatut()==='annulé'  ? 'selected':'' ?>>Canceled</option>
+                <option value="terminé" <?= $evenement->getStatut()==='terminé' ? 'selected':'' ?>>Finished</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Image</label>
+              <input type="file" name="image" class="form-control" accept="image/*" onchange="previewImage(this, 'previewImg')">
+              <div class="image-preview-box">
+                <?php if ($imageUrl): ?>
+                  <img id="previewImg" src="<?= htmlspecialchars($imageUrl) ?>" alt="Current image">
+                  <label class="delete-img-label">
+                    <input type="checkbox" name="delete_image" value="1" onchange="toggleUpload(this)">
+                    Remove current image
+                  </label>
+                <?php else: ?>
+                  <img id="previewImg" src="#" alt="Preview" style="display:none;">
+                <?php endif; ?>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Description *</label>
+              <textarea name="description" class="form-control" rows="4"><?= htmlspecialchars($evenement->getDescription()) ?></textarea>
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-danger">Update</button>
+              <a href="listEvenements.php" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </section>
+        <aside class="side-panel">
+          <div class="small-card">
+            <h3>Event preview</h3>
+            <?php if ($imageUrl): ?>
+              <img src="<?= htmlspecialchars($imageUrl) ?>" alt="Event image" style="width:100%;border-radius:12px;object-fit:cover;max-height:220px;margin-bottom:14px;">
+            <?php endif; ?>
+            <ul>
+              <li><span>Title</span><span><?= htmlspecialchars($evenement->getTitre()) ?></span></li>
+              <li><span>Location</span><span><?= htmlspecialchars($evenement->getLieu()) ?></span></li>
+              <li><span>Type</span><span><?= htmlspecialchars($evenement->getType()) ?></span></li>
+              <li><span>Status</span><span><?= htmlspecialchars($evenement->getStatut()) ?></span></li>
+            </ul>
+          </div>
+          <div class="small-card">
+            <h3>Quick actions</h3>
+            <a href="addEvenement.php" class="btn-action-secondary"><i class="bi bi-plus-circle"></i> Add new event</a>
+            <a href="listParticipations.php" class="btn-action-secondary"><i class="bi bi-people"></i> View participants</a>
+          </div>
+        </aside>
+      </div>
     </div>
-
-    <!-- Actions -->
-    <div class="col-12 d-flex gap-2">
-      <button type="submit" class="btn btn-danger">Mettre à jour</button>
-      <a href="listEvenements.php" class="btn btn-outline-secondary">Annuler</a>
-    </div>
-
-  </form>
+  </main>
 </div>
-</section>
 
 <script>
 function previewImage(input, previewId) {

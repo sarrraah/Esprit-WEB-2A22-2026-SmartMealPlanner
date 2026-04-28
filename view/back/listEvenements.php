@@ -16,389 +16,226 @@ $participationCounts = [];
 foreach ($evenements as $e) {
     $participationCounts[$e->getIdEvent()] = $controller->countParticipationsByEvent($e->getIdEvent());
 }
+
+$totalEvents      = count($evenements);
+$activeEvents     = count(array_filter($evenements, function($e) {
+    return strpos(strtolower($e->getStatut()), 'actif') !== false;
+}));
+$fullEvents       = count(array_filter($evenements, function($e) use ($participationCounts) {
+    $cap = (int)$e->getCapaciteMax();
+    $cnt = $participationCounts[$e->getIdEvent()] ?? 0;
+    return $cap > 0 && $cnt >= $cap;
+}));
+$upcomingEvents   = count(array_filter($evenements, function($e) {
+    return strtotime($e->getDateDebut()) > time();
+}));
+$totalCapacity    = array_sum(array_map(function($e) {
+    return (int)$e->getCapaciteMax();
+}, $evenements));
+$withParticipants = count(array_filter($evenements, function($e) use ($participationCounts) {
+    return ($participationCounts[$e->getIdEvent()] ?? 0) > 0;
+}));
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Événements</title>
+    <title>Event Management</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { box-sizing: border-box; }
-        body { background: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; }
-
-        /* ── Navbar ── */
-        .top-navbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 40px;
-            height: 64px;
-            border-bottom: 1px solid #eee;
-            background: #fff;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .top-navbar .brand {
-            font-weight: 800;
-            font-size: 20px;
-            color: #111;
-            text-decoration: none;
-        }
-        .top-navbar .brand span { color: #e63946; }
-        .top-navbar .nav-links { display: flex; gap: 32px; list-style: none; margin: 0; padding: 0; }
-        .top-navbar .nav-links a {
-            text-decoration: none;
-            color: #555;
-            font-size: 14px;
-            font-weight: 500;
-            padding-bottom: 4px;
-            border-bottom: 2px solid transparent;
-        }
-        .top-navbar .nav-links a.active,
-        .top-navbar .nav-links a:hover {
-            color: #111;
-            border-bottom: 2px solid #e63946;
-        }
-        .top-navbar .btn-add {
-            background: #e63946;
-            color: #fff;
-            border: none;
-            border-radius: 25px;
-            padding: 9px 22px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .top-navbar .btn-add:hover { background: #c1121f; color: #fff; }
-
-        /* ── Page content ── */
-        .page-content { padding: 40px 40px 60px; }
-
-        .page-title {
-            font-size: 38px;
-            font-weight: 400;
-            color: #111;
-            margin-bottom: 24px;
-        }
-
-        /* ── Filters ── */
-        .filters-row {
-            display: grid;
-            grid-template-columns: 2fr 1.2fr 1.2fr 1.5fr auto;
-            gap: 12px;
-            margin-bottom: 24px;
-            align-items: center;
-            width: 100%;
-        }
-        .filters-row input,
-        .filters-row select {
-            width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 11px 16px;
-            font-size: 15px;
-            color: #333;
-            background: #fff;
-            outline: none;
-        }
-        .filters-row input:focus,
-        .filters-row select:focus { border-color: #aaa; }
-        .filters-row .btn-cancel {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 11px 18px;
-            font-size: 15px;
-            color: #555;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-        }
-        .filters-row .btn-cancel:hover { border-color: #aaa; color: #111; }
-
-        /* ── Table ── */
-        .table-wrap { border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 16px; }
-        thead th {
-            background: #fff;
-            font-weight: 700;
-            padding: 18px 20px;
-            border-bottom: 2px solid #e5e5e5;
-            white-space: nowrap;
-            font-size: 15px;
-        }
-        thead th:nth-child(1)  { color: #6c757d; }
-        thead th:nth-child(2)  { color: #111; }
-        thead th:nth-child(3)  { color: #0d6efd; }
-        thead th:nth-child(4)  { color: #6c757d; }
-        thead th:nth-child(5)  { color: #198754; }
-        thead th:nth-child(6)  { color: #198754; }
-        thead th:nth-child(7)  { color: #6c757d; }
-        thead th:nth-child(8)  { color: #0d6efd; }
-        thead th:nth-child(9)  { color: #dc3545; }
-        thead th:nth-child(10) { color: #6c757d; }
-        thead th:nth-child(11) { color: #6c757d; }
-
-        tbody tr { border-bottom: 1px solid #f0f0f0; }
-        tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: #fafafa; }
-        tbody td {
-            padding: 16px 20px;
-            color: #333;
-            font-size: 16px;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-        tbody td:nth-child(2) {
-            white-space: normal;
-            min-width: 160px;
-            font-size: 17px;
-            font-weight: 400;
-            color: #111;
-        }
-        tbody td:nth-child(4) { white-space: normal; min-width: 130px; }
-
-        /* ── Badges ── */
-        .badge-status {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            background: #333;
-            color: #fff;
-        }
-        .badge-status.actif   { background: #198754; }
-        .badge-status.annule  { background: #ffc107; color: #333; }
-        .badge-status.termine { background: #6c757d; }
-
-        .badge-inscrit {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #fff;
-            text-decoration: none;
-        }
-        .badge-inscrit.ok     { background: #198754; }
-        .badge-inscrit.almost { background: #ffc107; color: #333; }
-        .badge-inscrit.full   { background: #dc3545; }
-
-        /* ── Action buttons ── */
-        .btn-modifier {
-            border: 1.5px solid #0d6efd;
-            color: #0d6efd;
-            background: #fff;
-            border-radius: 6px;
-            padding: 4px 14px;
-            font-size: 13px;
-            font-weight: 500;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .btn-modifier:hover { background: #0d6efd; color: #fff; }
-
-        .btn-supprimer {
-            border: 1.5px solid #dc3545;
-            color: #dc3545;
-            background: #fff;
-            border-radius: 6px;
-            padding: 4px 14px;
-            font-size: 13px;
-            font-weight: 500;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.15s;
-            margin-left: 6px;
-        }
-        .btn-supprimer:hover { background: #dc3545; color: #fff; }
-
-        .btn-participants {
-            border: 1.5px solid #0dcaf0;
-            color: #0dcaf0;
-            background: #fff;
-            border-radius: 6px;
-            padding: 4px 10px;
-            font-size: 13px;
-            text-decoration: none;
-            margin-left: 6px;
-            transition: all 0.15s;
-        }
-        .btn-participants:hover { background: #0dcaf0; color: #fff; }
-
-        /* Prix */
-        .prix-gratuit { color: #198754; font-weight: 600; }
-        .prix-payant  { color: #dc3545; font-weight: 600; }
-
-        /* No result */
-        .no-result td { text-align: center; color: #aaa; padding: 30px; font-size: 14px; }
-
-        /* Alert */
-        .alert { border-radius: 8px; font-size: 14px; margin-bottom: 20px; }
-    </style>
+    <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
-
-<!-- NAVBAR -->
-<nav class="top-navbar">
-    <a href="#" class="brand">Smart Meal Planner<span>.</span></a>
-    <ul class="nav-links">
-        <li><a href="listEvenements.php" class="active">Événements</a></li>
-        <li><a href="listParticipations.php">Participants</a></li>
-        <li><a href="afficherProduit.php">Produits</a></li>
-        <li><a href="afficherCategorie.php">Catégories</a></li>
-    </ul>
-    <a href="addEvenement.php" class="btn-add">Ajouter Événement</a>
-</nav>
-
-<!-- CONTENT -->
-<div class="page-content">
-
-    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-        <h1 class="page-title mb-0">Gestion des Événements</h1>
-        <button class="btn-cancel" onclick="exportCSV()" style="border-radius:8px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
-    </div>
-
-    <!-- Alertes -->
-    <?php if ($msg === 'added'): ?>
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle me-1"></i>Événement ajouté avec succès.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="admin-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">S</div>
+            <div class="brand-name">SmartMeal</div>
         </div>
-    <?php endif; ?>
-    <?php if ($msg === 'updated'): ?>
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle me-1"></i>Événement mis à jour avec succès.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="section-label">Dashboard</div>
+        <nav>
+            <a href="listEvenements.php" class="active"><i class="bi bi-calendar-event-fill"></i> Events</a>
+            <a href="listParticipations.php"><i class="bi bi-people-fill"></i> Participants</a>
+            <a href="afficherProduit.php"><i class="bi bi-bag-fill"></i> Products</a>
+            <a href="afficherCategorie.php"><i class="bi bi-tags-fill"></i> Categories</a>
+        </nav>
+        <div class="section-label">System</div>
+        <nav>
+            <a href="#"><i class="bi bi-bar-chart-fill"></i> Analytics</a>
+            <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
+        </nav>
+    </aside>
+    <main class="main-area">
+        <div class="topbar">
+            <div class="topbar-title">
+                <span class="label">Event Dashboard</span>
+                <h1>Events overview</h1>
+                <p>Manage your events, check capacity and jump into participant lists instantly.</p>
+            </div>
+            <div class="topbar-action">
+                <a href="addEvenement.php" class="btn-primary"><i class="bi bi-plus-lg"></i> Add Event</a>
+            </div>
         </div>
-    <?php endif; ?>
-    <?php if ($msg === 'deleted'): ?>
-        <div class="alert alert-warning alert-dismissible fade show">
-            <i class="fas fa-trash me-1"></i>Événement supprimé.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="content-wrap">
+            <div class="dashboard-banner">
+                <h2>Welcome back to <span>SmartMeal</span></h2>
+                <p>Track upcoming events, capacity status and participant engagement from a single dashboard.</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-label">Total events</div>
+                    <div class="stat-value"><?= $totalEvents ?></div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-label">Active events</div>
+                    <div class="stat-value"><?= $activeEvents ?></div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">Upcoming</div>
+                    <div class="stat-value"><?= $upcomingEvents ?></div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-label">Full capacity</div>
+                    <div class="stat-value"><?= $fullEvents ?></div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <section class="section-card">
+                    <div class="section-card-title">
+                        <span><i class="bi bi-calendar3"></i> Event table</span>
+                        <a href="addEvenement.php" class="btn-action-primary"><i class="bi bi-plus-circle"></i> New event</a>
+                    </div>
+
+                    <div class="filters-row">
+                        <input type="text" id="search-event" class="filter-input" placeholder="Search event...">
+                        <select id="filter-type" class="filter-input">
+                            <option value="">All types</option>
+                            <?php
+                            $types = array_unique(array_map(fn($e) => $e->getType(), $evenements));
+                            sort($types);
+                            foreach ($types as $t): ?>
+                                <option value="<?= htmlspecialchars(strtolower($t)) ?>"><?= htmlspecialchars($t) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <select id="filter-statut" class="filter-input">
+                            <option value="">All statuses</option>
+                            <?php
+                            $statuts = array_unique(array_map(fn($e) => $e->getStatut(), $evenements));
+                            sort($statuts);
+                            foreach ($statuts as $s): ?>
+                                <option value="<?= htmlspecialchars(strtolower($s)) ?>"><?= htmlspecialchars($s) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <select id="filter-tri" class="filter-input">
+                            <option value="">— Sort —</option>
+                            <option value="title-asc">Title A → Z</option>
+                            <option value="title-desc">Title Z → A</option>
+                            <option value="price-asc">Price low ↑</option>
+                            <option value="price-desc">Price high ↓</option>
+                            <option value="date-asc">Date soon ↑</option>
+                            <option value="date-desc">Date later ↓</option>
+                        </select>
+                        <button class="btn-soft" onclick="annulerFiltres()">
+                            <i class="bi bi-x-circle"></i> Reset
+                        </button>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table id="table-evenements">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Location</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Capacity</th>
+                                    <th>Participants</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-evenements">
+                            <?php foreach ($evenements as $e):
+                                $s = strtolower($e->getStatut());
+                                $badgeStatus = str_contains($s,'actif') ? 'actif' : (str_contains($s,'annul') ? 'annule' : 'termine');
+
+                                $isFree = (float)$e->getPrix() == 0;
+                                $priceLabel = $isFree
+                                    ? '<span class="prix-gratuit">Gratuit</span>'
+                                    : '<span class="prix-payant">'.number_format($e->getPrix(),2).' TND</span>';
+
+                                $count = $participationCounts[$e->getIdEvent()] ?? 0;
+                                $cap   = (int)$e->getCapaciteMax();
+                                $full  = $cap > 0 && $count >= $cap;
+                                $almost = $cap > 0 && !$full && ($count / $cap) >= 0.8;
+                                $inscritClass = $full ? 'full' : ($almost ? 'almost' : 'ok');
+
+                                $debut = substr($e->getDateDebut(), 0, 16);
+                                $fin   = substr($e->getDateFin(),   0, 16);
+                            ?>
+                                <tr
+                                    data-titre="<?= htmlspecialchars(strtolower($e->getTitre()), ENT_QUOTES) ?>"
+                                    data-type="<?= htmlspecialchars(strtolower($e->getType()), ENT_QUOTES) ?>"
+                                    data-statut="<?= htmlspecialchars(strtolower($e->getStatut()), ENT_QUOTES) ?>"
+                                    data-prix="<?= (float)$e->getPrix() ?>"
+                                    data-date="<?= htmlspecialchars($e->getDateDebut() ?? '', ENT_QUOTES) ?>">
+                                    <td><?= (int)$e->getIdEvent() ?></td>
+                                    <td><?= htmlspecialchars($e->getTitre()) ?></td>
+                                    <td><?= htmlspecialchars($e->getType()) ?></td>
+                                    <td><?= htmlspecialchars($e->getLieu()) ?></td>
+                                    <td><?= htmlspecialchars($debut) ?></td>
+                                    <td><?= htmlspecialchars($fin) ?></td>
+                                    <td><?= $cap ?></td>
+                                    <td>
+                                        <a href="listParticipations.php?id_event=<?= $e->getIdEvent() ?>" class="badge-inscrit <?= $inscritClass ?>">
+                                            <?= $count ?> / <?= $cap ?>
+                                        </a>
+                                    </td>
+                                    <td><?= $priceLabel ?></td>
+                                    <td><span class="badge-status <?= $badgeStatus ?>"><?= htmlspecialchars($e->getStatut()) ?></span></td>
+                                    <td>
+                                        <a href="updateEvenement.php?id=<?= (int)$e->getIdEvent() ?>" class="btn-table btn-edit"><i class="bi bi-pencil"></i></a>
+                                        <a href="listParticipations.php?id_event=<?= (int)$e->getIdEvent() ?>" class="btn-table btn-participants" title="View all participants"><i class="fas fa-users"></i></a>
+                                        <a href="listEvenements.php?delete=<?= (int)$e->getIdEvent() ?>" class="btn-table btn-delete" onclick="return confirm('Delete this event?')"><i class="bi bi-trash"></i></a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <tr id="no-result" class="no-result" style="display:none;">
+                                <td colspan="11"><i class="fas fa-search me-2"></i>No events found.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                <aside class="side-panel">
+                    <div class="small-card">
+                        <h3>Quick summary</h3>
+                        <ul>
+                            <li><span>Total events</span><span><?= $totalEvents ?></span></li>
+                            <li><span>Total capacity</span><span><?= $totalCapacity ?></span></li>
+                            <li><span>Events with bookings</span><span><?= $withParticipants ?></span></li>
+                            <li><span>Full events</span><span><?= $fullEvents ?></span></li>
+                        </ul>
+                    </div>
+                    <div class="small-card">
+                        <h3>Quick actions</h3>
+                        <div class="quick-action">
+                            <a href="addEvenement.php"><i class="bi bi-plus-lg"></i> Add event</a>
+                            <a href="listParticipations.php"><i class="bi bi-people"></i> View participants</a>
+                            <a href="listEvenements.php"><i class="bi bi-arrow-clockwise"></i> Refresh</a>
+                        </div>
+                    </div>
+                </aside>
+            </div>
         </div>
-    <?php endif; ?>
-
-    <!-- Filtres -->
-    <div class="filters-row">
-        <input type="text" id="search-event" placeholder="Rechercher un événement...">
-        <select id="filter-type">
-            <option value="">Tous les types</option>
-            <?php
-            $types = array_unique(array_map(fn($e) => $e->getType(), $evenements));
-            sort($types);
-            foreach ($types as $t): ?>
-                <option value="<?= htmlspecialchars(strtolower($t)) ?>"><?= htmlspecialchars($t) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <select id="filter-statut">
-            <option value="">Tous les statuts</option>
-            <?php
-            $statuts = array_unique(array_map(fn($e) => $e->getStatut(), $evenements));
-            sort($statuts);
-            foreach ($statuts as $s): ?>
-                <option value="<?= htmlspecialchars(strtolower($s)) ?>"><?= htmlspecialchars($s) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <select id="filter-tri">
-            <option value="">— Trier —</option>
-            <option value="titre-asc">Titre A → Z</option>
-            <option value="titre-desc">Titre Z → A</option>
-            <option value="prix-asc">Prix croissant ↑</option>
-            <option value="prix-desc">Prix décroissant ↓</option>
-            <option value="date-asc">Date proche ↑</option>
-            <option value="date-desc">Date lointaine ↓</option>
-        </select>
-        <button class="btn-cancel" onclick="annulerFiltres()">
-            <i class="bi bi-x-circle"></i> Annuler
-        </button>
-    </div>
-
-    <!-- Tableau -->
-    <div class="table-wrap">
-        <table id="table-evenements">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Titre</th>
-                    <th>Type</th>
-                    <th>Lieu</th>
-                    <th>Début</th>
-                    <th>Fin</th>
-                    <th>Cap.</th>
-                    <th>Inscrits</th>
-                    <th>Prix</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="tbody-evenements">
-            <?php foreach ($evenements as $e):
-                $s = strtolower($e->getStatut());
-                $badgeStatus = str_contains($s,'actif') ? 'actif' : (str_contains($s,'annul') ? 'annule' : 'termine');
-
-                $isFree = (float)$e->getPrix() == 0;
-                $priceLabel = $isFree
-                    ? '<span class="prix-gratuit">Gratuit</span>'
-                    : '<span class="prix-payant">'.number_format($e->getPrix(),2).' TND</span>';
-
-                $count = $participationCounts[$e->getIdEvent()] ?? 0;
-                $cap   = (int)$e->getCapaciteMax();
-                $full  = $cap > 0 && $count >= $cap;
-                $almost = $cap > 0 && !$full && ($count / $cap) >= 0.8;
-                $inscritClass = $full ? 'full' : ($almost ? 'almost' : 'ok');
-
-                $debut = substr($e->getDateDebut(), 0, 16);
-                $fin   = substr($e->getDateFin(),   0, 16);
-            ?>
-                <tr
-                    data-titre="<?= htmlspecialchars(strtolower($e->getTitre()), ENT_QUOTES) ?>"
-                    data-type="<?= htmlspecialchars(strtolower($e->getType()), ENT_QUOTES) ?>"
-                    data-statut="<?= htmlspecialchars(strtolower($e->getStatut()), ENT_QUOTES) ?>"
-                    data-prix="<?= (float)$e->getPrix() ?>"
-                    data-date="<?= htmlspecialchars($e->getDateDebut() ?? '', ENT_QUOTES) ?>">
-                    <td><?= (int)$e->getIdEvent() ?></td>
-                    <td><?= htmlspecialchars($e->getTitre()) ?></td>
-                    <td><?= htmlspecialchars($e->getType()) ?></td>
-                    <td><?= htmlspecialchars($e->getLieu()) ?></td>
-                    <td><?= htmlspecialchars($debut) ?></td>
-                    <td><?= htmlspecialchars($fin) ?></td>
-                    <td><?= $cap ?></td>
-                    <td>
-                        <a href="listParticipations.php?id_event=<?= $e->getIdEvent() ?>" class="badge-inscrit <?= $inscritClass ?>">
-                            <?= $count ?> / <?= $cap ?>
-                        </a>
-                    </td>
-                    <td><?= $priceLabel ?></td>
-                    <td><span class="badge-status <?= $badgeStatus ?>"><?= htmlspecialchars($e->getStatut()) ?></span></td>
-                    <td>
-                        <a href="updateEvenement.php?id=<?= (int)$e->getIdEvent() ?>" class="btn-modifier">Modifier</a>
-                        <a href="listParticipations.php?id_event=<?= (int)$e->getIdEvent() ?>" class="btn-participants" title="Participants"><i class="fas fa-users"></i></a>
-                        <a href="listEvenements.php?delete=<?= (int)$e->getIdEvent() ?>" class="btn-supprimer"
-                           onclick="return confirm('Supprimer cet événement ?')">Supprimer</a>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            <tr id="no-result" class="no-result" style="display:none;">
-                <td colspan="11"><i class="fas fa-search me-2"></i>Aucun événement trouvé.</td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-
+    </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -426,8 +263,8 @@ function filtrerEtTrier() {
         var field=tri.split('-')[0], dir=tri.split('-')[1];
         var vis=rows.filter(function(r){ return r.style.display!=='none'; });
         vis.sort(function(a,b){
-            if (field==='titre') return dir==='asc'?(a.dataset.titre||'').localeCompare(b.dataset.titre||''):(b.dataset.titre||'').localeCompare(a.dataset.titre||'');
-            if (field==='prix')  { var va=parseFloat(a.dataset.prix)||0,vb=parseFloat(b.dataset.prix)||0; return dir==='asc'?va-vb:vb-va; }
+            if (field==='title') return dir==='asc'?(a.dataset.titre||'').localeCompare(b.dataset.titre||''):(b.dataset.titre||'').localeCompare(a.dataset.titre||'');
+            if (field==='price')  { var va=parseFloat(a.dataset.prix)||0,vb=parseFloat(b.dataset.prix)||0; return dir==='asc'?va-vb:vb-va; }
             if (field==='date')  return dir==='asc'?(a.dataset.date||'').localeCompare(b.dataset.date||''):(b.dataset.date||'').localeCompare(a.dataset.date||'');
             return 0;
         });
@@ -445,7 +282,7 @@ function annulerFiltres() {
 }
 
 function exportCSV() {
-    var headers=['ID','Titre','Type','Lieu','Début','Fin','Capacité','Inscrits','Prix','Statut'];
+    var headers=['ID','Title','Type','Location','Start','End','Capacity','Participants','Price','Status'];
     var rows=Array.from(tbody.querySelectorAll('tr:not(#no-result)')).filter(function(r){ return r.style.display!=='none'; });
     var esc=function(v){ return '"'+v.replace(/"/g,'""')+'"'; };
     var lines=[headers.map(esc).join(',')];

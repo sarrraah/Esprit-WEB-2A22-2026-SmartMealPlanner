@@ -221,19 +221,19 @@ h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
 
   <?php if ($success): ?>
 
-  <!-- Succès -->
+  <!-- Success -->
   <div class="success-box">
     <div class="success-icon">🎉</div>
-    <div class="success-title">Inscription enregistrée !</div>
+    <div class="success-title">Registration saved!</div>
     <div class="success-sub">
-      Votre demande de participation à<br>
+      Your participation request for<br>
       <strong><?= htmlspecialchars($evenement->getTitre()) ?></strong><br>
-      a bien été reçue. Votre statut est <strong>« en attente »</strong> —
-      vous serez notifié(e) par email dès confirmation.
+      has been received. Your status is <strong>“pending”</strong> —
+      you will be notified by email once confirmed.
     </div>
     <div class="d-flex gap-2" style="justify-content:center;flex-wrap:wrap">
-      <a href="../front/interfaceevent.php" class="btn btn-danger">🗓️ Voir tous les événements</a>
-      <a href="../front/detailEvent.php?id=<?= $id_event ?>" class="btn btn-outline-secondary">↩ Retour à l'événement</a>
+      <a href="../front/interfaceevent.php" class="btn btn-danger">🗓️ View all events</a>
+      <a href="../front/detailEvent.php?id=<?= $id_event ?>" class="btn btn-outline-secondary">↩ Back to event</a>
     </div>
   </div>
 
