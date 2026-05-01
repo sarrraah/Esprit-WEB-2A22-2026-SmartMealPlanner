@@ -1,9 +1,55 @@
 <?php
 require_once __DIR__ . '/../../controller/ProduitController.php';
 require_once __DIR__ . '/../../controller/CategorieController.php';
+require_once __DIR__ . '/../../config.php';
 
 $produitController   = new ProduitController();
 $categorieController = new CategorieController();
+
+// Top 5 meals by average rating (based on reviews)
+$stmtTop = config::getConnexion()->query("
+    SELECT p.id, p.nom, p.image,
+           ROUND(AVG(a.note), 1) AS avg_note,
+           COUNT(a.id_avis)      AS nb_avis
+    FROM avis a
+    JOIN produit p ON a.id_produit = p.id
+    GROUP BY p.id, p.nom, p.image
+    HAVING nb_avis > 0
+    ORDER BY avg_note DESC, nb_avis DESC
+    LIMIT 5
+");
+$topMeals = $stmtTop->fetchAll();
+
+// Bottom 5 meals by average rating (worst rated)
+$stmtWorst = config::getConnexion()->query("
+    SELECT p.id, p.nom, p.image,
+           ROUND(AVG(a.note), 1) AS avg_note,
+           COUNT(a.id_avis)      AS nb_avis
+    FROM avis a
+    JOIN produit p ON a.id_produit = p.id
+    GROUP BY p.id, p.nom, p.image
+    HAVING nb_avis > 0
+    ORDER BY avg_note ASC, nb_avis DESC
+    LIMIT 5
+");
+$worstMeals = $stmtWorst->fetchAll();
+
+// Top 5 most liked meals (from produit_likes table if exists)
+$mostLiked = [];
+try {
+    $stmtLikes = config::getConnexion()->query("
+        SELECT p.id, p.nom, p.image,
+               COUNT(pl.id) AS nb_likes
+        FROM produit_likes pl
+        JOIN produit p ON pl.id_produit = p.id
+        GROUP BY p.id, p.nom, p.image
+        ORDER BY nb_likes DESC
+        LIMIT 5
+    ");
+    $mostLiked = $stmtLikes->fetchAll();
+} catch (Exception $e) {
+    $mostLiked = []; // table doesn't exist yet
+}
 $allProduits   = $produitController->listProduits();
 $allCategories = $categorieController->getAllCategories();
 
@@ -175,32 +221,156 @@ include("header.php");
   <?php endif; ?>
 
   <!-- STATS -->
+  <?php
+  // Prepare data for charts
+  $totalRupture = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Rupture'));
+  $totalEpuise  = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Épuisé'));
+
+  // Products per category
+  $catData = [];
+  foreach ($allCategories as $cat) {
+    $cnt = count(array_filter($allProduits, function($p) use ($cat) {
+      return (int)($p['categorie'] ?? $p['id_categorie'] ?? 0) === (int)$cat['id_categorie'];
+    }));
+    $catData[$cat['nom']] = $cnt;
+  }
+
+  // Stock per category
+  $catStock = [];
+  foreach ($allCategories as $cat) {
+    $stock = array_sum(array_column(array_filter($allProduits, function($p) use ($cat) {
+      return (int)($p['categorie'] ?? $p['id_categorie'] ?? 0) === (int)$cat['id_categorie'];
+    }), 'quantiteStock'));
+    $catStock[$cat['nom']] = $stock;
+  }
+
+  ?>
+
+  <!-- KPI Cards -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card" style="border-left:4px solid #e74c3c;">
         <div class="stat-icon" style="background:#fdecea;"><i class="bi bi-box-seam text-danger"></i></div>
-        <div><div class="stat-label">Total Products</div><div class="stat-value"><?= $totalProduits ?></div></div>
+        <div>
+          <div class="stat-label">Total Products</div>
+          <div class="stat-value"><?= $totalProduits ?></div>
+          <div style="font-size:0.7rem;color:#28a745;margin-top:2px;"><i class="bi bi-arrow-up-short"></i><?= $totalDispo ?> available</div>
+        </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card" style="border-left:4px solid #1a73e8;">
         <div class="stat-icon" style="background:#e8f0fe;"><i class="bi bi-tags" style="color:#1a73e8;"></i></div>
-        <div><div class="stat-label">Categories</div><div class="stat-value"><?= $totalCategories ?></div></div>
+        <div>
+          <div class="stat-label">Categories</div>
+          <div class="stat-value"><?= $totalCategories ?></div>
+          <div style="font-size:0.7rem;color:#999;margin-top:2px;">Active categories</div>
+        </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card" style="border-left:4px solid #f57f17;">
         <div class="stat-icon" style="background:#fff8e1;"><i class="bi bi-stack" style="color:#f57f17;"></i></div>
-        <div><div class="stat-label">Total Stock</div><div class="stat-value"><?= $totalStock ?></div></div>
+        <div>
+          <div class="stat-label">Total Stock</div>
+          <div class="stat-value"><?= $totalStock ?></div>
+          <div style="font-size:0.7rem;color:#f57f17;margin-top:2px;"><i class="bi bi-exclamation-circle"></i> <?= $totalRupture ?> out of stock</div>
+        </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card" style="border-left:4px solid #2e7d32;">
         <div class="stat-icon" style="background:#e8f5e9;"><i class="bi bi-check-circle" style="color:#2e7d32;"></i></div>
-        <div><div class="stat-label">Available</div><div class="stat-value"><?= $totalDispo ?></div></div>
+        <div>
+          <div class="stat-label">Available</div>
+          <div class="stat-value"><?= $totalDispo ?></div>
+          <div style="font-size:0.7rem;color:#2e7d32;margin-top:2px;"><?= $totalProduits > 0 ? round($totalDispo/$totalProduits*100) : 0 ?>% of total</div>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- ── CHARTS SECTION ── -->
+  <div style="background:#fff;border-radius:14px;padding:20px 24px;box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-bottom:28px;">
+    <div style="font-family:'Raleway',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#2d2d2d;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;">
+      <i class="bi bi-graph-up" style="color:#e74c3c;"></i> Analytics Overview
+    </div>
+
+    <!-- ROW: all 3 charts on one line -->
+    <div class="row g-3">
+
+      <!-- Bar: Products per category -->
+      <div class="col-lg-4 col-md-6">
+        <div style="background:#f9f9f9;border-radius:10px;padding:18px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-bar-chart-fill" style="color:#1a73e8;"></i> By Category
+          </div>
+          <canvas id="chartCategories" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Horizontal bar: Stock per category -->
+      <div class="col-lg-4 col-md-6">
+        <div style="background:#f9f9f9;border-radius:10px;padding:18px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-layers-fill" style="color:#2e7d32;"></i> Stock Level
+          </div>
+          <canvas id="chartStock" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Donut: Status -->
+      <div class="col-lg-4 col-md-12">
+        <div style="background:#f9f9f9;border-radius:10px;padding:18px;text-align:center;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="bi bi-pie-chart-fill" style="color:#e74c3c;"></i> Status
+          </div>
+          <canvas id="chartStatus" height="220" style="max-height:220px;"></canvas>
+          <div style="margin-top:10px;font-size:0.72rem;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#28a745;margin-right:4px;"></span>Available (<?= $totalDispo ?>)</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e74c3c;margin-right:4px;"></span>Out of stock (<?= $totalRupture ?>)</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#adb5bd;margin-right:4px;"></span>Expired (<?= $totalEpuise ?>)</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  Chart.defaults.font.family = "'Raleway', sans-serif";
+  Chart.defaults.font.size   = 10;
+
+  new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Available', 'Out of Stock', 'Expired'],
+      datasets: [{ data: [<?= $totalDispo ?>, <?= $totalRupture ?>, <?= $totalEpuise ?>], backgroundColor: ['#28a745','#e74c3c','#adb5bd'], borderWidth: 2, borderColor: '#f9f9f9' }]
+    },
+    options: { cutout: '68%', maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('chartCategories'), {
+    type: 'bar',
+    data: {
+      labels: <?= json_encode(array_keys($catData)) ?>,
+      datasets: [{ data: <?= json_encode(array_values($catData)) ?>, backgroundColor: ['#e74c3c','#1a73e8','#f57f17','#2e7d32','#8e44ad'], borderRadius: 5, borderSkipped: false }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#eee' }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('chartStock'), {
+    type: 'bar',
+    data: {
+      labels: <?= json_encode(array_keys($catStock)) ?>,
+      datasets: [{ data: <?= json_encode(array_values($catStock)) ?>, backgroundColor: ['rgba(231,76,60,0.7)','rgba(26,115,232,0.7)','rgba(245,127,23,0.7)','rgba(46,125,50,0.7)'], borderRadius: 5, borderSkipped: false }]
+    },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#eee' } }, y: { grid: { display: false } } } }
+  });
+  </script>
 
   <!-- MAIN ROW -->
   <div class="row g-3">
@@ -231,6 +401,7 @@ include("header.php");
               <option value="">— Sort —</option>
               <option value="nom-asc">Name A → Z</option>
               <option value="nom-desc">Name Z → A</option>
+              <option value="expiration-asc">Expiring Soon ↑</option>
               <option value="prix-asc">Price ↑</option>
               <option value="prix-desc">Price ↓</option>
               <option value="stock-asc">Stock ↑</option>
@@ -260,7 +431,8 @@ include("header.php");
               <tr data-nom="<?= htmlspecialchars(strtolower($p['nom']),ENT_QUOTES) ?>"
                   data-statut="<?= htmlspecialchars($p['statut'],ENT_QUOTES) ?>"
                   data-prix="<?= (float)$p['prix'] ?>"
-                  data-stock="<?= (int)$p['quantiteStock'] ?>">
+                  data-stock="<?= (int)$p['quantiteStock'] ?>"
+                  data-expiration="<?= htmlspecialchars($p['dateExpiration'] ?? '',ENT_QUOTES) ?>">
                 <td>
                   <?php if ($imgSrc): ?>
                     <img src="<?= htmlspecialchars($imgSrc) ?>" style="width:44px;height:44px;object-fit:cover;border-radius:8px;">
@@ -309,12 +481,114 @@ include("header.php");
         <?php endforeach; ?>
       </div>
 
+      <!-- Top Meals by Reviews -->
+      <div class="section-card mb-3">
+        <div class="section-card-title">
+          <i class="bi bi-star-fill" style="color:#f39c12;"></i> Top Rated Meals
+          <span style="font-size:0.65rem;color:#bbb;font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px;">based on reviews</span>
+        </div>
+        <?php if (empty($topMeals)): ?>
+          <p style="font-size:0.8rem;color:#bbb;text-align:center;padding:12px 0;">No reviews yet.</p>
+        <?php else: ?>
+          <?php foreach ($topMeals as $rank => $meal):
+            $img = $meal['image'] ?? '';
+            if (empty($img))                         $mImgSrc = '';
+            elseif (str_starts_with($img,'http'))    $mImgSrc = $img;
+            elseif (str_starts_with($img,'meals/'))  $mImgSrc = '../../view/assets/img/'.$img;
+            else                                      $mImgSrc = UPLOAD_URL.$img;
+            $stars = round($meal['avg_note']);
+            $colors = ['#e74c3c','#f57f17','#1a73e8','#2e7d32','#8e44ad'];
+            $rankColor = $colors[$rank] ?? '#999';
+          ?>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f5f5f5;">
+            <!-- Rank badge -->
+            <div style="width:22px;height:22px;border-radius:50%;background:<?= $rankColor ?>;color:white;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <?= $rank + 1 ?>
+            </div>
+            <!-- Thumbnail -->
+            <?php if ($mImgSrc): ?>
+              <img src="<?= htmlspecialchars($mImgSrc) ?>" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+            <?php else: ?>
+              <div style="width:36px;height:36px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="bi bi-image" style="color:#ccc;font-size:0.9rem;"></i></div>
+            <?php endif; ?>
+            <!-- Name + stars -->
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.8rem;font-weight:600;color:#2d2d2d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <?= htmlspecialchars($meal['nom']) ?>
+              </div>
+              <div style="font-size:0.7rem;color:#f39c12;line-height:1.2;">
+                <?= str_repeat('★', $stars) ?><span style="color:#ddd;"><?= str_repeat('★', 5 - $stars) ?></span>
+                <span style="color:#999;font-size:0.65rem;margin-left:4px;"><?= $meal['avg_note'] ?> (<?= $meal['nb_avis'] ?> review<?= $meal['nb_avis'] > 1 ? 's' : '' ?>)</span>
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
       <!-- Quick Actions -->
+      <div class="section-card mb-3">
+        <div class="section-card-title">
+          <i class="bi bi-emoji-frown-fill" style="color:#c62828;"></i> Lowest Rated Meals
+          <span style="font-size:0.65rem;color:#bbb;font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px;">based on reviews</span>
+        </div>
+        <?php if (empty($worstMeals)): ?>
+          <p style="font-size:0.8rem;color:#bbb;text-align:center;padding:12px 0;">No reviews yet.</p>
+        <?php else: ?>
+          <?php foreach ($worstMeals as $rank => $meal):
+            $img = $meal['image'] ?? '';
+            if (empty($img))                         $wImgSrc = '';
+            elseif (str_starts_with($img,'http'))    $wImgSrc = $img;
+            elseif (str_starts_with($img,'meals/'))  $wImgSrc = '../../view/assets/img/'.$img;
+            else                                      $wImgSrc = UPLOAD_URL.$img;
+            $stars = round($meal['avg_note']);
+          ?>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f5f5f5;">
+            <!-- Rank badge -->
+            <div style="width:22px;height:22px;border-radius:50%;background:#c62828;color:white;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <?= $rank + 1 ?>
+            </div>
+            <!-- Thumbnail -->
+            <?php if ($wImgSrc): ?>
+              <img src="<?= htmlspecialchars($wImgSrc) ?>" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+            <?php else: ?>
+              <div style="width:36px;height:36px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="bi bi-image" style="color:#ccc;font-size:0.9rem;"></i></div>
+            <?php endif; ?>
+            <!-- Name + stars -->
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.8rem;font-weight:600;color:#2d2d2d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <?= htmlspecialchars($meal['nom']) ?>
+              </div>
+              <div style="font-size:0.7rem;color:#c62828;line-height:1.2;">
+                <?= str_repeat('★', $stars) ?><span style="color:#ddd;"><?= str_repeat('★', 5 - $stars) ?></span>
+                <span style="color:#999;font-size:0.65rem;margin-left:4px;"><?= $meal['avg_note'] ?> (<?= $meal['nb_avis'] ?> review<?= $meal['nb_avis'] > 1 ? 's' : '' ?>)</span>
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
+      <!-- Quick Actions (original) -->
       <div class="section-card">
         <div class="section-card-title"><i class="bi bi-lightning-charge"></i> Quick Actions</div>
         <a href="ajouterProduit.php" class="btn-action-primary"><i class="bi bi-plus-circle"></i> Add a Product</a>
         <a href="ajouterCategorie.php" class="btn-action-secondary"><i class="bi bi-plus-circle"></i> Add a Category</a>
         <a href="afficherCategorie.php" class="btn-action-secondary"><i class="bi bi-tags"></i> Manage Categories</a>
+
+        <hr style="border-color:#f0f0f0;margin:12px 0;">
+
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:10px;">
+          <i class="bi bi-download" style="color:#1a73e8;"></i> Export Stock
+        </div>
+        <a href="export_produits_pdf.php" target="_blank"
+           style="background:#fdecea;color:#c62828;border:1px solid #f5c6c6;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;width:100%;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:0.2s;margin-bottom:8px;">
+          <i class="bi bi-file-earmark-pdf-fill"></i> Export as PDF
+        </a>
+        <a href="export_produits_excel.php"
+           style="background:#e8f5e9;color:#2e7d32;border:1px solid #c3e6cb;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;width:100%;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:0.2s;margin-bottom:8px;">
+          <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export as Excel (CSV)
+        </a>
       </div>
 
     </div>
@@ -344,6 +618,11 @@ function filtrerEtTrier() {
       if(field==='nom') return dir==='asc'?(a.dataset.nom||'').localeCompare(b.dataset.nom||''):(b.dataset.nom||'').localeCompare(a.dataset.nom||'');
       if(field==='prix'){var va=parseFloat(a.dataset.prix)||0,vb=parseFloat(b.dataset.prix)||0;return dir==='asc'?va-vb:vb-va;}
       if(field==='stock'){var va=parseInt(a.dataset.stock)||0,vb=parseInt(b.dataset.stock)||0;return dir==='asc'?va-vb:vb-va;}
+      if(field==='expiration'){
+        var da=a.dataset.expiration?new Date(a.dataset.expiration).getTime():Infinity;
+        var db=b.dataset.expiration?new Date(b.dataset.expiration).getTime():Infinity;
+        return da-db;
+      }
     });
     vis.forEach(function(r){tbody.insertBefore(r,document.getElementById('no-result'));});
   }

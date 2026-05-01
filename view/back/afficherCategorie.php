@@ -11,6 +11,39 @@ $totalCategories = count($allCategories);
 $totalProduits   = count($allProduits);
 $categories = $allCategories;
 
+// Compute stats
+foreach ($allProduits as &$p) { $p['statut'] = determinerStatut($p['quantiteStock'], $p['dateExpiration']); }
+unset($p);
+$totalDispo    = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Disponible'));
+$totalRupture  = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Rupture'));
+$totalEpuise   = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Épuisé'));
+$totalStock    = array_sum(array_column($allProduits, 'quantiteStock'));
+
+// Products per category (for chart + table)
+$catData      = [];
+$catProdCount = [];
+$catDispoRate = []; // % disponible par catégorie
+$catStockData = []; // stock par catégorie
+
+foreach ($allCategories as $cat) {
+  $id  = (int)$cat['id_categorie'];
+  $nom = $cat['nom'];
+
+  $prodsCat = array_filter($allProduits, function($p) use ($id) {
+    return (int)($p['categorie'] ?? $p['id_categorie'] ?? 0) === $id;
+  });
+  $prodsCat = array_values($prodsCat);
+
+  $cnt   = count($prodsCat);
+  $dispo = count(array_filter($prodsCat, fn($p) => $p['statut'] === 'Disponible'));
+  $stock = array_sum(array_column($prodsCat, 'quantiteStock'));
+
+  $catData[$nom]      = $cnt;
+  $catProdCount[$id]  = $cnt;
+  $catDispoRate[$nom] = $cnt > 0 ? round($dispo / $cnt * 100) : 0;
+  $catStockData[$nom] = $stock;
+}
+
 include("header.php");
 ?>
 
@@ -65,18 +98,170 @@ include("header.php");
   <!-- STATS -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card" style="border-left:4px solid #e74c3c;">
         <div class="stat-icon" style="background:#fdecea;"><i class="bi bi-box-seam text-danger"></i></div>
-        <div><div class="stat-label">Total Products</div><div class="stat-value"><?= $totalProduits ?></div></div>
+        <div>
+          <div class="stat-label">Total Products</div>
+          <div class="stat-value"><?= $totalProduits ?></div>
+          <div style="font-size:0.7rem;color:#28a745;margin-top:2px;"><i class="bi bi-arrow-up-short"></i><?= $totalDispo ?> available</div>
+        </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card" style="border-left:4px solid #1a73e8;">
         <div class="stat-icon" style="background:#e8f0fe;"><i class="bi bi-tags" style="color:#1a73e8;"></i></div>
-        <div><div class="stat-label">Categories</div><div class="stat-value"><?= $totalCategories ?></div></div>
+        <div>
+          <div class="stat-label">Categories</div>
+          <div class="stat-value"><?= $totalCategories ?></div>
+          <div style="font-size:0.7rem;color:#999;margin-top:2px;">Active categories</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="border-left:4px solid #f57f17;">
+        <div class="stat-icon" style="background:#fff8e1;"><i class="bi bi-stack" style="color:#f57f17;"></i></div>
+        <div>
+          <div class="stat-label">Total Stock</div>
+          <div class="stat-value"><?= $totalStock ?></div>
+          <div style="font-size:0.7rem;color:#f57f17;margin-top:2px;"><i class="bi bi-exclamation-circle"></i> <?= $totalRupture ?> out of stock</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="border-left:4px solid #2e7d32;">
+        <div class="stat-icon" style="background:#e8f5e9;"><i class="bi bi-check-circle" style="color:#2e7d32;"></i></div>
+        <div>
+          <div class="stat-label">Available</div>
+          <div class="stat-value"><?= $totalDispo ?></div>
+          <div style="font-size:0.7rem;color:#2e7d32;margin-top:2px;"><?= $totalProduits > 0 ? round($totalDispo/$totalProduits*100) : 0 ?>% of total</div>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- CHARTS -->
+  <div style="background:#fff;border-radius:14px;padding:20px 24px;box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-bottom:28px;">
+    <div style="font-family:'Raleway',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#2d2d2d;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;">
+      <i class="bi bi-graph-up" style="color:#e74c3c;"></i> Analytics Overview
+    </div>
+    <div class="row g-3">
+      <!-- Bar: products per category -->
+      <div class="col-lg-4">
+        <div style="background:#f9f9f9;border-radius:10px;padding:18px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-bar-chart-fill" style="color:#1a73e8;"></i> Products per Category
+          </div>
+          <canvas id="chartCatProducts" height="220"></canvas>
+        </div>
+      </div>
+      <!-- Horizontal bar: % disponibilité par catégorie -->
+      <div class="col-lg-4">
+        <div style="background:#f9f9f9;border-radius:10px;padding:18px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-check2-circle" style="color:#28a745;"></i> Availability Rate (%)
+          </div>
+          <canvas id="chartCatDispo" height="220"></canvas>
+        </div>
+      </div>
+      <!-- Donut: répartition des catégories -->
+      <div class="col-lg-4">
+        <div style="background:#f9f9f9;border-radius:10px;padding:18px;text-align:center;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="bi bi-pie-chart-fill" style="color:#e74c3c;"></i> Category Share
+          </div>
+          <canvas id="chartCatShare" height="220" style="max-height:220px;"></canvas>
+          <div style="margin-top:10px;font-size:0.7rem;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+            <?php
+            $palette = ['#e74c3c','#1a73e8','#f57f17','#2e7d32','#8e44ad','#16a085'];
+            $i = 0;
+            foreach ($catData as $nom => $cnt):
+              $color = $palette[$i % count($palette)]; $i++;
+            ?>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:<?= $color ?>;margin-right:4px;"></span><?= htmlspecialchars($nom) ?> (<?= $cnt ?>)</span>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  Chart.defaults.font.family = "'Raleway', sans-serif";
+  Chart.defaults.font.size   = 10;
+
+  new Chart(document.getElementById('chartCatProducts'), {
+    type: 'bar',
+    data: {
+      labels: <?= json_encode(array_keys($catData)) ?>,
+      datasets: [{ data: <?= json_encode(array_values($catData)) ?>, backgroundColor: ['#e74c3c','#1a73e8','#f57f17','#2e7d32','#8e44ad','#16a085'], borderRadius: 5, borderSkipped: false }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#eee' }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+  });
+
+  // Availability rate per category (horizontal bar)
+  new Chart(document.getElementById('chartCatDispo'), {
+    type: 'bar',
+    data: {
+      labels: <?= json_encode(array_keys($catDispoRate)) ?>,
+      datasets: [{
+        data: <?= json_encode(array_values($catDispoRate)) ?>,
+        backgroundColor: ['rgba(40,167,69,0.75)','rgba(26,115,232,0.75)','rgba(245,127,23,0.75)','rgba(46,125,50,0.75)','rgba(142,68,173,0.75)','rgba(22,160,133,0.75)'],
+        borderRadius: 5, borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, max: 100, grid: { color: '#eee' }, ticks: { callback: function(v){ return v+'%'; } } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Category share donut
+  new Chart(document.getElementById('chartCatShare'), {
+    type: 'doughnut',
+    data: {
+      labels: <?= json_encode(array_keys($catData)) ?>,
+      datasets: [{
+        data: <?= json_encode(array_values($catData)) ?>,
+        backgroundColor: ['#e74c3c','#1a73e8','#f57f17','#2e7d32','#8e44ad','#16a085'],
+        borderWidth: 2, borderColor: '#f9f9f9'
+      }]
+    },
+    options: { cutout: '60%', maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('chartCatStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Available', 'Out of Stock', 'Expired'],
+      datasets: [{ data: [<?= $totalDispo ?>, <?= $totalRupture ?>, <?= $totalEpuise ?>], backgroundColor: ['#28a745','#e74c3c','#adb5bd'], borderWidth: 2, borderColor: '#f9f9f9' }]
+    },
+    options: { cutout: '68%', maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  <?php
+  $catStockData = [];
+  foreach ($allCategories as $cat) {
+    $stock = array_sum(array_column(array_filter($allProduits, function($p) use ($cat) {
+      return (int)($p['categorie'] ?? $p['id_categorie'] ?? 0) === (int)$cat['id_categorie'];
+    }), 'quantiteStock'));
+    $catStockData[$cat['nom']] = $stock;
+  }
+  ?>
+  new Chart(document.getElementById('chartCatStock'), {
+    type: 'bar',
+    data: {
+      labels: <?= json_encode(array_keys($catStockData)) ?>,
+      datasets: [{ data: <?= json_encode(array_values($catStockData)) ?>, backgroundColor: ['rgba(231,76,60,0.7)','rgba(26,115,232,0.7)','rgba(245,127,23,0.7)','rgba(46,125,50,0.7)','rgba(142,68,173,0.7)','rgba(22,160,133,0.7)'], borderRadius: 5, borderSkipped: false }]
+    },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#eee' } }, y: { grid: { display: false } } } }
+  });
+  </script>
 
   <!-- MAIN ROW -->
   <div class="row g-3">
@@ -86,8 +271,17 @@ include("header.php");
           <i class="bi bi-tags"></i> All Categories
           <a href="ajouterCategorie.php" class="ms-auto" style="background:#e74c3c;color:white;border-radius:20px;padding:4px 14px;font-size:11px;text-decoration:none;font-weight:600;">+ Add</a>
         </div>
-        <div class="mb-3">
-          <input type="text" id="search-categorie" class="filter-input" placeholder="Search categories...">
+        <div class="row g-2 mb-3">
+          <div class="col-md-7">
+            <input type="text" id="search-categorie" class="filter-input" placeholder="Search categories...">
+          </div>
+          <div class="col-md-5">
+            <select id="sort-categorie" class="filter-input">
+              <option value="">— Sort —</option>
+              <option value="nom-asc">Name A → Z</option>
+              <option value="nom-desc">Name Z → A</option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table">
@@ -110,7 +304,7 @@ include("header.php");
                 <td>
                   <a href="afficherProduit.php?categorie=<?= (int)$cat['id_categorie'] ?>"
                      style="background:#e8f0fe;color:#1a73e8;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
-                    <i class="bi bi-eye"></i> View Products
+                    <i class="bi bi-eye"></i> <?= $catProdCount[(int)$cat['id_categorie']] ?? 0 ?> product<?= ($catProdCount[(int)$cat['id_categorie']] ?? 0) !== 1 ? 's' : '' ?>
                   </a>
                 </td>
                 <td>
@@ -140,13 +334,31 @@ include("header.php");
 </div>
 
 <script>
-document.getElementById('search-categorie').addEventListener('input', function() {
-  var q = this.value.toLowerCase().trim();
-  var rows = document.querySelectorAll('#tbody-categories tr:not(#no-result-cat)');
+function filtrerCategories() {
+  var q   = document.getElementById('search-categorie').value.toLowerCase().trim();
+  var tri = document.getElementById('sort-categorie').value;
+  var rows = Array.from(document.querySelectorAll('#tbody-categories tr:not(#no-result-cat)'));
   var visible = 0;
-  rows.forEach(function(r){ var match=!q||r.dataset.nom.includes(q); r.style.display=match?'':'none'; if(match)visible++; });
-  document.getElementById('no-result-cat').style.display = visible===0?'':'none';
-});
+  rows.forEach(function(r) {
+    var match = !q || r.dataset.nom.includes(q);
+    r.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  if (tri) {
+    var dir = tri.split('-')[1];
+    var vis = rows.filter(function(r){ return r.style.display !== 'none'; });
+    vis.sort(function(a, b) {
+      return dir === 'asc'
+        ? (a.dataset.nom||'').localeCompare(b.dataset.nom||'')
+        : (b.dataset.nom||'').localeCompare(a.dataset.nom||'');
+    });
+    var tbody = document.getElementById('tbody-categories');
+    vis.forEach(function(r){ tbody.insertBefore(r, document.getElementById('no-result-cat')); });
+  }
+  document.getElementById('no-result-cat').style.display = visible === 0 ? '' : 'none';
+}
+document.getElementById('search-categorie').addEventListener('input', filtrerCategories);
+document.getElementById('sort-categorie').addEventListener('change', filtrerCategories);
 </script>
 
 <?php include("footer.php"); ?>
