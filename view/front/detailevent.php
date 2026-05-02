@@ -1,4 +1,23 @@
 <?php
+/**
+ * SQL (run once):
+ * CREATE TABLE IF NOT EXISTS commentaire (
+ *   id INT AUTO_INCREMENT PRIMARY KEY,
+ *   id_event INT NOT NULL,
+ *   auteur VARCHAR(100) NOT NULL,
+ *   contenu TEXT NOT NULL,
+ *   created_at DATETIME DEFAULT NOW(),
+ *   FOREIGN KEY (id_event) REFERENCES evenement(id_event) ON DELETE CASCADE
+ * );
+ * CREATE TABLE IF NOT EXISTS reaction (
+ *   id INT AUTO_INCREMENT PRIMARY KEY,
+ *   id_event INT NOT NULL,
+ *   type ENUM('❤️','😂','😮','😢','👏','🔥') NOT NULL,
+ *   session_id VARCHAR(100) NOT NULL,
+ *   UNIQUE KEY unique_reaction (id_event, session_id, type),
+ *   FOREIGN KEY (id_event) REFERENCES evenement(id_event) ON DELETE CASCADE
+ * );
+ */
 require_once __DIR__ . '/../../controller/EvenementController.php';
 
 $ctrl = new EvenementController();
@@ -47,6 +66,7 @@ $suggests = array_slice($suggests, 0, 3);
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($e->getTitre()) ?> – Event Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
@@ -92,6 +112,100 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 .section-block{background:#fff;border:1px solid #fde8e8;border-radius:12px;padding:22px;margin-bottom:16px}
 .section-block h2{font-size:15px;font-weight:600;color:#1a0505;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #fce8e8}
 .desc-text{font-size:14px;color:#4a1515;line-height:1.8}
+
+/* ── SENTIMENT ── */
+.sentiment-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid #fce8e8; }
+.sentiment-title { font-size: 13px; font-weight: 600; color: #1a0505; margin-bottom: 12px; display:flex; align-items:center; gap:6px; }
+.sentiment-summary {
+  background: #fff5f5; border: 1px solid #fde8e8; border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.sentiment-score-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.sentiment-emoji-big { font-size: 36px; }
+.sentiment-label { font-size: 16px; font-weight: 700; color: #1a0505; }
+.sentiment-sub   { font-size: 12px; color: #9a3535; margin-top:2px; }
+.sentiment-bar-wrap { margin-bottom: 6px; }
+.sentiment-bar-row  { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:5px; }
+.sentiment-bar-row span:first-child { width: 70px; color: #9a3535; }
+.sentiment-bar-row span:last-child  { width: 32px; text-align:right; color:#1a0505; font-weight:600; }
+.sbar { flex:1; height:8px; background:#fce8e8; border-radius:8px; overflow:hidden; }
+.sbar-fill { height:100%; border-radius:8px; transition: width .6s ease; }
+.sbar-pos  { background: #22c55e; }
+.sbar-neu  { background: #f59e0b; }
+.sbar-neg  { background: #ef4444; }
+.sentiment-details { display:grid; gap:6px; margin-top:10px; }
+.sentiment-item {
+  display:flex; align-items:flex-start; gap:8px;
+  background:#fff; border:1px solid #fde8e8; border-radius:8px; padding:8px 10px;
+  font-size:12px;
+}
+.sentiment-item-emoji { font-size:18px; flex-shrink:0; }
+.sentiment-item-author { font-weight:700; color:#1a0505; margin-bottom:2px; }
+.sentiment-item-text   { color:#4a1515; line-height:1.4; }
+.sentiment-item-badge  {
+  margin-left:auto; flex-shrink:0;
+  padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700;
+}
+.badge-pos { background:#dcfce7; color:#166534; }
+.badge-neu { background:#fef9c3; color:#854d0e; }
+.badge-neg { background:#fee2e2; color:#991b1b; }
+.sentiment-btn {
+  background: #fff; border: 1px solid #f7c1c1; border-radius: 8px;
+  padding: 8px 14px; font-size: 12px; color: #9a3535; cursor: pointer;
+  font-family: inherit; transition: all .15s; width:100%; margin-top:8px;
+}
+.sentiment-btn:hover { background:#fce8e8; color:#7f1d1d; }
+.sentiment-loading { text-align:center; padding:16px; color:#9a3535; font-size:13px; }
+.reactions-bar { display:flex; gap: 10px; flex-wrap: wrap; }
+.reaction-btn {
+  background: #f8f8f8; border: 2px solid transparent; border-radius: 50px;
+  padding: 8px 16px; font-size: 18px; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.reaction-btn:hover { background: #fff0f0; border-color: #e63946; transform: scale(1.1); }
+.reaction-btn.reacted { background: #ffe5e5; border-color: #e63946; }
+.reaction-count { font-size: 11px; color: #888; font-weight: 600; }
+
+.comments-list { margin-top: 16px; }
+.comment-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.comment-item:last-child{ border-bottom:none; }
+.comment-author { font-weight: 700; color: #111; font-size: 14px; }
+.comment-date { font-size: 11px; color: #aaa; margin-left: 8px; }
+.comment-text { font-size: 14px; color: #444; margin-top: 4px; }
+.comment-empty { color:#999; font-size: 13px; padding: 10px 0; }
+.comment-delete-btn {
+  background: none; border: none; cursor: pointer;
+  color: #ccc; font-size: 14px; padding: 2px 6px; border-radius: 6px;
+  transition: all .15s; line-height: 1;
+}
+.comment-delete-btn:hover { color: #e63946; background: #fff0f0; }
+
+.comment-form { margin-top: 14px; display:grid; gap: 10px; }
+.comment-form input, .comment-form textarea {
+  width: 100%;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+.comment-form input:focus, .comment-form textarea:focus { border-color: rgba(230,57,70,0.5); box-shadow: 0 0 0 3px rgba(230,57,70,0.10); }
+.comment-btn {
+  background: #e63946;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+}
+.comment-error { color:#dc2626; font-size: 12px; display:none; }
+.comment-error.show{ display:block; }
+.fade-in { animation: fadeIn 220ms ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0);} }
 
 .prog-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}
 .prog-row span:first-child{color:#9a3535}
@@ -206,6 +320,40 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       </div>
     </div>
 
+    <div class="section-block" id="commentsReactions">
+      <h2>💬 Commentaires & Réactions</h2>
+
+      <div class="reactions-bar" id="reactions">
+        <?php foreach (['❤️','😂','😮','😢','👏','🔥'] as $emoji): ?>
+          <button type="button" class="reaction-btn" data-type="<?= $emoji ?>">
+            <span><?= $emoji ?></span>
+            <span class="reaction-count" data-count-for="<?= $emoji ?>">0</span>
+          </button>
+        <?php endforeach; ?>
+      </div>
+
+      <div class="comments-list" id="comments">
+        <div class="comment-empty">Aucun commentaire pour l'instant.</div>
+      </div>
+
+      <div class="comment-form">
+        <div class="comment-error" id="comment-err"></div>
+        <input placeholder="Votre nom" id="auteur">
+        <textarea placeholder="Votre commentaire..." id="contenu" rows="3"></textarea>
+        <button type="button" class="comment-btn" id="submitComment">Publier</button>
+      </div>
+
+      <!-- Sentiment Analysis -->
+      <div class="sentiment-block" id="sentiment-block">
+        <div class="sentiment-title">🧠 Analyse Sentimentale</div>
+        <div id="sentiment-content">
+          <button class="sentiment-btn" id="sentiment-load-btn">
+            🔍 Analyser les commentaires
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="section-block">
       <h2>Available seats</h2>
       <?php $pct = 75; $fillClass = $pct >= 100 ? 'full' : ($pct >= 80 ? 'warn' : ''); ?>
@@ -273,16 +421,379 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       </div>
 
       <div class="share-section">
+        <div class="share-label">QR Code de l'événement</div>
+        <div id="qrcode" style="display:flex;justify-content:center;padding:10px 0"></div>
+        <div style="font-size:11px;color:#9a3535;text-align:center;margin-top:4px">Scannez pour accéder à cet événement</div>
+        <button id="qr-download" style="width:100%;margin-top:8px;background:transparent;border:1px solid #f7c1c1;border-radius:8px;padding:7px;font-size:12px;color:#9a3535;cursor:pointer;font-family:inherit;transition:all .15s">
+          ⬇️ Télécharger le QR Code
+        </button>
+      </div>
+
+      <div class="share-section">
         <div class="share-label">Share this event</div>
         <div class="share-btns">
-          <button class="share-btn">🔗 Link</button>
-          <button class="share-btn">📧 Email</button>
-          <button class="share-btn">💬 WhatsApp</button>
+          <button class="share-btn" id="share-link">🔗 Link</button>
+          <button class="share-btn" id="share-email">📧 Email</button>
+          <button class="share-btn" id="share-whatsapp">💬 WhatsApp</button>
         </div>
+        <div id="share-copied" style="display:none;font-size:11px;color:#166534;margin-top:6px">✅ Lien copié !</div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  var ID_EVENT = <?= (int)$e->getIdEvent() ?>;
+  var REACTION_TYPES = ['❤️','😂','😮','😢','👏','🔥'];
+  var BASE = '<?= (isset($_SERVER["HTTPS"])?"https":"http")."://".$_SERVER["HTTP_HOST"]."/projet_nutriplanner/view/back/"; ?>';
+
+  function ensureSessionId() {
+    try {
+      var id = localStorage.getItem('smp_session_id');
+      if (id) return id;
+      var uuid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(16) + '-' + Math.random().toString(16).slice(2));
+      localStorage.setItem('smp_session_id', uuid);
+      return uuid;
+    } catch (e) {
+      return 'anon-' + Date.now();
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderCommentItem(c) {
+    var dt = c.created_at ? new Date(c.created_at) : null;
+    var dateLabel = (dt && !isNaN(dt.getTime())) ? dt.toLocaleString() : '';
+    return `
+      <div class="comment-item fade-in" data-id="${escapeHtml(c.id)}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span class="comment-author">${escapeHtml(c.auteur)}</span>
+            <span class="comment-date">${escapeHtml(dateLabel)}</span>
+          </div>
+          <button class="comment-delete-btn" title="Supprimer" onclick="deleteComment(${c.id})">🗑</button>
+        </div>
+        <div class="comment-text">${escapeHtml(c.contenu)}</div>
+      </div>
+    `;
+  }
+
+  function setReactionCounts(counts) {
+    document.querySelectorAll('.reaction-btn').forEach(function (btn) {
+      var type = btn.dataset.type;
+      var el = btn.querySelector('[data-count-for]');
+      var v = counts && typeof counts[type] !== 'undefined' ? counts[type] : 0;
+      if (el) el.textContent = String(v);
+    });
+  }
+
+  function restoreReactedState() {
+    document.querySelectorAll('.reaction-btn').forEach(function (btn) {
+      var type = btn.dataset.type;
+      var key = 'reacted_' + ID_EVENT + '_' + type;
+      var reacted = false;
+      try { reacted = localStorage.getItem(key) === 'true'; } catch (e) {}
+      btn.classList.toggle('reacted', reacted);
+    });
+  }
+
+  async function loadCommentaires() {
+    var list = document.getElementById('comments');
+    if (!list) return;
+    var res = await fetch(BASE + 'getCommentaires.php?id_event=' + encodeURIComponent(ID_EVENT), { headers: { 'Accept':'application/json' }});
+    var data = await res.json();
+    if (!Array.isArray(data)) return;
+    if (data.length === 0) {
+      list.innerHTML = '<div class="comment-empty">Aucun commentaire pour linstant.</div>';
+      return;
+    }
+    list.innerHTML = data.map(renderCommentItem).join('');
+  }
+
+  async function loadReactions() {
+    var res = await fetch(BASE + 'getReactions.php?id_event=' + encodeURIComponent(ID_EVENT), { headers: { 'Accept':'application/json' }});
+    var data = await res.json();
+    if (data && data.counts) setReactionCounts(data.counts);
+  }
+
+  function showErr(msg) {
+    var errEl = document.getElementById('comment-err');
+    if (!errEl) return;
+    errEl.textContent = msg || '';
+    errEl.classList.toggle('show', !!msg);
+  }
+
+  // ── Sentiment Analysis ────────────────────────────────────────────
+  function renderSentiment(data) {
+    var content = document.getElementById('sentiment-content');
+    if (!content) return;
+
+    if (data.total === 0) {
+      content.innerHTML = '<div style="color:#9a3535;font-size:13px;padding:8px 0">Aucun commentaire à analyser.</div>';
+      return;
+    }
+
+    var posW = data.total > 0 ? Math.round((data.positive / data.total) * 100) : 0;
+    var neuW = data.total > 0 ? Math.round((data.neutral  / data.total) * 100) : 0;
+    var negW = data.total > 0 ? Math.round((data.negative / data.total) * 100) : 0;
+
+    var detailsHtml = '';
+    if (data.details && data.details.length > 0) {
+      data.details.forEach(function(d) {
+        var badgeCls  = d.sentiment === 'positive' ? 'badge-pos' : (d.sentiment === 'negative' ? 'badge-neg' : 'badge-neu');
+        var badgeLbl  = d.sentiment === 'positive' ? 'Positif'   : (d.sentiment === 'negative' ? 'Négatif'   : 'Neutre');
+        var contenu   = String(d.contenu || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var auteur    = String(d.auteur  || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        detailsHtml += `
+          <div class="sentiment-item">
+            <span class="sentiment-item-emoji">${d.emoji}</span>
+            <div style="flex:1;min-width:0">
+              <div class="sentiment-item-author">${auteur}</div>
+              <div class="sentiment-item-text">${contenu}</div>
+            </div>
+            <span class="sentiment-item-badge ${badgeCls}">${badgeLbl}</span>
+          </div>`;
+      });
+    }
+
+    content.innerHTML = `
+      <div class="sentiment-summary">
+        <div class="sentiment-score-row">
+          <span class="sentiment-emoji-big">${data.emoji}</span>
+          <div>
+            <div class="sentiment-label">${data.label}</div>
+            <div class="sentiment-sub">${data.pct}% de commentaires positifs · ${data.total} analysés</div>
+          </div>
+        </div>
+        <div class="sentiment-bar-wrap">
+          <div class="sentiment-bar-row">
+            <span>😊 Positif</span>
+            <div class="sbar"><div class="sbar-fill sbar-pos" style="width:${posW}%"></div></div>
+            <span>${data.positive}</span>
+          </div>
+          <div class="sentiment-bar-row">
+            <span>😐 Neutre</span>
+            <div class="sbar"><div class="sbar-fill sbar-neu" style="width:${neuW}%"></div></div>
+            <span>${data.neutral}</span>
+          </div>
+          <div class="sentiment-bar-row">
+            <span>😞 Négatif</span>
+            <div class="sbar"><div class="sbar-fill sbar-neg" style="width:${negW}%"></div></div>
+            <span>${data.negative}</span>
+          </div>
+        </div>
+      </div>
+      <div class="sentiment-details">${detailsHtml}</div>
+      <button class="sentiment-btn" id="sentiment-reload-btn">🔄 Réanalyser</button>
+    `;
+
+    var reloadBtn = document.getElementById('sentiment-reload-btn');
+    if (reloadBtn) reloadBtn.addEventListener('click', runSentimentAnalysis);
+  }
+
+  async function runSentimentAnalysis() {
+    var content = document.getElementById('sentiment-content');
+    if (!content) return;
+    content.innerHTML = '<div class="sentiment-loading">⏳ Analyse en cours...</div>';
+    try {
+      var res  = await fetch(BASE + 'analyzeSentiment.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_event: ID_EVENT })
+      });
+      var data = await res.json();
+      if (data.error) {
+        content.innerHTML = '<div style="color:#dc2626;font-size:12px">❌ ' + data.error + '</div>';
+      } else {
+        renderSentiment(data);
+      }
+    } catch (e) {
+      content.innerHTML = '<div style="color:#dc2626;font-size:12px">❌ Erreur de connexion.</div>';
+    }
+  }
+
+  window.deleteComment = async function(commentId) {
+    if (!confirm('Supprimer ce commentaire ?')) return;
+    try {
+      var res  = await fetch(BASE + 'deleteCommentaire.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: commentId, id_event: ID_EVENT })
+      });
+      var data = await res.json();
+      if (data && data.success) {
+        var el = document.querySelector('.comment-item[data-id="' + commentId + '"]');
+        if (el) {
+          el.style.transition = 'opacity .2s';
+          el.style.opacity = '0';
+          setTimeout(function () {
+            el.remove();
+            var list = document.getElementById('comments');
+            if (list && list.querySelectorAll('.comment-item').length === 0) {
+              list.innerHTML = '<div class="comment-empty">Aucun commentaire pour linstant.</div>';
+            }
+          }, 200);
+        }
+      } else {
+        alert((data && data.error) ? data.error : 'Erreur lors de la suppression.');
+      }
+    } catch (e) {
+      alert('Erreur de connexion.');
+    }
+  };
+
+  function init() {
+    var sessionId = ensureSessionId();
+    restoreReactedState();
+    loadCommentaires();
+    loadReactions();
+
+    document.querySelectorAll('.reaction-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function (e) {
+        e.preventDefault();
+        var type = btn.dataset.type;
+        if (!REACTION_TYPES.includes(type)) return;
+
+        var key = 'reacted_' + ID_EVENT + '_' + type;
+        var reacted = btn.classList.contains('reacted');
+        try { localStorage.setItem(key, reacted ? 'false' : 'true'); } catch (e2) {}
+
+        var res = await fetch(BASE + 'addReaction.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_event: ID_EVENT, type: type, session_id: sessionId })
+        });
+        var data = await res.json();
+        if (data && data.success && data.counts) {
+          btn.classList.toggle('reacted', !reacted);
+          setReactionCounts(data.counts);
+        } else {
+          try { localStorage.setItem(key, reacted ? 'true' : 'false'); } catch (e3) {}
+        }
+      });
+    });
+
+    var submitBtn = document.getElementById('submitComment');
+    var auteurEl = document.getElementById('auteur');
+    var contenuEl = document.getElementById('contenu');
+    var list = document.getElementById('comments');
+
+    // Sentiment load button
+    var sentimentBtn = document.getElementById('sentiment-load-btn');
+    if (sentimentBtn) sentimentBtn.addEventListener('click', runSentimentAnalysis);
+
+    if (submitBtn) submitBtn.addEventListener('click', async function () {
+      var auteur = (auteurEl && auteurEl.value ? auteurEl.value : '').trim();
+      var contenu = (contenuEl && contenuEl.value ? contenuEl.value : '').trim();
+      showErr('');
+
+      if (!auteur) { showErr('Veuillez saisir votre nom.'); return; }
+      if (contenu.length < 3) { showErr('Le commentaire doit contenir au moins 3 caractères.'); return; }
+      if (contenu.length > 500) { showErr('Le commentaire ne doit pas dépasser 500 caractères.'); return; }
+
+      var res = await fetch(BASE + 'addCommentaire.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_event: ID_EVENT, auteur: auteur, contenu: contenu })
+      });
+      var data = await res.json();
+      if (data && data.success && data.comment) {
+        if (contenuEl) contenuEl.value = '';
+        if (list) {
+          var empty = list.querySelector('.comment-empty');
+          if (empty) empty.remove();
+          list.insertAdjacentHTML('afterbegin', renderCommentItem(data.comment));
+        }
+      } else {
+        showErr((data && data.error) ? data.error : 'Erreur lors de la publication.');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
+// ── Share buttons ──────────────────────────────────────────────────────
+(function () {
+  var EVENT_TITLE = <?= json_encode($e->getTitre(), JSON_UNESCAPED_UNICODE) ?>;
+  var PAGE_URL    = window.location.href;
+
+  function copyLink() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(PAGE_URL).then(function () {
+        var msg = document.getElementById('share-copied');
+        if (!msg) return;
+        msg.style.display = 'block';
+        setTimeout(function () { msg.style.display = 'none'; }, 2500);
+      });
+    } else {
+      // Fallback for older browsers
+      var ta = document.createElement('textarea');
+      ta.value = PAGE_URL;
+      ta.style.position = 'fixed';
+      ta.style.opacity  = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      var msg = document.getElementById('share-copied');
+      if (msg) { msg.style.display = 'block'; setTimeout(function () { msg.style.display = 'none'; }, 2500); }
+    }
+  }
+
+  function shareEmail() {
+    var subject = encodeURIComponent('Invitation : ' + EVENT_TITLE);
+    var body    = encodeURIComponent('Bonjour,\n\nJe vous invite à découvrir cet événement :\n' + EVENT_TITLE + '\n\n' + PAGE_URL);
+    window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+  }
+
+  function shareWhatsApp() {
+    var text = encodeURIComponent('🎉 ' + EVENT_TITLE + '\n' + PAGE_URL);
+    window.open('https://wa.me/?text=' + text, '_blank', 'noopener,noreferrer');
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var btnLink      = document.getElementById('share-link');
+    var btnEmail     = document.getElementById('share-email');
+    var btnWhatsApp  = document.getElementById('share-whatsapp');
+    if (btnLink)     btnLink.addEventListener('click',     copyLink);
+    if (btnEmail)    btnEmail.addEventListener('click',    shareEmail);
+    if (btnWhatsApp) btnWhatsApp.addEventListener('click', shareWhatsApp);
+
+    // ── QR Code ──
+    var qrContainer = document.getElementById('qrcode');
+    var qrDownload  = document.getElementById('qr-download');
+    if (qrContainer && typeof QRCode !== 'undefined') {
+      var qr = new QRCode(qrContainer, {
+        text:         window.location.href,
+        width:        150,
+        height:       150,
+        colorDark:    '#b91c1c',
+        colorLight:   '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      // Download button
+      if (qrDownload) {
+        qrDownload.addEventListener('click', function () {
+          setTimeout(function () {
+            var canvas = qrContainer.querySelector('canvas');
+            if (canvas) {
+              var link    = document.createElement('a');
+              link.download = 'qrcode-event-<?= (int)$e->getIdEvent() ?>.png';
+              link.href   = canvas.toDataURL('image/png');
+              link.click();
+            }
+          }, 100);
+        });
+      }
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
