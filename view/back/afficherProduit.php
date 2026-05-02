@@ -526,6 +526,69 @@ include("header.php");
         <?php endif; ?>
       </div>
 
+      <!-- Most Popular (wishlist + orders combined) -->
+      <div class="section-card mb-3">
+        <div class="section-card-title">
+          <i class="bi bi-fire" style="color:#f57f17;"></i> Most Popular
+          <span style="font-size:0.65rem;color:#bbb;font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px;">likes &amp; orders</span>
+        </div>
+        <?php
+        // Most popular = products with most stock decrease (proxy for orders) + top rated
+        // We combine: avg_note weight + nb_avis weight
+        $stmtPop = config::getConnexion()->query("
+            SELECT p.id, p.nom, p.image,
+                   COALESCE(ROUND(AVG(a.note),1), 0)  AS avg_note,
+                   COUNT(a.id_avis)                    AS nb_avis
+            FROM produit p
+            LEFT JOIN avis a ON a.id_produit = p.id
+            GROUP BY p.id, p.nom, p.image
+            ORDER BY (COUNT(a.id_avis) * 2 + COALESCE(AVG(a.note),0)) DESC
+            LIMIT 5
+        ");
+        $popularMeals = $stmtPop->fetchAll();
+        $maxScore = 0;
+        foreach ($popularMeals as $pm) {
+            $s = $pm['nb_avis'] * 2 + (float)$pm['avg_note'];
+            if ($s > $maxScore) $maxScore = $s;
+        }
+        ?>
+        <?php if (empty($popularMeals)): ?>
+          <p style="font-size:0.8rem;color:#bbb;text-align:center;padding:12px 0;">No data yet.</p>
+        <?php else: ?>
+          <?php foreach ($popularMeals as $rank => $meal):
+            $img = $meal['image'] ?? '';
+            if (empty($img))                         $pImgSrc = '';
+            elseif (str_starts_with($img,'http'))    $pImgSrc = $img;
+            elseif (str_starts_with($img,'meals/'))  $pImgSrc = '../../view/assets/img/'.$img;
+            else                                      $pImgSrc = UPLOAD_URL.$img;
+            $score   = $meal['nb_avis'] * 2 + (float)$meal['avg_note'];
+            $barPct  = $maxScore > 0 ? round(($score / $maxScore) * 100) : 0;
+            $stars   = round((float)$meal['avg_note']);
+          ?>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f5f5f5;">
+            <div style="width:22px;height:22px;border-radius:50%;background:#f57f17;color:white;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><?= $rank + 1 ?></div>
+            <?php if ($pImgSrc): ?>
+              <img src="<?= htmlspecialchars($pImgSrc) ?>" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+            <?php else: ?>
+              <div style="width:36px;height:36px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="bi bi-image" style="color:#ccc;font-size:0.9rem;"></i></div>
+            <?php endif; ?>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.8rem;font-weight:600;color:#2d2d2d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($meal['nom']) ?></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+                <div style="flex:1;background:#f0f0f0;border-radius:4px;height:5px;">
+                  <div style="width:<?= $barPct ?>%;background:#f57f17;height:5px;border-radius:4px;"></div>
+                </div>
+                <span style="font-size:0.65rem;color:#999;white-space:nowrap;">
+                  <?= str_repeat('★',$stars) ?><span style="color:#eee;"><?= str_repeat('★',5-$stars) ?></span>
+                  &nbsp;<?= $meal['nb_avis'] ?> reviews
+                </span>
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
       <!-- Quick Actions -->
       <div class="section-card mb-3">
         <div class="section-card-title">

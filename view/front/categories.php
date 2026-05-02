@@ -15,6 +15,11 @@ if ($idCategorie > 0) {
     $categories = $categorieController->getAllCategories();
 }
 
+// Base URL for AJAX calls
+$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+         . '://' . $_SERVER['HTTP_HOST']
+         . rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+
 include("header.php");
 ?>
 
@@ -367,6 +372,8 @@ function wishlistAddToCart(id){
   var panier=getPanier(),ex=panier.find(function(x){return x.id===id;});
   if(ex){ex.quantite+=1;}else{panier.push({id:p.id,nom:p.nom,prix:p.prix,image:p.image,quantite:1});}
   savePanier(panier);
+  // Auto-remove from wishlist
+  removeFromWishlist(id);
   document.getElementById('panier-toast-msg').textContent='"'+p.nom+'" added to cart!';
   var t=document.getElementById('panier-toast');t.style.display='flex';
   setTimeout(function(){t.style.display='none';},3000);
@@ -376,6 +383,12 @@ function wishlistAddAllToCart(){
   var panier=getPanier();
   w.forEach(function(p){var ex=panier.find(function(x){return x.id===p.id;});if(ex){ex.quantite+=1;}else{panier.push({id:p.id,nom:p.nom,prix:p.prix,image:p.image,quantite:1});}});
   savePanier(panier);
+  // Auto-remove all from wishlist
+  w.forEach(function(p){
+    var btn=document.querySelector('.btn-wishlist[data-id="'+p.id+'"]');
+    if(btn)btn.classList.remove('active');
+  });
+  saveWishlist([]);
   bootstrap.Modal.getInstance(document.getElementById('modalWishlist')).hide();
   document.getElementById('panier-toast-msg').textContent=w.length+' item'+(w.length>1?'s':'')+' added to cart!';
   var t=document.getElementById('panier-toast');t.style.display='flex';
@@ -386,8 +399,17 @@ function wishlistClearAll(){
   saveWishlist([]);ouvrirWishlist();
 }
 function wishlistOpenDetail(id){
-  bootstrap.Modal.getInstance(document.getElementById('modalWishlist')).hide();
-  setTimeout(function(){openProductModal(parseInt(id));},350);
+  var wModal=bootstrap.Modal.getInstance(document.getElementById('modalWishlist'));
+  if(wModal){
+    document.getElementById('modalWishlist').addEventListener('hidden.bs.modal',function onWHidden(){
+      document.getElementById('modalWishlist').removeEventListener('hidden.bs.modal',onWHidden);
+      cleanupModal();
+      setTimeout(function(){openProductModal(parseInt(id));},50);
+    },{once:true});
+    wModal.hide();
+  } else {
+    openProductModal(parseInt(id));
+  }
 }
 function removeFromWishlist(id){
   saveWishlist(getWishlist().filter(function(x){return x.id!==id;}));
@@ -395,10 +417,23 @@ function removeFromWishlist(id){
   if(btn)btn.classList.remove('active');
   ouvrirWishlist();
 }
+function cleanupModal(){
+  document.querySelectorAll('.modal-backdrop').forEach(function(el){el.remove();});
+  document.body.classList.remove('modal-open');
+  document.body.style.removeProperty('overflow');
+  document.body.style.removeProperty('padding-right');
+}
 document.addEventListener('DOMContentLoaded',function(){
   var w=getWishlist();
   w.forEach(function(item){var btn=document.querySelector('.btn-wishlist[data-id="'+item.id+'"]');if(btn)btn.classList.add('active');});
   updateWishlistBadge();
+  // Always clean up when wishlist modal closes
+  var wModalEl=document.getElementById('modalWishlist');
+  if(wModalEl){
+    wModalEl.addEventListener('hidden.bs.modal',function(){
+      setTimeout(cleanupModal,50);
+    });
+  }
 });
 </script>
 
@@ -462,6 +497,14 @@ document.addEventListener('DOMContentLoaded',function(){
                 </div>
                 <div class="col-12">
                   <input type="text" class="form-control" id="co-localisation" placeholder="City / Region" required style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px;">
+                </div>
+                <div class="col-12">
+                  <div style="position:relative;">
+                    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:0.85rem;color:#999;">📞</span>
+                    <input type="tel" class="form-control" id="co-phone" placeholder="Phone number (for delivery)"
+                      oninput="this.value=this.value.replace(/[^0-9+\s\-]/g,'')"
+                      style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px 10px 36px;">
+                  </div>
                 </div>
               </div>
               <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;">
@@ -661,12 +704,24 @@ function confirmerCommande(e){
   var checkoutModal=bootstrap.Modal.getInstance(document.getElementById('modalCheckout'));
   if(checkoutModal)checkoutModal.hide();
 
+  // Capture invoice data BEFORE clearing cart
+  var email=document.getElementById('co-email').value.trim();
+  var phone=document.getElementById('co-phone')?document.getElementById('co-phone').value.trim():'';
+  var invoiceItems=panier.map(function(p){return {nom:p.nom,quantite:p.quantite,prix:p.prix};});
+
   savePanier([]);
 
   fetch('update_stock.php',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({items:items})
+  }).catch(function(){});
+
+  // Send invoice email
+  fetch('/ryhem/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/send_invoice.php',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({prenom:prenom,nom:nom,email:email,phone:phone,method:methodLabel,items:invoiceItems,total:total})
   }).catch(function(){});
 
   document.getElementById('modalCheckout').addEventListener('hidden.bs.modal', function onHidden(){

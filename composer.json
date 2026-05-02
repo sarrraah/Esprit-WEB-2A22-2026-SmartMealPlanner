@@ -1,0 +1,17 @@
+{
+    "name": "ryhem/esprit-web-2a22-2025-2026-smart-meal-planner",
+    "autoload": {
+        "psr-4": {
+            "Ryhem\\EspritWeb2a2220252026SmartMealPlanner\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "ryhem",
+            "email": "ryhem.hajji@esprit.tn"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^7.0"
+    }
+}

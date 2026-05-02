@@ -9,6 +9,11 @@ $produits   = $produitController->listProduits();
 $categories = $categorieController->getAllCategories();
 $total      = count($produits);
 
+// Base URL for AJAX calls
+$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+         . '://' . $_SERVER['HTTP_HOST']
+         . rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+
 include("header.php");
 ?>
 
@@ -594,6 +599,8 @@ function wishlistAddToCart(id) {
   var ex = panier.find(function(x){ return x.id === id; });
   if (ex) { ex.quantite += 1; } else { panier.push({id: p.id, nom: p.nom, prix: p.prix, image: p.image, quantite: 1}); }
   savePanier(panier);
+  // Auto-remove from wishlist
+  removeFromWishlist(id);
   document.getElementById('panier-toast-msg').textContent = '"'+p.nom+'" added to cart!';
   var t = document.getElementById('panier-toast'); t.style.display = 'flex';
   setTimeout(function(){ t.style.display = 'none'; }, 3000);
@@ -608,6 +615,12 @@ function wishlistAddAllToCart() {
     if (ex) { ex.quantite += 1; } else { panier.push({id: p.id, nom: p.nom, prix: p.prix, image: p.image, quantite: 1}); }
   });
   savePanier(panier);
+  // Auto-remove all from wishlist
+  w.forEach(function(p) {
+    var btn = document.querySelector('.btn-wishlist[data-id="'+p.id+'"]');
+    if (btn) btn.classList.remove('active');
+  });
+  saveWishlist([]);
   bootstrap.Modal.getInstance(document.getElementById('modalWishlist')).hide();
   document.getElementById('panier-toast-msg').textContent = w.length+' item'+(w.length>1?'s':'')+' added to cart!';
   var t = document.getElementById('panier-toast'); t.style.display = 'flex';
@@ -624,8 +637,17 @@ function wishlistClearAll() {
 }
 
 function wishlistOpenDetail(id) {
-  bootstrap.Modal.getInstance(document.getElementById('modalWishlist')).hide();
-  setTimeout(function(){ openProductModal(parseInt(id)); }, 350);
+  var wModal = bootstrap.Modal.getInstance(document.getElementById('modalWishlist'));
+  if (wModal) {
+    document.getElementById('modalWishlist').addEventListener('hidden.bs.modal', function onWHidden() {
+      document.getElementById('modalWishlist').removeEventListener('hidden.bs.modal', onWHidden);
+      cleanupModal();
+      setTimeout(function(){ openProductModal(parseInt(id)); }, 50);
+    }, {once: true});
+    wModal.hide();
+  } else {
+    openProductModal(parseInt(id));
+  }
 }
 
 function removeFromWishlist(id) {
@@ -636,35 +658,30 @@ function removeFromWishlist(id) {
   ouvrirWishlist();
 }
 
-// Init hearts on page load
+// Clean up Bootstrap modal leftovers (backdrop, body classes)
+function cleanupModal() {
+  document.querySelectorAll('.modal-backdrop').forEach(function(el){ el.remove(); });
+  document.body.classList.remove('modal-open');
+  document.body.style.removeProperty('overflow');
+  document.body.style.removeProperty('padding-right');
+}
+
+// Always clean up when wishlist modal closes
 document.addEventListener('DOMContentLoaded', function() {
+  var wModalEl = document.getElementById('modalWishlist');
+  if (wModalEl) {
+    wModalEl.addEventListener('hidden.bs.modal', function() {
+      setTimeout(cleanupModal, 50);
+    });
+  }
+
+  // Init hearts on page load
   var w = getWishlist();
   w.forEach(function(item) {
     var btn = document.querySelector('.btn-wishlist[data-id="'+item.id+'"]');
     if (btn) btn.classList.add('active');
   });
   updateWishlistBadge();
-
-  // ── LIKES ──
-  fetch('get_likes.php')
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
-      var counts = data.counts || {};
-      var liked  = data.liked  || [];
-      // Update all like badges
-      Object.keys(counts).forEach(function(id) {
-        var badge = document.getElementById('like-badge-'+id);
-        if (badge) {
-          badge.querySelector('.like-num').textContent = counts[id];
-          badge.style.display = counts[id] > 0 ? 'block' : 'none';
-        }
-      });
-      // Mark liked buttons
-      liked.forEach(function(id) {
-        var btn = document.querySelector('.btn-wishlist[data-id="'+id+'"]');
-        if (btn) btn.classList.add('liked-db');
-      });
-    }).catch(function(){});
 });
 </script>
 
@@ -737,6 +754,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-12">
                   <input type="text" class="form-control" id="co-localisation" placeholder="City / Region" required
                     style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px;">
+                </div>
+                <div class="col-12">
+                  <div style="position:relative;">
+                    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:0.85rem;color:#999;">📞</span>
+                    <input type="tel" class="form-control" id="co-phone" placeholder="Phone number (for delivery)"
+                      oninput="this.value=this.value.replace(/[^0-9+\s\-]/g,'')"
+                      style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px 10px 36px;">
+                  </div>
                 </div>
               </div>
 
@@ -1008,6 +1033,13 @@ function confirmerCommande(e) {
   var checkoutModal = bootstrap.Modal.getInstance(document.getElementById('modalCheckout'));
   if (checkoutModal) checkoutModal.hide();
 
+  // Capture invoice data BEFORE clearing cart
+  var email = document.getElementById('co-email').value.trim();
+  var phone = document.getElementById('co-phone') ? document.getElementById('co-phone').value.trim() : '';
+  var invoiceItems = panier.map(function(p){
+    return {nom: p.nom, quantite: p.quantite, prix: p.prix};
+  });
+
   // Clear cart
   savePanier([]);
 
@@ -1017,6 +1049,18 @@ function confirmerCommande(e) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({items: items})
   }).catch(function(){});
+
+  // Send invoice email
+  fetch('/ryhem/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/send_invoice.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      prenom: prenom, nom: nom, email: email, phone: phone,
+      method: methodLabel, items: invoiceItems, total: total
+    })
+  }).then(function(r){ return r.json(); })
+    .then(function(d){ console.log('[Invoice]', d); })
+    .catch(function(e){ console.error('[Invoice error]', e); });
 
   // Show success toast after modal animation completes
   document.getElementById('modalCheckout').addEventListener('hidden.bs.modal', function onHidden() {
