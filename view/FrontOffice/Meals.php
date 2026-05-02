@@ -6,6 +6,13 @@ require_once __DIR__ . '/../../model/Plan.php';
 $meals       = MealController::listMeals();
 $assetPrefix = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
 
+// Search handling
+$searchQuery  = trim($_GET['q']        ?? '');
+$searchBy     = trim($_GET['searchBy'] ?? 'name');
+if ($searchQuery !== '') {
+    $meals = MealController::searchMeals($searchQuery, $searchBy);
+}
+
 // Get active plan dates for day picker
 $plan = Plan::first();
 $planStart = $plan ? $plan->dateDebut : date('Y-m-d');
@@ -79,6 +86,37 @@ function resolveImageUrl(string $image, string $prefix): string {
       </div>
 
       <div class="container">
+
+        <!-- Search bar -->
+        <form method="GET" action="Meals.php" class="mb-4">
+          <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
+            <div class="input-group" style="max-width:480px;">
+              <input
+                type="text"
+                class="form-control rounded-pill-start"
+                name="q"
+                placeholder="Search meals..."
+                value="<?php echo htmlspecialchars($searchQuery); ?>"
+                style="border-radius:50px 0 0 50px;border-color:#ce1212;"
+              >
+              <select name="searchBy" class="form-select" style="max-width:130px;border-color:#ce1212;border-left:0;">
+                <option value="name"     <?php echo $searchBy==='name'    ?'selected':''; ?>>Name</option>
+                <option value="calories" <?php echo $searchBy==='calories'?'selected':''; ?>>Calories</option>
+              </select>
+              <button class="btn btn-danger" type="submit" style="border-radius:0 50px 50px 0;">
+                Search
+              </button>
+            </div>
+            <?php if ($searchQuery !== ''): ?>
+            <a href="Meals.php" class="btn btn-outline-secondary rounded-pill">Clear</a>
+            <?php endif; ?>
+          </div>
+          <?php if ($searchQuery !== ''): ?>
+          <p class="text-center text-muted mt-2" style="font-size:.9rem;">
+            <?php echo count($meals); ?> result(s) for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>" by <?php echo htmlspecialchars($searchBy); ?>
+          </p>
+          <?php endif; ?>
+        </form>
 
         <!-- Filter bar -->
         <div class="d-flex flex-wrap gap-2 justify-content-center mb-4">

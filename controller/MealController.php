@@ -17,6 +17,27 @@ class MealController
     }
 
     /**
+     * Search meals by name, calories or type.
+     * @return Meal[]
+     */
+    public static function searchMeals(string $query, string $searchBy): array
+    {
+        $all = Meal::all();
+        if ($query === '') return $all;
+
+        return array_values(array_filter($all, function(Meal $m) use ($query, $searchBy) {
+            switch ($searchBy) {
+                case 'calories':
+                    return str_contains((string) $m->calories, $query);
+                case 'type':
+                    return stripos($m->mealType, $query) !== false;
+                default: // name
+                    return stripos($m->name, $query) !== false;
+            }
+        }));
+    }
+
+    /**
      * Returns meals that are currently assigned to the active plan today,
      * joined via plan_detail. Each row has extra keys: plan_name, objectif.
      *
