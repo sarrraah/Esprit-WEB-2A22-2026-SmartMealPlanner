@@ -5,6 +5,18 @@ console.log('meals.js loaded - version:', new Date().getTime());
 
 (function () {
   'use strict';
+  // Auto-apply filter if coming from Replace button
+  window.addEventListener('load', function() {
+    var f = window.AUTO_FILTER;
+    if (f && f !== '') {
+      var btn = document.querySelector('.meal-filter[data-filter="' + f + '"]');
+      if (btn) btn.click();
+    }
+  });
+})();
+
+(function () {
+  'use strict';
 
   function toggleScrolled() {
     const body = document.querySelector('body');
@@ -167,6 +179,8 @@ console.log('meals.js loaded - version:', new Date().getTime());
     const start = new Date(window.PLAN_START || new Date());
     const end   = new Date(window.PLAN_END   || new Date(start.getTime() + 13 * 86400000));
     const today = new Date().toISOString().slice(0, 10);
+    // If coming from Replace button, pre-select that date
+    const replaceDate = window.REPLACE_DATE || '';
 
     const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

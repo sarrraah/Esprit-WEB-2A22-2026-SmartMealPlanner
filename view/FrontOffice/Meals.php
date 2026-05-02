@@ -13,6 +13,9 @@ if ($searchQuery !== '') {
     $meals = MealController::searchMeals($searchQuery, $searchBy);
 }
 
+// Auto-filter by type when coming from Replace button
+$autoFilter = trim($_GET['filter'] ?? '');
+
 // Get active plan dates for day picker
 $plan = Plan::first();
 $planStart = $plan ? $plan->dateDebut : date('Y-m-d');
@@ -172,6 +175,49 @@ function resolveImageUrl(string $image, string $prefix): string {
             </div>
           <?php endforeach; ?>
         </div>
+
+        <!-- Live Stats Pie Chart -->
+        <?php
+          $allForStats = MealController::listMeals();
+          $stats = ['breakfast' => 0, 'lunch' => 0, 'dinner' => 0, 'snack' => 0];
+          foreach ($allForStats as $m) {
+              if (isset($stats[$m->mealType])) $stats[$m->mealType]++;
+          }
+          $total = array_sum($stats);
+        ?>
+        <div class="container mt-5 mb-4">
+          <div class="text-center mb-4">
+            <h3 style="font-size:1.4rem;font-weight:700;">Meal Type Distribution</h3>
+            <p class="text-muted" style="font-size:.95rem;">Live breakdown of all <?php echo $total; ?> meals in the gallery</p>
+          </div>
+          <div class="row align-items-center justify-content-center g-4">
+            <div class="col-md-4 text-center">
+              <canvas id="mealPieChart" width="260" height="260" style="max-width:260px;"></canvas>
+            </div>
+            <div class="col-md-4">
+              <?php
+                $colors  = ['breakfast'=>'#f59e0b','lunch'=>'#10b981','dinner'=>'#ce1212','snack'=>'#6366f1'];
+                $icons   = ['breakfast'=>'☀️','lunch'=>'🥗','dinner'=>'🍽️','snack'=>'🍎'];
+                foreach ($stats as $type => $count):
+                  $pct = $total > 0 ? round(($count / $total) * 100) : 0;
+              ?>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <span style="font-size:1.4rem;"><?php echo $icons[$type]; ?></span>
+                <div style="flex:1;">
+                  <div class="d-flex justify-content-between mb-1">
+                    <span style="font-weight:600;font-size:.95rem;"><?php echo ucfirst($type); ?></span>
+                    <span style="font-weight:700;color:<?php echo $colors[$type]; ?>;"><?php echo $count; ?> (<?php echo $pct; ?>%)</span>
+                  </div>
+                  <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+                    <div style="height:8px;background:<?php echo $colors[$type]; ?>;border-radius:4px;width:<?php echo $pct; ?>%;transition:.6s;"></div>
+                  </div>
+                </div>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -238,10 +284,42 @@ function resolveImageUrl(string $image, string $prefix): string {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>
     window.PLAN_START = '<?php echo $planStart; ?>';
     window.PLAN_END   = '<?php echo $planEnd; ?>';
-    console.log('Meals.php inline script loaded');
+    window.AUTO_FILTER = '<?php echo htmlspecialchars($autoFilter); ?>';
+    window.REPLACE_DATE = '<?php echo htmlspecialchars($_GET['date'] ?? ''); ?>';
+
+    // Pie chart
+    new Chart(document.getElementById('mealPieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Breakfast', 'Lunch', 'Dinner', 'Snack'],
+        datasets: [{
+          data: [<?php echo $stats['breakfast']; ?>, <?php echo $stats['lunch']; ?>, <?php echo $stats['dinner']; ?>, <?php echo $stats['snack']; ?>],
+          backgroundColor: ['#f59e0b', '#10b981', '#ce1212', '#6366f1'],
+          borderWidth: 3,
+          borderColor: '#fff',
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        cutout: '65%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                var pct = total > 0 ? Math.round((ctx.parsed / total) * 100) : 0;
+                return ' ' + ctx.parsed + ' meals (' + pct + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
   </script>
   <script src="/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/js/meals.js?v=<?php echo time(); ?>"></script>
 

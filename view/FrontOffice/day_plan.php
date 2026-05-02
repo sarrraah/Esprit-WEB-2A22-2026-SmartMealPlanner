@@ -73,6 +73,11 @@ foreach ($slots as $i => $slot) {
 $totalPlanned = array_sum(array_map(fn($s) => $s['meal'] ? $s['meal']->calories : 0, $suggested));
 $remaining    = max(0, $dailyKcal - $totalPlanned);
 
+// Load consumed meals from session
+session_start();
+$sessionKey = 'consumed_' . $plan->id . '_' . $dateStr;
+$consumed   = $_SESSION[$sessionKey] ?? [];
+
 $daysElapsed = $plan->daysElapsed();
 $progress    = $plan->progressPercent();
 
@@ -236,26 +241,30 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
             </div>
 
             <!-- Stats bar -->
-            <div class="stats-bar">
-              <div class="stat-item">
-                <span class="stat-icon">🎯</span>
-                <div>
-                  <p class="stat-label">Daily Target</p>
-                  <p class="stat-val"><?php echo $dailyKcal ?: '—'; ?> kcal</p>
+            <!-- Stats bar — one doughnut with all 3 values -->
+            <div class="stats-bar" style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;">
+              <div style="position:relative;width:110px;height:110px;flex-shrink:0;">
+                <canvas id="statsChart" width="110" height="110" style="width:110px;height:110px;"></canvas>
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1.2;">
+                  <span style="font-size:.7rem;color:#999;">Planned</span><br>
+                  <span style="font-size:.95rem;font-weight:700;color:#ce1212;"><?php echo $totalPlanned; ?></span>
                 </div>
               </div>
-              <div class="stat-item">
-                <span class="stat-icon">🔥</span>
-                <div>
-                  <p class="stat-label">Total Planned</p>
-                  <p class="stat-val"><?php echo $totalPlanned; ?> kcal</p>
+              <div style="display:flex;flex-direction:column;gap:.75rem;">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span style="width:12px;height:12px;background:#ce1212;border-radius:50%;flex-shrink:0;"></span>
+                  <span class="stat-label" style="margin:0;">Daily Target</span>
+                  <span class="stat-val" style="margin:0;margin-left:.5rem;"><?php echo $dailyKcal ?: '—'; ?> kcal</span>
                 </div>
-              </div>
-              <div class="stat-item">
-                <span class="stat-icon">🥗</span>
-                <div>
-                  <p class="stat-label">Remaining</p>
-                  <p class="stat-val <?php echo $remaining <= 100 ? 'green' : ''; ?>"><?php echo $remaining; ?> kcal</p>
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span style="width:12px;height:12px;background:#f59e0b;border-radius:50%;flex-shrink:0;"></span>
+                  <span class="stat-label" style="margin:0;">Total Planned</span>
+                  <span class="stat-val" style="margin:0;margin-left:.5rem;"><?php echo $totalPlanned; ?> kcal</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span style="width:12px;height:12px;background:#10b981;border-radius:50%;flex-shrink:0;"></span>
+                  <span class="stat-label" style="margin:0;">Remaining</span>
+                  <span class="stat-val <?php echo $remaining <= 100 ? 'green' : ''; ?>" style="margin:0;margin-left:.5rem;"><?php echo $remaining; ?> kcal</span>
                 </div>
               </div>
             </div>
@@ -287,14 +296,22 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
                   <i class="bi bi-book"></i> View Recipe
                 </a>
                 <?php endif; ?>
+                <a href="Meals.php?filter=<?php echo urlencode($slot['type']); ?>&date=<?php echo urlencode($dateStr); ?>"
+                   class="btn-recipe" style="border-color:#ce1212;color:#ce1212;">
+                  <i class="bi bi-arrow-repeat"></i> Replace
+                </a>
+                <button class="btn-consumed <?php echo isset($consumed[$slot['type']]) ? 'consumed' : ''; ?>"
+                        onclick="toggleConsumed('<?php echo $slot['type']; ?>', '<?php echo $dateStr; ?>', this)"
+                        style="border:none;border-radius:8px;padding:.4rem 1rem;font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s;background:<?php echo isset($consumed[$slot['type']]) ? '#2e7d32' : '#e8f5e9'; ?>;color:<?php echo isset($consumed[$slot['type']]) ? '#fff' : '#2e7d32'; ?>;">
+                  ✔ <?php echo isset($consumed[$slot['type']]) ? 'Consumed' : 'Mark Consumed'; ?>
+                </button>
               </div>
             </div>
             <?php endforeach; ?>
 
-            <!-- Nutrient summary -->
+            <!-- Nutrient summary — doughnut charts -->
             <div class="nutrient-bar">
-              <span style="font-size:2.5rem;">🥧</span>
-              <div style="flex:1;">
+              <div style="flex:1;min-width:140px;">
                 <p class="fw-bold mb-0" style="font-size:1rem;">Nutrient Summary</p>
                 <p class="text-muted mb-0" style="font-size:.9rem;">Good balance! You're hitting your daily targets.</p>
               </div>
@@ -306,30 +323,24 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
                 $cTarget = $dailyKcal ? (int) round($dailyKcal * 0.45 / 4) : 200;
                 $fTarget = $dailyKcal ? (int) round($dailyKcal * 0.25 / 9) : 65;
               ?>
-              <div class="nutrient-item">
-                <p class="nutrient-label">Protein</p>
+              <div class="nutrient-item text-center">
+                <canvas id="proteinChart" width="70" height="70" style="width:70px;height:70px;"></canvas>
+                <p class="nutrient-label mt-1">Protein</p>
                 <p class="nutrient-val"><?php echo $protein; ?>g / <?php echo $pTarget; ?>g</p>
-                <div class="nutrient-track"><div class="nutrient-fill" style="width:<?php echo min(100, (int)(($protein/$pTarget)*100)); ?>%;"></div></div>
               </div>
-              <div class="nutrient-item">
-                <p class="nutrient-label">Carbs</p>
+              <div class="nutrient-item text-center">
+                <canvas id="carbsChart" width="70" height="70" style="width:70px;height:70px;"></canvas>
+                <p class="nutrient-label mt-1">Carbs</p>
                 <p class="nutrient-val"><?php echo $carbs; ?>g / <?php echo $cTarget; ?>g</p>
-                <div class="nutrient-track"><div class="nutrient-fill" style="width:<?php echo min(100, (int)(($carbs/$cTarget)*100)); ?>%;"></div></div>
               </div>
-              <div class="nutrient-item">
-                <p class="nutrient-label">Fats</p>
+              <div class="nutrient-item text-center">
+                <canvas id="fatsChart" width="70" height="70" style="width:70px;height:70px;"></canvas>
+                <p class="nutrient-label mt-1">Fats</p>
                 <p class="nutrient-val"><?php echo $fats; ?>g / <?php echo $fTarget; ?>g</p>
-                <div class="nutrient-track"><div class="nutrient-fill" style="width:<?php echo min(100, (int)(($fats/$fTarget)*100)); ?>%;"></div></div>
               </div>
             </div>
 
-            <!-- Bottom bar -->
-            <div class="bottom-bar">
-              <p><i class="bi bi-info-circle text-danger me-1"></i> You can replace any meal with another from our meal gallery.</p>
-              <a href="Meals.php" class="btn btn-danger rounded-pill px-4" style="font-size:.95rem;">
-                <i class="bi bi-arrow-repeat me-1"></i> Replace Meal
-              </a>
-            </div>
+            <!-- Bottom bar removed — Replace button is now per meal row -->
 
           </div>
         </div>
@@ -346,7 +357,72 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
   <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
   <div id="preloader"></div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="<?php echo $assetPrefix; ?>js/main.js"></script>
+  <script>
+  // Stats doughnut — 3 segments: target, planned, remaining
+  new Chart(document.getElementById('statsChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Daily Target', 'Total Planned', 'Remaining'],
+      datasets: [{
+        data: [
+          <?php echo $dailyKcal; ?>,
+          <?php echo $totalPlanned; ?>,
+          <?php echo max(0, $remaining); ?>
+        ],
+        backgroundColor: ['#ce1212', '#f59e0b', '#10b981'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      cutout: '65%',
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + ' kcal' } }
+      }
+    }
+  });
+
+  // Nutrient doughnut charts
+  function nutrientChart(id, val, target, color) {
+    new Chart(document.getElementById(id), {
+      type: 'doughnut',
+      data: {
+        datasets: [{ 
+          data: [Math.min(val, target), Math.max(0, target - val)],
+          backgroundColor: [color, '#f0f0f0'],
+          borderWidth: 0
+        }]
+      },
+      options: { cutout: '68%', responsive: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed + 'g' } } } }
+    });
+  }
+  nutrientChart('proteinChart', <?php echo $protein; ?>, <?php echo $pTarget; ?>, '#3b82f6');
+  nutrientChart('carbsChart',   <?php echo $carbs; ?>,   <?php echo $cTarget; ?>, '#f59e0b');
+  nutrientChart('fatsChart',    <?php echo $fats; ?>,    <?php echo $fTarget; ?>, '#10b981');
+
+  function toggleConsumed(mealType, date, btn) {
+    var fd = new FormData();
+    fd.append('meal_type', mealType);
+    fd.append('date', date);
+    fetch('toggle_consumed.php', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(d => {
+        if (d.consumed) {
+          btn.textContent = '✔ Consumed';
+          btn.style.background = '#2e7d32';
+          btn.style.color = '#fff';
+        } else {
+          btn.textContent = '✔ Mark Consumed';
+          btn.style.background = '#e8f5e9';
+          btn.style.color = '#2e7d32';
+        }
+      });
+  }
+  </script>
 </body>
 </html>
 

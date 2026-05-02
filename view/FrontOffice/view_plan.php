@@ -268,20 +268,26 @@ $objectifLabel = $objectifLabels[$plan->objectif] ?? ucfirst($plan->objectif);
               <?php endforeach; ?>
             </div>
 
-            <!-- Weekly summary bar -->
-            <div class="weekly-bar">
-              <div class="d-flex align-items-center gap-3">
-                <span style="font-size:2rem;">🍩</span>
-                <div>
-                  <p class="fw-bold mb-0" style="color:#ce1212;font-size:1rem;">Weekly Summary</p>
-                  <p class="label mb-0">
-                    Target Calories: <strong><?php echo number_format($weeklyTarget); ?> kcal</strong>
-                    &nbsp;·&nbsp; Planned: <strong><?php echo number_format($plannedSoFar); ?> kcal</strong>
-                    &nbsp;·&nbsp; Remaining: <strong><?php echo number_format($weeklyRemaining); ?> kcal</strong>
-                  </p>
+            <!-- Weekly summary — doughnut chart -->
+            <div class="weekly-bar" style="align-items:center;gap:1.5rem;">
+              <canvas id="weeklyChart" width="40" height="40" style="flex-shrink:0;width:40px;height:40px;"></canvas>
+              <div style="flex:1;">
+                <p class="fw-bold mb-1" style="color:#ce1212;font-size:1rem;">Weekly Summary</p>
+                <p class="label mb-2">
+                  Target: <strong><?php echo number_format($weeklyTarget); ?> kcal</strong>
+                  &nbsp;·&nbsp; Planned: <strong><?php echo number_format($plannedSoFar); ?> kcal</strong>
+                  &nbsp;·&nbsp; Remaining: <strong><?php echo number_format($weeklyRemaining); ?> kcal</strong>
+                </p>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                  <span style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;">
+                    <span style="width:12px;height:12px;background:#ce1212;border-radius:50%;display:inline-block;"></span> Planned
+                  </span>
+                  <span style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;">
+                    <span style="width:12px;height:12px;background:#f0f0f0;border-radius:50%;display:inline-block;"></span> Remaining
+                  </span>
                 </div>
               </div>
-              <a href="Plans.php" class="btn btn-danger rounded-pill px-4" style="font-size:.95rem;">
+              <a href="Plans.php" class="btn btn-danger rounded-pill px-4" style="font-size:.95rem;flex-shrink:0;">
                 <i class="bi bi-graph-up-arrow me-1"></i> View Progress
               </a>
             </div>
@@ -327,10 +333,39 @@ $objectifLabel = $objectifLabels[$plan->objectif] ?? ucfirst($plan->objectif);
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="<?php echo $assetPrefix; ?>js/main.js"></script>
   <script>
     document.getElementById('btn-delete-plan').addEventListener('click', function() {
       new bootstrap.Modal(document.getElementById('deletePlanModal')).show();
+    });
+
+    // Weekly summary doughnut chart
+    new Chart(document.getElementById('weeklyChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Planned', 'Remaining'],
+        datasets: [{
+          data: [<?php echo $plannedSoFar; ?>, <?php echo max(0, $weeklyRemaining); ?>],
+          backgroundColor: ['#ce1212', '#f0f0f0'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        cutout: '72%',
+        responsive: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                return ' ' + ctx.parsed.toLocaleString() + ' kcal';
+              }
+            }
+          }
+        }
+      }
     });
   </script>
 </body>
