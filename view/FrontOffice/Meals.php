@@ -6,6 +6,14 @@ require_once __DIR__ . '/../../model/Plan.php';
 $meals       = MealController::listMeals();
 $assetPrefix = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
 
+// Load favourites and sort them to top
+$favouriteIds = MealController::getFavouriteIds();
+usort($meals, function($a, $b) use ($favouriteIds) {
+    $aFav = in_array($a->id, $favouriteIds) ? 0 : 1;
+    $bFav = in_array($b->id, $favouriteIds) ? 0 : 1;
+    return $aFav - $bFav;
+});
+
 // Search handling
 $searchQuery  = trim($_GET['q']        ?? '');
 $searchBy     = trim($_GET['searchBy'] ?? 'name');
@@ -156,19 +164,23 @@ function resolveImageUrl(string $image, string $prefix): string {
                 data-meal-type="<?php echo $safeType; ?>"
                 data-meal-type-label="<?php echo $safeTypeLabel; ?>"
               >
+                <?php $isFav = in_array($meal->id, $favouriteIds); ?>
+                <button
+                  class="fav-btn <?php echo $isFav ? 'active' : ''; ?>"
+                  onclick="toggleFav(event, this, <?php echo (int)$meal->id; ?>)"
+                  title="<?php echo $isFav ? 'Remove from favourites' : 'Add to favourites'; ?>"
+                  style="position:absolute;top:.6rem;right:.6rem;background:none;border:none;cursor:pointer;font-size:1.3rem;line-height:1;z-index:2;transition:.2s;"
+                >
+                  <?php echo $isFav ? '❤️' : '🤍'; ?>
+                </button>
                 <div class="meal-card__media">
                   <img src="<?php echo $imgSrc; ?>" alt="<?php echo $safeName; ?>" loading="lazy">
                 </div>
                 <div class="meal-card__body">
                   <h3 class="meal-card__name"><?php echo $safeName; ?></h3>
                   <p class="meal-card__calories"><strong><?php echo (int) $meal->calories; ?></strong> kcal</p>
-                  <?php if ($safePlanName !== '') : ?>
-                  <p class="meal-card__plan" style="font-size:.8rem;color:#888;margin:0;">
-                    Plan: <?php echo $safePlanName; ?>
-                    <?php if ($safeObjectif !== '') : ?>
-                    &nbsp;· Goal: <?php echo $safeObjectif; ?>
-                    <?php endif; ?>
-                  </p>
+                  <?php if ($isFav): ?>
+                  <span style="font-size:.75rem;color:#ce1212;font-weight:600;">❤️ Favourite</span>
                   <?php endif; ?>
                 </div>
               </article>
@@ -290,6 +302,25 @@ function resolveImageUrl(string $image, string $prefix): string {
     window.PLAN_END   = '<?php echo $planEnd; ?>';
     window.AUTO_FILTER = '<?php echo htmlspecialchars($autoFilter); ?>';
     window.REPLACE_DATE = '<?php echo htmlspecialchars($_GET['date'] ?? ''); ?>';
+
+    // Make meal cards position:relative for heart button
+    document.querySelectorAll('.meal-card').forEach(c => c.style.position = 'relative');
+
+    function toggleFav(e, btn, mealId) {
+      e.stopPropagation(); // don't open modal
+      var fd = new FormData();
+      fd.append('meal_id', mealId);
+      fetch('toggle_favourite.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            btn.textContent = d.favourited ? '❤️' : '🤍';
+            btn.classList.toggle('active', d.favourited);
+            // Reload to re-sort favourites to top
+            setTimeout(() => window.location.reload(), 300);
+          }
+        });
+    }
 
     // Pie chart
     new Chart(document.getElementById('mealPieChart'), {

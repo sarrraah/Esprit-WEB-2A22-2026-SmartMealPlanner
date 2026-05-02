@@ -17,6 +17,22 @@ class MealController
     }
 
     /**
+     * Get favourite meal IDs for the current user.
+     * @return int[]
+     */
+    public static function getFavouriteIds(int $userId = 1): array
+    {
+        try {
+            $pdo  = Database::pdo();
+            $stmt = $pdo->prepare('SELECT meal_id FROM favourites WHERE user_id = :uid ORDER BY created_at DESC');
+            $stmt->execute([':uid' => $userId]);
+            return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
      * Search meals by name, calories or type.
      * @return Meal[]
      */
