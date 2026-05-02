@@ -16,7 +16,8 @@ $experience = '';
 $speciality = '';
 $motivation = '';
 $reapplyError = '';
-$profilePicture = $user['profile_picture'] ?? 'default.png';
+$uploadError = '';
+$profilePicture = 'default.png';
 
 try {
     $pdo = config::getConnexion();
@@ -92,6 +93,8 @@ try {
                     $profilePictureSql = ", profile_picture = :profile_picture";
                     $paramsPicture['profile_picture'] = $newFileName;
                 }
+            } else {
+                $uploadError = 'Profile picture must be JPG, JPEG, PNG, WEBP, or JFIF.';
             }
         }
 
@@ -865,6 +868,63 @@ $requestText = 'Your professional account request is currently being reviewed by
             border: 3px solid white;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
+
+
+        .drag-drop-zone {
+            cursor: pointer;
+        }
+
+        .drag-drop-zone::after {
+            content: "Drag & drop photo";
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 18px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.35;
+            background: rgba(33, 37, 41, 0.58);
+            opacity: 0;
+            transform: scale(0.96);
+            transition: 0.25s ease;
+            pointer-events: none;
+        }
+
+        .drag-drop-zone:hover::after,
+        .drag-drop-zone.drag-over::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .drag-drop-zone.drag-over .profile-photo {
+            border-color: #ce1212;
+            box-shadow: 0 0 0 6px rgba(206, 18, 18, 0.12), 0 14px 34px rgba(206, 18, 18, 0.22);
+            transform: scale(1.04);
+        }
+
+        .photo-help-text {
+            margin-top: -6px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .upload-error {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 12px 14px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -955,7 +1015,7 @@ $requestText = 'Your professional account request is currently being reviewed by
                     <div class="profile-card">
 
                         <div class="profile-top">
-                            <div class="profile-photo-wrapper">
+                            <div class="profile-photo-wrapper <?= $editMode ? 'drag-drop-zone' : '' ?>" id="profileDropZone">
                                 <img
                                     src="../assets/img/profiles/<?= htmlspecialchars($user['profile_picture'] ?? 'default.png') ?>"
                                     alt="Profile Picture"
@@ -973,6 +1033,12 @@ $requestText = 'Your professional account request is currently being reviewed by
                                     </div>
                                 <?php endif; ?>
                             </div>
+
+                            
+
+                            <?php if ($uploadError !== ''): ?>
+                                <div class="upload-error"><?= htmlspecialchars($uploadError) ?></div>
+                            <?php endif; ?>
 
                             <span class="profile-role"><?= htmlspecialchars($role) ?></span>
                         </div>
@@ -1174,13 +1240,65 @@ $requestText = 'Your professional account request is currently being reviewed by
         const profilePreview = document.getElementById('profilePreview');
         const removeBtn = document.getElementById('removePhotoBtn');
         const removeInput = document.getElementById('removeProfilePicture');
+        const profileDropZone = document.getElementById('profileDropZone');
+
+        function previewSelectedProfilePicture(file) {
+            if (!file || !profilePreview) {
+                return;
+            }
+
+            profilePreview.src = URL.createObjectURL(file);
+
+            if (removeInput) {
+                removeInput.value = '0';
+            }
+        }
 
         if (profileInput) {
             profileInput.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
-                    profilePreview.src = URL.createObjectURL(this.files[0]);
-                    removeInput.value = '0';
+                    previewSelectedProfilePicture(this.files[0]);
                 }
+            });
+        }
+
+        if (profileDropZone && profileInput) {
+            profileDropZone.addEventListener('click', function(e) {
+                if (e.target.closest('.photo-edit-btn') || e.target.closest('.photo-remove-btn')) {
+                    return;
+                }
+
+                profileInput.click();
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                profileDropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    profileDropZone.classList.add('drag-over');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                profileDropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    profileDropZone.classList.remove('drag-over');
+                });
+            });
+
+            profileDropZone.addEventListener('drop', function(e) {
+                const droppedFile = e.dataTransfer.files && e.dataTransfer.files[0];
+
+                if (!droppedFile) {
+                    return;
+                }
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(droppedFile);
+                profileInput.files = dataTransfer.files;
+
+                previewSelectedProfilePicture(droppedFile);
             });
         }
 
