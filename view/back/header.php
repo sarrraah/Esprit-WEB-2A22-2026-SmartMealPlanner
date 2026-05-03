@@ -220,6 +220,10 @@
        class="<?= in_array($currentPage, ['afficherCategorie.php','ajouterCategorie.php','modifierCategorie.php','supprimerCategorie.php']) ? 'active' : '' ?>">
       <i class="bi bi-tags"></i> Categories
     </a>
+    <a href="afficherAvis.php"
+       class="<?= in_array($currentPage, ['afficherAvis.php','supprimerAvis.php']) ? 'active' : '' ?>">
+      <i class="bi bi-chat-square-text"></i> Avis
+    </a>
     <div class="nav-section">Content</div>
     <a href="#"><i class="bi bi-calendar-event"></i> Events</a>
     <a href="#"><i class="bi bi-journal-text"></i> Meal Planner</a>
@@ -257,6 +261,8 @@
       'modifierCategorie.php' => 'Edit Category',
       'supprimerCategorie.php'=> 'Delete Category',
       'afficherReclamations.php' => 'Complaints',
+      'afficherAvis.php'         => 'Reviews',
+      'supprimerAvis.php'        => 'Delete Review',
     ];
     echo $titles[$currentPage] ?? 'Dashboard';
     ?>

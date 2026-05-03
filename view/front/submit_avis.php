@@ -24,9 +24,19 @@ $GEMINI_API_KEY = 'AIzaSyBysJrty1ByclcqGmnx_54awJEZfkUTMhY';
 $sentiment_emoji = '😐'; // default neutral
 
 function analyserSentimentGemini(string $commentaire, int $note, string $apiKey): string {
-    $prompt = "Analyze the sentiment of this product review (note: {$note}/5): \"{$commentaire}\"\n\n"
-            . "Respond with ONLY one of these exact words: VERY_POSITIVE, POSITIVE, NEUTRAL, NEGATIVE, VERY_NEGATIVE\n"
-            . "No explanation, no punctuation, just the word.";
+    $prompt = "You are a sentiment analysis system for a food product review website.\n\n"
+            . "Review text: \"{$commentaire}\"\n"
+            . "Star rating: {$note}/5\n\n"
+            . "IMPORTANT: The reviewer may have typos or informal language. Be lenient.\n"
+            . "Examples: 'live it' means 'love it', 'amzing' means 'amazing', 'gret' means 'great'.\n\n"
+            . "Classification rules (star rating is the PRIMARY signal):\n"
+            . "- 5 stars → VERY_POSITIVE (unless text is clearly negative)\n"
+            . "- 4 stars → POSITIVE (unless text is clearly negative)\n"
+            . "- 3 stars → NEUTRAL\n"
+            . "- 2 stars → NEGATIVE (unless text is clearly positive)\n"
+            . "- 1 star → VERY_NEGATIVE (unless text is clearly positive)\n\n"
+            . "Respond with ONLY one of: VERY_POSITIVE, POSITIVE, NEUTRAL, NEGATIVE, VERY_NEGATIVE\n"
+            . "No explanation. Just the word.";
 
     $payload = json_encode([
         'contents' => [
@@ -52,15 +62,27 @@ function analyserSentimentGemini(string $commentaire, int $note, string $apiKey)
     $response = curl_exec($ch);
     curl_close($ch);
 
-    if (!$response) return 'NEUTRAL';
+    if (!$response) {
+        // Fallback based on note
+        return $note >= 5 ? 'VERY_POSITIVE' : ($note >= 4 ? 'POSITIVE' : ($note <= 2 ? 'NEGATIVE' : 'NEUTRAL'));
+    }
 
     $data = json_decode($response, true);
-    $text = strtoupper(trim($data['candidates'][0]['content']['parts'][0]['text'] ?? 'NEUTRAL'));
-
-    // Clean up any extra characters
+    $text = strtoupper(trim($data['candidates'][0]['content']['parts'][0]['text'] ?? ''));
     $text = preg_replace('/[^A-Z_]/', '', $text);
 
-    return $text ?: 'NEUTRAL';
+    $valid = ['VERY_POSITIVE', 'POSITIVE', 'NEUTRAL', 'NEGATIVE', 'VERY_NEGATIVE'];
+
+    // If Gemini returns NEUTRAL for a 5-star or 1-star review, override with note-based fallback
+    if ($text === 'NEUTRAL' || !in_array($text, $valid)) {
+        if ($note === 5) return 'VERY_POSITIVE';
+        if ($note === 4) return 'POSITIVE';
+        if ($note === 2) return 'NEGATIVE';
+        if ($note === 1) return 'VERY_NEGATIVE';
+        return 'NEUTRAL';
+    }
+
+    return $text;
 }
 
 $emojiMap = [

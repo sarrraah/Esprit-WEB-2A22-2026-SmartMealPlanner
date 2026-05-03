@@ -184,18 +184,18 @@ include("header.php");
     <div class="row gy-4 align-items-center justify-content-between">
       <div class="col-lg-5 order-2 order-lg-1">
         <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#fff0f0,#ffe8e8);border:1px solid rgba(206,18,18,0.2);border-radius:20px;padding:5px 12px;margin-bottom:12px;">
-          <i class="bi bi-stars" style="color:#ce1212;font-size:0.8rem;"></i>
-          <span style="font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ce1212;">Recommended by our AI</span>
+          <i class="bi bi-grid-3x3-gap-fill" style="color:#ce1212;font-size:0.8rem;"></i>
+          <span style="font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ce1212;">Best meal per category</span>
         </div>
         <h1>Discover our <span>fresh</span> &amp; healthy products</h1>
-        <p>Fresh ingredients, smart packs and meal prep — everything you need to cook healthy every day.</p>
+        <p>The top-rated product from each category — handpicked based on customer reviews.</p>
         <a href="#produitsGrid" class="btn-browse">Browse products</a>
       </div>
       <div class="col-lg-7 order-1 order-lg-2">
-        <!-- AI Recommendations in hero -->
+        <!-- Best meal per category in hero -->
         <div id="hero-reco-loading" style="display:flex;align-items:center;gap:10px;color:#bbb;font-size:0.85rem;padding:20px 0;">
           <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
-          Loading AI picks...
+          Loading best picks per category...
         </div>
         <div id="hero-reco-list" style="display:none;"></div>
       </div>
@@ -235,10 +235,10 @@ include("header.php");
             <div style="background:linear-gradient(135deg,#ce1212,#ff4444);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
               <i class="bi bi-stars" style="color:white;font-size:0.85rem;"></i>
             </div>
-            <span style="font-size:1rem;font-weight:700;color:#2d2d2d;">AI Selection — Our best meals</span>
+            <span style="font-size:1rem;font-weight:700;color:#2d2d2d;">AI Selection — Personalized picks</span>
           </div>
           <div style="font-size:0.8rem;color:#888;margin-left:36px;">
-            Our AI analyzes customer ratings, popularity and nutritional diversity to suggest the 3 best picks right now.
+            Our AI analyzes customer ratings, popularity and nutritional diversity to suggest the 3 best picks for you right now.
           </div>
         </div>
         <button onclick="loadRecommendations()" id="reco-refresh-btn"
@@ -967,7 +967,7 @@ function resetSort() {
 
 updateBadge();
 
-// ── AI RECOMMENDATIONS ────────────────────────────────────────────────────
+// ── AI RECOMMENDATIONS (middle section — personal picks) ─────────────────
 var RECO_MEDALS = ['🥇', '🥈', '🥉'];
 
 function loadRecommendations() {
@@ -1045,38 +1045,114 @@ function loadRecommendations() {
         cardHtml += '</div>';
 
         html += cardHtml;
-
-        // Also inject into hero (same cards, smaller height)
-        var heroCard = cardHtml.replace('height:320px', 'height:240px');
-        if (idx === 0) {
-          var heroGrid = document.getElementById('hero-reco-list');
-          if (heroGrid && heroGrid._html === undefined) heroGrid._html = '';
-          if (heroGrid) heroGrid._html = (heroGrid._html || '') + heroCard;
-        } else if (idx === 1 || idx === 2) {
-          var heroGrid = document.getElementById('hero-reco-list');
-          if (heroGrid) heroGrid._html = (heroGrid._html || '') + heroCard;
-        }
       });
 
       html += '</div>';
       list.innerHTML = html;
       list.style.display = 'block';
-
-      // Render hero cards
-      var heroLoading = document.getElementById('hero-reco-loading');
-      var heroList    = document.getElementById('hero-reco-list');
-      if (heroLoading) heroLoading.style.display = 'none';
-      if (heroList) {
-        heroList.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">' + (heroList._html || '') + '</div>';
-        heroList.style.display = 'block';
-      }
     })
     .catch(function() {
       loading.style.display = 'none';
       error.style.display   = 'block';
-      var heroLoading = document.getElementById('hero-reco-loading');
-      if (heroLoading) heroLoading.style.display = 'none';
       if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    });
+}
+
+// ── BEST MEAL PER CATEGORY (hero section) ────────────────────────────────
+function loadBestByCategory() {
+  var loading = document.getElementById('hero-reco-loading');
+  var list    = document.getElementById('hero-reco-list');
+  if (!loading || !list) return;
+
+  loading.style.display = 'flex';
+  list.style.display    = 'none';
+
+  fetch('get_best_by_category.php')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.style.display = 'none';
+      if (!Array.isArray(data) || data.length === 0) {
+        list.innerHTML = '<p style="color:#bbb;font-size:0.85rem;">No products available.</p>';
+        list.style.display = 'block';
+        return;
+      }
+
+      // Show up to 4 categories in a 2×2 or scrollable row
+      var shown = data.slice(0, 4);
+      var cols  = shown.length <= 3 ? shown.length : 2;
+      var html  = '<div style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:12px;">';
+
+      shown.forEach(function(item) {
+        var safeNom = item.nom.replace(/'/g, "\\'");
+        var safeImg = (item.image||'').replace(/'/g, "\\'");
+        var priceStr = item.prix.toFixed(2).replace('.', ',') + ' DT';
+
+        var bgStyle = item.image
+          ? 'background:url(\'' + item.image + '\') center/cover no-repeat;'
+          : 'background:linear-gradient(135deg,#1a1a1a,#2d2d2d);';
+
+        var starsHtml = '';
+        if (item.avg_note > 0) {
+          var full = Math.round(item.avg_note);
+          starsHtml = '<span style="color:#f39c12;font-size:0.7rem;">'
+                    + '★'.repeat(full)
+                    + '<span style="opacity:0.3;">' + '★'.repeat(5-full) + '</span></span>'
+                    + '<span style="font-size:0.6rem;color:rgba(255,255,255,0.55);margin-left:3px;">'
+                    + item.avg_note + ' · ' + item.nb_avis + ' reviews</span>';
+        }
+
+        // Category badge color based on index
+        var catBadge = '<span style="display:inline-block;background:rgba(206,18,18,0.85);'
+                     + 'color:white;border-radius:12px;padding:2px 9px;font-size:0.6rem;'
+                     + 'font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">'
+                     + item.categorie + '</span>';
+
+        var card = '<div style="' + bgStyle
+          + 'border-radius:16px;overflow:hidden;position:relative;height:240px;cursor:pointer;'
+          + 'transition:transform 0.3s,box-shadow 0.3s;" '
+          + 'onclick="openProductModal(' + item.id + ')" '
+          + 'onmouseover="this.style.transform=\'scale(1.03)\';this.style.boxShadow=\'0 16px 40px rgba(0,0,0,0.35)\'" '
+          + 'onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
+
+        card += '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.15) 55%,transparent 100%);border-radius:16px;"></div>';
+
+        // Top-right cart button
+        card += '<div style="position:absolute;top:12px;right:12px;z-index:2;">';
+        card += '<button onclick="event.stopPropagation();recoAddToCart(' + item.id + ',\'' + safeNom + '\',' + item.prix + ',\'' + safeImg + '\')" '
+              + 'style="width:34px;height:34px;border-radius:50%;background:white;border:none;cursor:pointer;'
+              + 'display:flex;align-items:center;justify-content:center;font-size:0.85rem;'
+              + 'box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:transform 0.2s;" '
+              + 'onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'\'">'
+              + '<i class="bi bi-cart-plus" style="color:#ce1212;"></i></button>';
+        card += '</div>';
+
+        // Bottom content
+        card += '<div style="position:absolute;bottom:0;left:0;right:0;padding:14px 14px;z-index:2;">';
+        card += catBadge + '<br>';
+        if (starsHtml) card += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">' + starsHtml + '</div>';
+        card += '<div style="font-size:0.9rem;font-weight:800;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + item.nom + '</div>';
+        card += '<div style="font-size:1.2rem;font-weight:900;color:white;text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + priceStr + '</div>';
+        card += '</div>';
+        card += '</div>';
+
+        html += card;
+      });
+
+      // If more than 4 categories, show a "see all" hint
+      if (data.length > 4) {
+        html += '<div style="grid-column:1/-1;text-align:center;padding:6px 0;">'
+              + '<span style="font-size:0.75rem;color:#bbb;">+'+(data.length-4)+' more categories</span>'
+              + '</div>';
+      }
+
+      html += '</div>';
+      list.innerHTML = html;
+      list.style.display = 'block';
+    })
+    .catch(function() {
+      loading.style.display = 'none';
+      list.innerHTML = '<p style="color:#bbb;font-size:0.85rem;"><i class="bi bi-exclamation-circle me-1"></i>Could not load category picks.</p>';
+      list.style.display = 'block';
     });
 }
 
@@ -1090,7 +1166,10 @@ function recoAddToCart(id, nom, prix, image) {
   setTimeout(function() { t.style.display = 'none'; }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', function() { loadRecommendations(); });
+document.addEventListener('DOMContentLoaded', function() {
+  loadBestByCategory();   // hero: best per category
+  loadRecommendations();  // middle: personal AI picks
+});
 
 // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
 var ACH_TIERS = [
@@ -2266,9 +2345,13 @@ function loadModalAvis(produitId) {
       var html = '';
       data.avis.forEach(function(a) {
         var stars = '★'.repeat(parseInt(a.note)) + '☆'.repeat(5 - parseInt(a.note));
+        var emoji = a.sentiment || '😐';
         html += '<div style="background:white;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid #f0f0f0;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+        html += '<div style="display:flex;align-items:center;gap:6px;">';
         html += '<span style="color:#f39c12;font-size:0.95rem;letter-spacing:1px;">' + stars + '</span>';
+        html += '<span style="font-size:1.1rem;" title="Sentiment analysis">' + emoji + '</span>';
+        html += '</div>';
         html += '<span style="font-size:0.7rem;color:#bbb;">' + a.date_avis + '</span>';
         html += '</div>';
         html += '<p style="font-size:0.82rem;color:#555;margin:0;line-height:1.5;">' + escHtml(a.commentaire) + '</p>';
@@ -2321,6 +2404,12 @@ document.getElementById('modal-avis-form').addEventListener('submit', function(e
   var id_produit  = document.getElementById('modal-avis-produit-id').value;
   if (!note || !commentaire || !id_produit) return;
 
+  // Show loading state on submit button
+  var submitBtn = document.getElementById('modal-avis-submit');
+  var originalHtml = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Analyzing sentiment...';
+
   var formData = new FormData();
   formData.append('note', note);
   formData.append('commentaire', commentaire);
@@ -2329,14 +2418,24 @@ document.getElementById('modal-avis-form').addEventListener('submit', function(e
   fetch('submit_avis.php', { method: 'POST', body: formData })
     .then(function(r){ return r.json(); })
     .then(function(data) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalHtml;
       if (data.success) {
-        document.getElementById('modal-avis-success').style.display = 'inline';
+        // Show success with sentiment emoji
+        var emoji = data.sentiment || '😐';
+        var successEl = document.getElementById('modal-avis-success');
+        successEl.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Thank you for your review! ' + emoji;
+        successEl.style.display = 'inline';
         document.getElementById('modal-avis-comment').value = '';
         document.getElementById('modal-note-value').value = '';
         resetModalStars();
         loadModalAvis(id_produit);
-        setTimeout(function(){ document.getElementById('modal-avis-success').style.display = 'none'; }, 3000);
+        setTimeout(function(){ successEl.style.display = 'none'; }, 4000);
       }
+    })
+    .catch(function() {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalHtml;
     });
 });
 </script>

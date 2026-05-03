@@ -17,6 +17,8 @@ $avgData = $avisController->getAverageNote($id_produit);
 // Format dates
 foreach ($avis as &$a) {
     $a['date_avis'] = date('d/m/Y', strtotime($a['date_avis']));
+    // Ensure sentiment field exists
+    if (!isset($a['sentiment'])) $a['sentiment'] = '😐';
 }
 unset($a);
 

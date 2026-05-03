@@ -58,12 +58,13 @@ class config
             $dbname     = "smart_meal_planner";
             try {
                 self::$pdo = new PDO(
-                    "mysql:host=$servername;dbname=$dbname;charset=utf8",
+                    "mysql:host=$servername;dbname=$dbname;charset=utf8mb4",
                     $username,
                     $password
                 );
                 self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 self::$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                self::$pdo->exec("SET NAMES utf8mb4");
             } catch (Exception $e) {
                 die('Erreur : ' . $e->getMessage());
             }

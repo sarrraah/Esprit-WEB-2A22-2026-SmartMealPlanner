@@ -14,9 +14,9 @@ $categories = $allCategories;
 // Compute stats
 foreach ($allProduits as &$p) { $p['statut'] = determinerStatut($p['quantiteStock'], $p['dateExpiration']); }
 unset($p);
-$totalDispo    = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Disponible'));
-$totalRupture  = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Rupture'));
-$totalEpuise   = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Épuisé'));
+$totalDispo    = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Available'));
+$totalRupture  = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Out of Stock'));
+$totalEpuise   = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Expired'));
 $totalStock    = array_sum(array_column($allProduits, 'quantiteStock'));
 
 // Products per category (for chart + table)
@@ -35,7 +35,7 @@ foreach ($allCategories as $cat) {
   $prodsCat = array_values($prodsCat);
 
   $cnt   = count($prodsCat);
-  $dispo = count(array_filter($prodsCat, fn($p) => $p['statut'] === 'Disponible'));
+  $dispo = count(array_filter($prodsCat, fn($p) => $p['statut'] === 'Available'));
   $stock = array_sum(array_column($prodsCat, 'quantiteStock'));
 
   $catData[$nom]      = $cnt;
