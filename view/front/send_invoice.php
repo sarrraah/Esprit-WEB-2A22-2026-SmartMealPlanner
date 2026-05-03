@@ -44,6 +44,20 @@ if (!$email) {
     exit;
 }
 
+// ── Phone validation ──────────────────────────────────────────────────────
+$rawPhone = $data['phone'] ?? '';
+$normalizedPhone = preg_replace('/[\s\-]/', '', $rawPhone);
+if (empty($normalizedPhone)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Numéro de téléphone obligatoire.']);
+    exit;
+}
+if (!preg_match('/^(\+216|00216)?[2-9]\d{7}$/', $normalizedPhone)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Numéro de téléphone invalide.']);
+    exit;
+}
+
 // ── Build HTML invoice ──────────────────────────────────────────────────────
 $rows = '';
 foreach ($items as $item) {

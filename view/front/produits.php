@@ -182,23 +182,29 @@ include("header.php");
 <section class="hero-produits">
   <div class="container">
     <div class="row gy-4 align-items-center justify-content-between">
-      <div class="col-lg-6 order-2 order-lg-1">
+      <div class="col-lg-5 order-2 order-lg-1">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#fff0f0,#ffe8e8);border:1px solid rgba(206,18,18,0.2);border-radius:20px;padding:5px 12px;margin-bottom:12px;">
+          <i class="bi bi-stars" style="color:#ce1212;font-size:0.8rem;"></i>
+          <span style="font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ce1212;">Recommandé par notre IA</span>
+        </div>
         <h1>Découvrez nos <span>produits</span> frais &amp; sains</h1>
         <p>Ingrédients frais, packs intelligents et meal prep — tout ce qu'il vous faut pour cuisiner sain au quotidien.</p>
-        <a href="#produits" class="btn-browse">Voir les produits</a>
+        <a href="#produitsGrid" class="btn-browse">Voir les produits</a>
       </div>
-      <div class="col-lg-5 order-1 order-lg-2">
-        <div class="hero-img">
-          <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800"
-               alt="Produits frais">
+      <div class="col-lg-7 order-1 order-lg-2">
+        <!-- AI Recommendations in hero -->
+        <div id="hero-reco-loading" style="display:flex;align-items:center;gap:10px;color:#bbb;font-size:0.85rem;padding:20px 0;">
+          <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
+          Loading AI picks...
         </div>
+        <div id="hero-reco-list" style="display:none;"></div>
       </div>
     </div>
   </div>
 </section>
 
-<section id="produits" class="section light-background py-5">
-  <div class="container section-title">
+<section id="produits" class="section light-background py-3">
+  <div class="container section-title" style="padding-bottom:10px;">
     <h2>Boutique</h2>
     <p><span>Nos</span> <span class="description-title">Produits</span></p>
   </div>
@@ -221,6 +227,342 @@ include("header.php");
       </div>
     </div>
 
+    <!-- AI RECOMMENDATIONS WIDGET -->
+    <div id="ai-reco-section" style="background:white;border-radius:16px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="background:linear-gradient(135deg,#ce1212,#ff4444);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-stars" style="color:white;font-size:0.85rem;"></i>
+            </div>
+            <span style="font-size:1rem;font-weight:700;color:#2d2d2d;">Sélection IA — Nos meilleurs repas</span>
+          </div>
+          <div style="font-size:0.8rem;color:#888;margin-left:36px;">
+            Notre IA analyse les notes clients, la popularité et la diversité nutritionnelle pour vous proposer les 3 meilleurs choix du moment.
+          </div>
+        </div>
+        <button onclick="loadRecommendations()" id="reco-refresh-btn"
+          style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:5px 14px;font-size:0.75rem;color:#999;cursor:pointer;transition:0.2s;display:flex;align-items:center;gap:5px;flex-shrink:0;">
+          <i class="bi bi-arrow-clockwise"></i> Actualiser
+        </button>
+      </div>
+
+      <!-- Loading state -->
+      <div id="reco-loading" style="display:flex;align-items:center;gap:10px;padding:16px 0;color:#bbb;font-size:0.85rem;">
+        <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
+        AI is analyzing your catalog...
+      </div>
+
+      <!-- Recommendations list -->
+      <div id="reco-list" style="display:none;"></div>
+
+      <!-- Error state -->
+      <div id="reco-error" style="display:none;font-size:0.82rem;color:#bbb;padding:8px 0;">
+        <i class="bi bi-exclamation-circle me-1"></i>Could not load recommendations.
+        <button onclick="loadRecommendations()" style="background:none;border:none;color:#ce1212;cursor:pointer;font-size:0.82rem;text-decoration:underline;">Retry</button>
+      </div>
+    </div>
+
+    <style>
+    /* ── AI RECOMMENDATION CARDS ── */
+    @media (max-width: 576px) {
+      #reco-list > div { grid-template-columns: 1fr !important; }
+    }
+    @media (min-width: 577px) and (max-width: 768px) {
+      #reco-list > div { grid-template-columns: repeat(2,1fr) !important; }
+    }
+    </style>
+    <div id="achievements-section" style="background:white;border-radius:16px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;">
+            <i class="bi bi-trophy-fill" style="color:#ce1212;"></i> Objectifs & Récompenses
+          </div>
+          <div style="font-size:0.82rem;color:#555;margin-top:2px;">
+            Achetez plus de repas et débloquez des remises exclusives 🎯
+          </div>
+        </div>
+        <div id="achievement-active-badge" style="display:none;color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;">
+          <i class="bi bi-percent me-1"></i><span id="achievement-active-text">Remise active !</span>
+        </div>
+      </div>
+
+      <!-- Visible tiers (1-3) -->
+      <div class="row g-3" id="achievements-grid">
+
+        <!-- Palier 1 : 5 repas → 5% — Rouge chaud -->
+        <div class="col-4">
+          <div class="achievement-card" id="ach-1">
+            <div class="ach-hexagon" style="--ach-color1:#ce1212;--ach-color2:#ff6b35;--ach-glow:rgba(206,18,18,0.5);">
+              <div class="ach-hex-inner">
+                <div class="ach-number">5%</div>
+                <div class="ach-icon"><i class="bi bi-basket2-fill"></i></div>
+              </div>
+            </div>
+            <div class="ach-progress-wrap">
+              <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-1" style="width:0%;background:linear-gradient(90deg,#ce1212,#ff6b35);"></div></div>
+            </div>
+            <div class="ach-label">🥄 First Step</div>
+            <div class="ach-sublabel"><span id="ach-count-1">0</span>/5 repas</div>
+          </div>
+        </div>
+
+        <!-- Palier 2 : 15 repas → 15% — Orange feu -->
+        <div class="col-4">
+          <div class="achievement-card" id="ach-2">
+            <div class="ach-hexagon" style="--ach-color1:#ff6b00;--ach-color2:#ffb300;--ach-glow:rgba(255,107,0,0.5);">
+              <div class="ach-hex-inner">
+                <div class="ach-number">15%</div>
+                <div class="ach-icon"><i class="bi bi-fire"></i></div>
+              </div>
+            </div>
+            <div class="ach-progress-wrap">
+              <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-2" style="width:0%;background:linear-gradient(90deg,#ff6b00,#ffb300);"></div></div>
+            </div>
+            <div class="ach-label">🌱 Healthy Starter</div>
+            <div class="ach-sublabel"><span id="ach-count-2">0</span>/15 repas</div>
+          </div>
+        </div>
+
+        <!-- Palier 3 : 20 repas → 20% — Or -->
+        <div class="col-4">
+          <div class="achievement-card" id="ach-3">
+            <div class="ach-hexagon" style="--ach-color1:#f9a825;--ach-color2:#ffe082;--ach-glow:rgba(249,168,37,0.5);">
+              <div class="ach-hex-inner">
+                <div class="ach-number">20%</div>
+                <div class="ach-icon"><i class="bi bi-award-fill"></i></div>
+              </div>
+            </div>
+            <div class="ach-progress-wrap">
+              <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-3" style="width:0%;background:linear-gradient(90deg,#f9a825,#ffe082);"></div></div>
+            </div>
+            <div class="ach-label">🔥 Discipline Builder</div>
+            <div class="ach-sublabel"><span id="ach-count-3">0</span>/20 repas</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Hidden tiers (4-7) — revealed by "View More" -->
+      <div id="ach-more-grid" style="display:none;overflow:hidden;transition:max-height 0.5s ease;">
+        <div class="row g-3" style="margin-top:0;">
+
+          <!-- Palier 4 : 30 repas → 30% — Vert nature -->
+          <div class="col-4 col-md-3">
+            <div class="achievement-card" id="ach-4">
+              <div class="ach-hexagon" style="--ach-color1:#2e7d32;--ach-color2:#66bb6a;--ach-glow:rgba(46,125,50,0.5);">
+                <div class="ach-hex-inner">
+                  <div class="ach-number">30%</div>
+                  <div class="ach-icon"><i class="bi bi-leaf-fill"></i></div>
+                </div>
+              </div>
+              <div class="ach-progress-wrap">
+                <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-4" style="width:0%;background:linear-gradient(90deg,#2e7d32,#66bb6a);"></div></div>
+              </div>
+              <div class="ach-label">🥗 Clean Eater</div>
+              <div class="ach-sublabel"><span id="ach-count-4">0</span>/30 repas</div>
+            </div>
+          </div>
+
+          <!-- Palier 5 : 50 repas → 50% — Bleu électrique -->
+          <div class="col-4 col-md-3">
+            <div class="achievement-card" id="ach-5">
+              <div class="ach-hexagon" style="--ach-color1:#1565c0;--ach-color2:#42a5f5;--ach-glow:rgba(21,101,192,0.5);">
+                <div class="ach-hex-inner">
+                  <div class="ach-number">50%</div>
+                  <div class="ach-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                </div>
+              </div>
+              <div class="ach-progress-wrap">
+                <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-5" style="width:0%;background:linear-gradient(90deg,#1565c0,#42a5f5);"></div></div>
+              </div>
+              <div class="ach-label">💪 Habit Keeper</div>
+              <div class="ach-sublabel"><span id="ach-count-5">0</span>/50 repas</div>
+            </div>
+          </div>
+
+          <!-- Palier 6 : 75 repas → 70% — Violet galaxie -->
+          <div class="col-4 col-md-3">
+            <div class="achievement-card" id="ach-6">
+              <div class="ach-hexagon" style="--ach-color1:#6a1b9a;--ach-color2:#ce93d8;--ach-glow:rgba(106,27,154,0.5);">
+                <div class="ach-hex-inner">
+                  <div class="ach-number">70%</div>
+                  <div class="ach-icon"><i class="bi bi-gem"></i></div>
+                </div>
+              </div>
+              <div class="ach-progress-wrap">
+                <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-6" style="width:0%;background:linear-gradient(90deg,#6a1b9a,#ce93d8);"></div></div>
+              </div>
+              <div class="ach-label">⚡ Consistency Pro</div>
+              <div class="ach-sublabel"><span id="ach-count-6">0</span>/75 repas</div>
+            </div>
+          </div>
+
+          <!-- Palier 7 : 100 repas → 80% — Noir & or légendaire -->
+          <div class="col-4 col-md-3">
+            <div class="achievement-card" id="ach-7">
+              <div class="ach-hexagon" style="--ach-color1:#212121;--ach-color2:#ffd700;--ach-glow:rgba(255,215,0,0.6);">
+                <div class="ach-hex-inner">
+                  <div class="ach-number" style="font-size:1.3rem;">80%</div>
+                  <div class="ach-icon"><i class="bi bi-crown-fill"></i></div>
+                </div>
+              </div>
+              <div class="ach-progress-wrap">
+                <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-7" style="width:0%;background:linear-gradient(90deg,#212121,#ffd700);"></div></div>
+              </div>
+              <div class="ach-label">🏆 Healthy Champion</div>
+              <div class="ach-sublabel"><span id="ach-count-7">0</span>/100 repas</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- View More button -->
+      <div style="text-align:center;margin-top:14px;">
+        <button id="ach-view-more-btn" onclick="toggleMoreAchievements()"
+          style="background:linear-gradient(135deg,#ce1212,#ff4444);border:none;border-radius:25px;padding:9px 24px;font-size:0.8rem;font-weight:700;color:white;cursor:pointer;transition:all 0.25s;display:inline-flex;align-items:center;gap:7px;box-shadow:0 3px 12px rgba(206,18,18,0.3);">
+          <i class="bi bi-chevron-down" id="ach-chevron"></i>
+          <span id="ach-view-more-text">View More Achievements</span>
+        </button>
+      </div>
+
+      <!-- Next milestone hint -->
+      <div id="ach-next-hint" style="margin-top:12px;padding:10px 14px;background:#f9f9f9;border-radius:10px;font-size:0.8rem;color:#666;display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-info-circle-fill" style="color:#ce1212;flex-shrink:0;"></i>
+        <span id="ach-next-hint-text">Buy 5 meals to unlock your first 5% discount!</span>
+      </div>
+    </div>
+
+    <style>
+    /* ── ACHIEVEMENT CARDS ── */
+    .achievement-card {
+      text-align: center;
+      padding: 8px 4px;
+      cursor: default;
+      transition: transform 0.25s;
+    }
+    .achievement-card:hover { transform: translateY(-4px); }
+
+    /* Hexagon shape using CSS custom properties */
+    .ach-hexagon {
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 10px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ach-hexagon::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #d0d0d0, #b0b0b0);
+      clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+      transition: background 0.4s, filter 0.4s;
+    }
+    /* Unlocked: use tier color */
+    .achievement-card.unlocked .ach-hexagon::before {
+      background: linear-gradient(135deg, var(--ach-color1), var(--ach-color2));
+    }
+    /* Active discount: pulse with tier glow */
+    .achievement-card.active-discount .ach-hexagon::before {
+      background: linear-gradient(135deg, var(--ach-color1), var(--ach-color2));
+      animation: achPulse 1.8s ease-in-out infinite;
+    }
+    .achievement-card.active-discount {
+      filter: drop-shadow(0 0 10px var(--ach-glow, rgba(206,18,18,0.5)));
+    }
+    @keyframes achPulse {
+      0%, 100% { filter: brightness(1); }
+      50%       { filter: brightness(1.25); }
+    }
+
+    /* Locked overlay */
+    .achievement-card:not(.unlocked) .ach-hexagon::after {
+      content: '🔒';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .achievement-card:not(.unlocked):hover .ach-hexagon::after { opacity: 1; }
+
+    .ach-hex-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+    .ach-number {
+      font-family: 'Amatic SC', cursive;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: white;
+      line-height: 1;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    }
+    .achievement-card:not(.unlocked) .ach-number { color: rgba(255,255,255,0.5); }
+    .ach-icon {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.9);
+      background: rgba(0,0,0,0.18);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .achievement-card:not(.unlocked) .ach-icon { opacity: 0.5; }
+
+    /* Progress bar */
+    .ach-progress-wrap { padding: 0 6px; margin-bottom: 6px; }
+    .ach-progress-bar {
+      height: 5px;
+      background: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .ach-progress-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .achievement-card.unlocked .ach-progress-fill { width: 100% !important; }
+
+    .ach-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #2d2d2d;
+      margin-bottom: 2px;
+    }
+    .ach-sublabel { font-size: 0.68rem; color: #aaa; }
+    .achievement-card.unlocked .ach-sublabel { color: var(--ach-color1, #ce1212); font-weight: 600; }
+
+    /* View more button hover */
+    #ach-view-more-btn:hover {
+      border-color: #ce1212;
+      color: #ce1212;
+      background: #fff5f5;
+    }
+
+    @media (max-width: 576px) {
+      .ach-hexagon { width: 68px; height: 68px; }
+      .ach-number  { font-size: 1.15rem; }
+      .ach-label   { font-size: 0.68rem; }
+    }
+    </style>
+
     <!-- FILTERS -->
     <div class="filters-section">
       <div class="row align-items-center gy-2">
@@ -238,13 +580,19 @@ include("header.php");
             placeholder="Rechercher un produit..." oninput="filtrerProduits()">
         </div>
         <div class="col-md-3">
-          <select id="sortSel" class="sort-select w-100" onchange="filtrerProduits()">
-            <option value="">— Trier —</option>
-            <option value="nom-asc">Nom A → Z</option>
-            <option value="nom-desc">Nom Z → A</option>
-            <option value="prix-asc">Prix croissant ↑</option>
-            <option value="prix-desc">Prix décroissant ↓</option>
-          </select>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="sortSel" class="sort-select" style="flex:1;" onchange="filtrerProduits();toggleResetBtn()">
+              <option value="">— Trier —</option>
+              <option value="nom-asc">Nom A → Z</option>
+              <option value="nom-desc">Nom Z → A</option>
+              <option value="prix-asc">Prix croissant ↑</option>
+              <option value="prix-desc">Prix décroissant ↓</option>
+            </select>
+            <button id="reset-sort-btn" onclick="resetSort()" title="Annuler le tri"
+              style="display:none;background:#ce1212;color:white;border:none;border-radius:50%;width:32px;height:32px;flex-shrink:0;cursor:pointer;font-size:0.85rem;transition:0.2s;display:none;align-items:center;justify-content:center;">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -442,23 +790,29 @@ function supprimerArticle(id) { savePanier(getPanier().filter(function(p){ retur
 function viderPanier() { savePanier([]); ouvrirPanier(); }
 function acheter() {
   var panier = getPanier(); if (!panier.length) return;
-  var total = panier.reduce(function(s,p){ return s+p.prix*p.quantite; },0);
+  var subtotal = panier.reduce(function(s,p){ return s+p.prix*p.quantite; },0);
+  var achDiscount   = getActiveDiscount();
+  var discountedSub = achDiscount > 0 ? subtotal * (1 - achDiscount / 100) : subtotal;
   // Update checkout summary
   var lines = '';
   panier.forEach(function(p){
     lines += '<tr><td style="font-size:0.82rem;">'+p.nom+'</td><td style="font-size:0.82rem;">x'+p.quantite+'</td><td style="font-size:0.82rem;font-weight:600;color:#ce1212;">'+(p.prix*p.quantite).toFixed(2).replace('.',',')+' DT</td></tr>';
   });
+  // Show discount row if applicable
+  if (achDiscount > 0) {
+    var saved = (subtotal - discountedSub).toFixed(2).replace('.',',');
+    lines += '<tr><td colspan="2" style="font-size:0.78rem;color:#2e7d32;"><i class="bi bi-percent me-1"></i>Remise fidélité -'+achDiscount+'%</td><td style="font-size:0.78rem;font-weight:700;color:#2e7d32;">-'+saved+' DT</td></tr>';
+  }
   document.getElementById('checkout-order-lines').innerHTML = lines;
   // Default: livraison selected → +8 DT (free if subtotal >= 100)
-  var freeDelivery = total >= 100;
+  var freeDelivery = subtotal >= 100;
   var livRow = document.getElementById('checkout-livraison-row');
   livRow.style.display = 'flex';
   livRow.innerHTML = freeDelivery
     ? '<span style="font-size:0.82rem;color:#2e7d32;"><i class="bi bi-truck me-1"></i>Delivery fee <span style="background:#e8f5e9;border-radius:10px;padding:1px 8px;font-size:0.72rem;font-weight:700;">FREE 🎁</span></span><span style="font-size:0.82rem;color:#2e7d32;font-weight:700;text-decoration:line-through;opacity:0.5;">8,00 DT</span>'
     : '<span style="font-size:0.82rem;color:#555;"><i class="bi bi-truck me-1" style="color:#ce1212;"></i>Delivery fee</span><span style="font-size:0.82rem;color:#555;">8,00 DT</span>';
-  document.getElementById('checkout-order-total').textContent = freeDelivery
-    ? total.toFixed(2).replace('.',',')+' DT'
-    : (total+8).toFixed(2).replace('.',',')+' DT';
+  var finalTotal = freeDelivery ? discountedSub : discountedSub + 8;
+  document.getElementById('checkout-order-total').textContent = finalTotal.toFixed(2).replace('.',',')+' DT';
   // Hide cart modal, show checkout modal
   var cartModal = bootstrap.Modal.getInstance(document.getElementById('modalPanier'));
   if (cartModal) cartModal.hide();
@@ -503,7 +857,290 @@ function filtrerProduits() {
   document.getElementById('no-result').style.display = visible === 0 ? '' : 'none';
 }
 
+function toggleResetBtn() {
+  var sel = document.getElementById('sortSel');
+  var btn = document.getElementById('reset-sort-btn');
+  if (!btn) return;
+  btn.style.display = sel.value ? 'flex' : 'none';
+}
+
+function resetSort() {
+  var sel = document.getElementById('sortSel');
+  sel.value = '';
+  toggleResetBtn();
+  // Restore original order
+  var grid  = document.getElementById('produitsGrid');
+  var items = Array.from(document.querySelectorAll('.product-item'));
+  items.sort(function(a, b) {
+    return parseInt(a.dataset.index || 0) - parseInt(b.dataset.index || 0);
+  });
+  items.forEach(function(el) { grid.appendChild(el); });
+  filtrerProduits();
+}
+
 updateBadge();
+
+// ── AI RECOMMENDATIONS ────────────────────────────────────────────────────
+var RECO_MEDALS = ['🥇', '🥈', '🥉'];
+
+function loadRecommendations() {
+  var loading = document.getElementById('reco-loading');
+  var list    = document.getElementById('reco-list');
+  var error   = document.getElementById('reco-error');
+  var btn     = document.getElementById('reco-refresh-btn');
+
+  loading.style.display = 'flex';
+  list.style.display    = 'none';
+  error.style.display   = 'none';
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+
+  fetch('get_recommendations.php')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.style.display = 'none';
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+      if (!Array.isArray(data) || data.length === 0) { error.style.display = 'block'; return; }
+
+      var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">';
+
+      data.forEach(function(item, idx) {
+        var medal = RECO_MEDALS[idx] || (idx + 1);
+        var safeNom   = item.nom.replace(/'/g, "\\'");
+        var safeImg   = (item.image||'').replace(/'/g, "\\'");
+        var priceStr  = item.prix.toFixed(2).replace('.', ',') + ' DT';
+
+        // Stars
+        var starsHtml = '';
+        if (item.note > 0) {
+          var full = Math.round(item.note);
+          starsHtml = '<div style="display:flex;align-items:center;gap:3px;margin-bottom:4px;">'
+                    + '<span style="color:#f39c12;font-size:0.75rem;">' + '★'.repeat(full) + '<span style="opacity:0.3;">' + '★'.repeat(5-full) + '</span></span>'
+                    + '<span style="font-size:0.65rem;color:rgba(255,255,255,0.6);margin-left:3px;">' + item.note + ' · ' + item.nb_avis + ' reviews</span>'
+                    + '</div>';
+        }
+
+        // Background: image or dark fallback
+        var bgStyle = item.image
+          ? 'background:url(\'' + item.image + '\') center/cover no-repeat;'
+          : 'background:linear-gradient(135deg,#1a1a1a,#2d2d2d);';
+
+        var cardHtml = '<div style="'
+              + bgStyle
+              + 'border-radius:20px;overflow:hidden;position:relative;height:320px;cursor:pointer;'
+              + 'transition:transform 0.3s,box-shadow 0.3s;flex-shrink:0;" '
+              + 'onclick="openProductModal(' + item.id + ')" '
+              + 'onmouseover="this.style.transform=\'scale(1.03)\';this.style.boxShadow=\'0 16px 40px rgba(0,0,0,0.35)\'" '
+              + 'onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
+
+        cardHtml += '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 50%,rgba(0,0,0,0.05) 100%);border-radius:20px;"></div>';
+
+        cardHtml += '<div style="position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:2;">';
+        cardHtml += '<span style="font-size:1.5rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">' + medal + '</span>';
+        cardHtml += '<button onclick="event.stopPropagation();recoAddToCart(' + item.id + ',\'' + safeNom + '\',' + item.prix + ',\'' + safeImg + '\')" '
+              + 'style="width:36px;height:36px;border-radius:50%;background:white;border:none;cursor:pointer;'
+              + 'display:flex;align-items:center;justify-content:center;font-size:0.9rem;'
+              + 'box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:transform 0.2s;" '
+              + 'onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'\'" '
+              + 'title="Add to cart">'
+              + '<i class="bi bi-cart-plus" style="color:#ce1212;"></i></button>';
+        cardHtml += '</div>';
+
+        cardHtml += '<div style="position:absolute;bottom:0;left:0;right:0;padding:18px 16px;z-index:2;">';
+        cardHtml += starsHtml;
+        cardHtml += '<div style="font-size:1rem;font-weight:800;color:white;margin-bottom:2px;'
+              + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+              + 'text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + item.nom + '</div>';
+        if (item.categorie) {
+          cardHtml += '<div style="font-size:0.7rem;color:rgba(255,255,255,0.6);margin-bottom:8px;">' + item.categorie + '</div>';
+        }
+        cardHtml += '<div style="font-size:1.4rem;font-weight:900;color:white;text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + priceStr + '</div>';
+        cardHtml += '</div>';
+        cardHtml += '</div>';
+
+        html += cardHtml;
+
+        // Also inject into hero (same cards, smaller height)
+        var heroCard = cardHtml.replace('height:320px', 'height:240px');
+        if (idx === 0) {
+          var heroGrid = document.getElementById('hero-reco-list');
+          if (heroGrid && heroGrid._html === undefined) heroGrid._html = '';
+          if (heroGrid) heroGrid._html = (heroGrid._html || '') + heroCard;
+        } else if (idx === 1 || idx === 2) {
+          var heroGrid = document.getElementById('hero-reco-list');
+          if (heroGrid) heroGrid._html = (heroGrid._html || '') + heroCard;
+        }
+      });
+
+      html += '</div>';
+      list.innerHTML = html;
+      list.style.display = 'block';
+
+      // Render hero cards
+      var heroLoading = document.getElementById('hero-reco-loading');
+      var heroList    = document.getElementById('hero-reco-list');
+      if (heroLoading) heroLoading.style.display = 'none';
+      if (heroList) {
+        heroList.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">' + (heroList._html || '') + '</div>';
+        heroList.style.display = 'block';
+      }
+    })
+    .catch(function() {
+      loading.style.display = 'none';
+      error.style.display   = 'block';
+      var heroLoading = document.getElementById('hero-reco-loading');
+      if (heroLoading) heroLoading.style.display = 'none';
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    });
+}
+
+function recoAddToCart(id, nom, prix, image) {
+  var panier = getPanier();
+  var ex = panier.find(function(p) { return p.id === String(id); });
+  if (ex) { ex.quantite += 1; } else { panier.push({id: String(id), nom: nom, prix: prix, image: image, quantite: 1}); }
+  savePanier(panier);
+  document.getElementById('panier-toast-msg').textContent = '"' + nom + '" added!';
+  var t = document.getElementById('panier-toast'); t.style.display = 'flex';
+  setTimeout(function() { t.style.display = 'none'; }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() { loadRecommendations(); });
+
+// ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
+var ACH_TIERS = [
+  { id: 1, target: 5,   discount: 5,  label: '🥄 First Step',          color1: '#ce1212', color2: '#ff6b35' },
+  { id: 2, target: 15,  discount: 15, label: '🌱 Healthy Starter',      color1: '#ff6b00', color2: '#ffb300' },
+  { id: 3, target: 20,  discount: 20, label: '🔥 Discipline Builder',   color1: '#f9a825', color2: '#ffe082' },
+  { id: 4, target: 30,  discount: 30, label: '🥗 Clean Eater',          color1: '#2e7d32', color2: '#66bb6a' },
+  { id: 5, target: 50,  discount: 50, label: '💪 Habit Keeper',         color1: '#1565c0', color2: '#42a5f5' },
+  { id: 6, target: 75,  discount: 70, label: '⚡ Consistency Pro',      color1: '#6a1b9a', color2: '#ce93d8' },
+  { id: 7, target: 100, discount: 80, label: '🏆 Healthy Champion',     color1: '#212121', color2: '#ffd700' }
+];
+
+function getMealsCount() {
+  return parseInt(localStorage.getItem('smp_meals_count') || '0', 10);
+}
+function setMealsCount(n) {
+  localStorage.setItem('smp_meals_count', n);
+}
+
+function getActiveDiscount() {
+  var count = getMealsCount();
+  var discount = 0;
+  ACH_TIERS.forEach(function(t) {
+    if (count >= t.target) discount = t.discount;
+  });
+  return discount;
+}
+
+function updateAchievements() {
+  var count = getMealsCount();
+  var activeDiscount = getActiveDiscount();
+  var activeTier = null;
+
+  ACH_TIERS.forEach(function(tier) {
+    var card    = document.getElementById('ach-' + tier.id);
+    var fill    = document.getElementById('ach-fill-' + tier.id);
+    var counter = document.getElementById('ach-count-' + tier.id);
+    if (!card) return;
+
+    var pct      = Math.min(100, Math.round((count / tier.target) * 100));
+    var unlocked = count >= tier.target;
+
+    if (counter) counter.textContent = Math.min(count, tier.target);
+    if (fill)    fill.style.width    = (unlocked ? 100 : pct) + '%';
+
+    card.classList.toggle('unlocked', unlocked);
+    var isActive = unlocked && tier.discount === activeDiscount;
+    card.classList.toggle('active-discount', isActive);
+    if (isActive) activeTier = tier;
+  });
+
+  // Active discount badge — colored with active tier's gradient
+  var badge     = document.getElementById('achievement-active-badge');
+  var badgeText = document.getElementById('achievement-active-text');
+  if (badge) {
+    if (activeDiscount > 0 && activeTier) {
+      badge.style.display = 'block';
+      badge.style.background = 'linear-gradient(135deg,' + activeTier.color1 + ',' + activeTier.color2 + ')';
+      badgeText.textContent = activeDiscount + '% de remise active !';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Next milestone hint
+  var hint = document.getElementById('ach-next-hint-text');
+  if (hint) {
+    var next = null;
+    for (var i = 0; i < ACH_TIERS.length; i++) {
+      if (count < ACH_TIERS[i].target) { next = ACH_TIERS[i]; break; }
+    }
+    if (next) {
+      var remaining = next.target - count;
+      hint.textContent = 'Only ' + remaining + ' more meals to unlock ' + next.discount + '% off — ' + next.label + '!';
+    } else {
+      hint.textContent = '🏆 Congratulations! You have unlocked all achievements. Enjoy 80% off your next order!';
+    }
+  }
+}
+
+var achMoreOpen = false;
+function toggleMoreAchievements() {
+  var grid    = document.getElementById('ach-more-grid');
+  var btn     = document.getElementById('ach-view-more-btn');
+  var chevron = document.getElementById('ach-chevron');
+  var label   = document.getElementById('ach-view-more-text');
+  achMoreOpen = !achMoreOpen;
+  if (achMoreOpen) {
+    grid.style.display = 'block';
+    // Animate in
+    grid.style.opacity = '0';
+    grid.style.transform = 'translateY(-10px)';
+    grid.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    setTimeout(function() {
+      grid.style.opacity = '1';
+      grid.style.transform = 'translateY(0)';
+    }, 10);
+    chevron.className = 'bi bi-chevron-up';
+    label.textContent = 'Show Less';
+    btn.style.background = 'linear-gradient(135deg,#b00e0e,#ce1212)';
+  } else {
+    grid.style.opacity = '0';
+    grid.style.transform = 'translateY(-10px)';
+    setTimeout(function() { grid.style.display = 'none'; }, 280);
+    chevron.className = 'bi bi-chevron-down';
+    label.textContent = 'View More Achievements';
+    btn.style.background = 'linear-gradient(135deg,#ce1212,#ff4444)';
+  }
+}
+
+function trackMealsPurchased(items) {
+  var prevCount = getMealsCount();
+  var added = 0;
+  items.forEach(function(p) { added += p.quantite; });
+  var newCount = prevCount + added;
+  setMealsCount(newCount);
+  updateAchievements();
+
+  // Show unlock toast if a new tier was just crossed
+  ACH_TIERS.forEach(function(tier) {
+    if (prevCount < tier.target && newCount >= tier.target) {
+      showAchievementToast(tier);
+    }
+  });
+}
+
+function showAchievementToast(tier) {
+  var toast = document.getElementById('achievement-toast');
+  if (!toast) return;
+  document.getElementById('ach-toast-title').textContent = '🏆 ' + tier.label + ' débloqué !';
+  document.getElementById('ach-toast-msg').textContent   = 'You reached ' + tier.target + ' meals. Enjoy ' + tier.discount + '% off!';
+  toast.style.display = 'flex';
+  setTimeout(function() { toast.style.display = 'none'; }, 5500);
+}
+
+// Init achievements on page load
+document.addEventListener('DOMContentLoaded', function() { updateAchievements(); });
 
 // ── WISHLIST ──
 function getWishlist() { return JSON.parse(localStorage.getItem('wishlist') || '[]'); }
@@ -759,9 +1396,11 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div style="position:relative;">
                     <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:0.85rem;color:#999;">📞</span>
                     <input type="tel" class="form-control" id="co-phone" placeholder="Phone number (for delivery)"
-                      oninput="this.value=this.value.replace(/[^0-9+\s\-]/g,'')"
+                      oninput="this.value=this.value.replace(/[^0-9+\s\-]/g,'');validatePhoneLive(this)"
+                      autocomplete="tel"
                       style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px 10px 36px;">
                   </div>
+                  <div id="co-phone-err" style="display:none;font-size:0.75rem;color:#dc3545;margin-top:4px;"><i class="bi bi-exclamation-circle me-1"></i><span id="co-phone-err-msg">Numéro invalide</span></div>
                 </div>
               </div>
 
@@ -876,6 +1515,27 @@ function attachNomValidation(inputId) {
 }
 attachNomValidation('co-prenom');
 attachNomValidation('co-nom');
+
+// ── Phone validation ──
+var phoneRegex = /^(\+216|00216)?[2-9]\d{7}$/;
+
+function validerPhone(val) {
+  var normalized = val.replace(/[\s\-]/g, '');
+  return phoneRegex.test(normalized);
+}
+
+function validatePhoneLive(el) {
+  var val = el.value.trim();
+  if (val === '') {
+    el.style.borderColor = '#e0e0e0';
+    document.getElementById('co-phone-err').style.display = 'none';
+    return;
+  }
+  var ok = validerPhone(val);
+  el.style.borderColor = ok ? '#28a745' : '#dc3545';
+  document.getElementById('co-phone-err').style.display = ok ? 'none' : 'block';
+  document.getElementById('co-phone-err-msg').textContent = ok ? '' : 'Numéro invalide. Exemple : 20 123 456 ou +216 20 123 456.';
+}
 
 function togglePaiement() {
   var val = document.querySelector('input[name="livraison"]:checked').value;
@@ -992,9 +1652,33 @@ function confirmerCommande(e) {
   var panier = getPanier();
   var subtotal = panier.reduce(function(s,p){ return s+p.prix*p.quantite; },0);
   var freeDelivery = subtotal >= 100;
-  var total    = (method === 'livraison' && !freeDelivery) ? subtotal + 8 : subtotal;
+  // Apply achievement discount on subtotal
+  var achDiscount  = getActiveDiscount();
+  var discountedSub = achDiscount > 0 ? subtotal * (1 - achDiscount / 100) : subtotal;
+  var total    = (method === 'livraison' && !freeDelivery) ? discountedSub + 8 : discountedSub;
   var items  = panier.map(function(p){ return {id: p.id, quantite: p.quantite}; });
   var methodLabel = method === 'carte' ? 'Credit Card' : (freeDelivery ? 'Home Delivery (FREE 🎁)' : 'Home Delivery (+8,00 DT)');
+  if (achDiscount > 0) methodLabel += ' (-' + achDiscount + '% remise fidélité)';
+
+  // Validate phone number
+  var phoneEl = document.getElementById('co-phone');
+  var phoneVal = phoneEl ? phoneEl.value.trim() : '';
+  if (!phoneVal) {
+    phoneEl.style.borderColor = '#dc3545';
+    document.getElementById('co-phone-err-msg').textContent = 'Le numéro de téléphone est obligatoire.';
+    document.getElementById('co-phone-err').style.display = 'block';
+    phoneEl.focus();
+    return;
+  }
+  if (!validerPhone(phoneVal)) {
+    phoneEl.style.borderColor = '#dc3545';
+    document.getElementById('co-phone-err-msg').textContent = 'Numéro invalide. Exemple : 20 123 456 ou +216 20 123 456.';
+    document.getElementById('co-phone-err').style.display = 'block';
+    phoneEl.focus();
+    return;
+  }
+  phoneEl.style.borderColor = '#28a745';
+  document.getElementById('co-phone-err').style.display = 'none';
 
   // Validate card fields if credit card selected
   if (method === 'carte') {
@@ -1043,6 +1727,9 @@ function confirmerCommande(e) {
   // Clear cart
   savePanier([]);
 
+  // Track meals for achievements
+  trackMealsPurchased(invoiceItems);
+
   // Decrement stock (fire and forget)
   fetch('update_stock.php', {
     method: 'POST',
@@ -1074,6 +1761,24 @@ function confirmerCommande(e) {
   }, {once: true});
 }
 </script>
+
+<!-- ── ACHIEVEMENT UNLOCK TOAST ── -->
+<div id="achievement-toast" style="display:none;position:fixed;bottom:28px;left:28px;z-index:9999;
+     background:white;border-radius:14px;box-shadow:0 8px 32px rgba(206,18,18,0.2);
+     padding:18px 22px;max-width:320px;border-left:5px solid #ce1212;animation:slideInLeft 0.4s ease;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="font-size:2rem;line-height:1;">🏆</div>
+    <div style="flex:1;">
+      <div style="font-weight:700;font-size:0.92rem;color:#2d2d2d;margin-bottom:3px;" id="ach-toast-title">Objectif débloqué !</div>
+      <div style="font-size:0.8rem;color:#555;" id="ach-toast-msg"></div>
+    </div>
+    <button onclick="document.getElementById('achievement-toast').style.display='none'"
+      style="background:none;border:none;font-size:1rem;color:#bbb;cursor:pointer;padding:0;line-height:1;">✕</button>
+  </div>
+</div>
+<style>
+@keyframes slideInLeft { from { transform: translateX(-100px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+</style>
 
 <!-- ── ORDER SUCCESS TOAST ── -->
 <div id="order-success-toast" style="display:none;position:fixed;bottom:28px;right:28px;z-index:9999;
@@ -1432,123 +2137,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_avis'])) {
         $newAvis = new Avis(null, $note, $commentaire, date('Y-m-d'), $id_produit);
         $avisController->addAvis($newAvis);
     }
-    // Redirect back to same product anchor to avoid re-submit on refresh
-    header('Location: produits.php?avis_ok=' . $id_produit . '#produit-' . $id_produit);
+    header('Location: produits.php?avis_ok=' . $id_produit);
     exit;
 }
 ?>
 
-<!-- ── AVIS PAR PRODUIT ── -->
-<section class="section py-5" style="background:#f5f5f0;" id="avis-section">
-  <div class="container">
-    <div class="section-title">
-      <h2>Avis</h2>
-      <p><span>Ce que disent</span> <span class="description-title">nos clients</span></p>
-    </div>
-
-    <?php foreach ($produits as $produit):
-      $avisListe = $avisController->getAvisByProduit($produit['id']);
-      $avgData   = $avisController->getAverageNote($produit['id']);
-      $avgNote   = $avgData['avg_note'] ? round((float)$avgData['avg_note'], 1) : 0;
-      $totalAvis = (int)$avgData['total'];
-      $avisOk    = isset($_GET['avis_ok']) && (int)$_GET['avis_ok'] === (int)$produit['id'];
-    ?>    <div id="produit-<?= (int)$produit['id'] ?>"
-         style="background:white;border-radius:16px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:28px;">
-
-      <!-- Product header -->
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:'Amatic SC',cursive;font-size:1.4rem;font-weight:700;color:#2d2d2d;">
-            <?= htmlspecialchars($produit['nom']) ?>
-          </div>
-        </div>
-        <?php if ($totalAvis > 0): ?>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <span style="color:#f39c12;font-size:1.1rem;letter-spacing:2px;">
-            <?= str_repeat('★', (int)round($avgNote)) ?><?= str_repeat('☆', 5 - (int)round($avgNote)) ?>
-          </span>
-          <span style="font-size:0.82rem;color:#999;"><?= $avgNote ?>/5 &bull; <?= $totalAvis ?> avis</span>
-        </div>
-        <?php endif; ?>
-      </div>
-
-      <!-- Existing reviews -->
-      <?php if ($totalAvis > 0): ?>
-      <div class="row g-3 mb-4">
-        <?php foreach ($avisListe as $av):
-          $starsF = str_repeat('★', (int)$av['note']) . str_repeat('☆', 5 - (int)$av['note']);
-        ?>
-        <div class="col-md-6 col-lg-4">
-          <div style="background:#f9f9f9;border-radius:10px;padding:16px;height:100%;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="color:#f39c12;font-size:1rem;letter-spacing:1px;"><?= $starsF ?></span>
-              <span style="font-size:0.7rem;color:#bbb;"><?= date('d/m/Y', strtotime($av['date_avis'])) ?></span>
-            </div>
-            <p style="font-size:0.84rem;color:#555;margin:0;line-height:1.6;">
-              <?= htmlspecialchars($av['commentaire']) ?>
-            </p>
-          </div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php else: ?>
-      <p style="font-size:0.85rem;color:#bbb;margin-bottom:20px;font-style:italic;">
-        Aucun avis pour ce produit. Soyez le premier !
-      </p>
-      <?php endif; ?>
-
-      <!-- Success message -->
-      <?php if ($avisOk): ?>
-      <div style="background:#e8f5e9;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#2e7d32;font-size:0.85rem;">
-        <i class="bi bi-check-circle-fill me-2"></i>Merci ! Votre avis a bien été enregistré.
-      </div>
-      <?php endif; ?>
-
-      <!-- Leave a review form -->
-      <div style="border-top:1px solid #f0f0f0;padding-top:20px;">
-        <div style="font-size:0.78rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
-          <i class="bi bi-pencil-square" style="color:#ce1212;"></i> Laisser un avis
-        </div>
-        <form method="POST" action="produits.php#produit-<?= (int)$produit['id'] ?>">
-          <input type="hidden" name="submit_avis" value="1">
-          <input type="hidden" name="id_produit" value="<?= (int)$produit['id'] ?>">
-
-          <!-- Star rating -->
-          <div style="margin-bottom:14px;">
-            <div class="star-picker" data-id="<?= (int)$produit['id'] ?>">
-              <?php for ($i = 5; $i >= 1; $i--): ?>
-                <input type="radio" name="note" id="star-<?= $produit['id'] ?>-<?= $i ?>" value="<?= $i ?>" style="display:none;">
-                <label for="star-<?= $produit['id'] ?>-<?= $i ?>"
-                       style="font-size:1.8rem;color:#ddd;cursor:pointer;transition:color 0.1s;margin-right:2px;">★</label>
-              <?php endfor; ?>
-            </div>
-            <div style="font-size:0.72rem;color:#bbb;margin-top:4px;">Cliquez pour noter</div>
-          </div>
-
-          <!-- Comment -->
-          <textarea name="commentaire" rows="3"
-            style="border-radius:8px;border:1px solid #e0e0e0;padding:10px 14px;font-size:0.85rem;width:100%;outline:none;resize:vertical;font-family:'Inter',sans-serif;margin-bottom:12px;"
-            placeholder="Partagez votre expérience avec ce produit..."></textarea>
-
-          <button type="submit"
-            style="background:#ce1212;color:white;border:none;border-radius:25px;padding:9px 26px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:0.2s;font-family:'Inter',sans-serif;">
-            <i class="bi bi-send me-2"></i>Envoyer
-          </button>
-        </form>
-      </div>
-
-    </div>
-    <?php endforeach; ?>
-  </div>
-</section>
-
 <style>
-/* Star picker — CSS-only highlight using flex row-reverse trick */
-.star-picker { display:inline-flex; flex-direction:row-reverse; gap:2px; }
-.star-picker input:checked ~ label,
-.star-picker label:hover,
-.star-picker label:hover ~ label { color:#f39c12; }
-
 /* Modal star picker */
 .modal-star-picker { display:inline-flex; flex-direction:row-reverse; gap:2px; }
 .modal-star-picker input:checked ~ label,

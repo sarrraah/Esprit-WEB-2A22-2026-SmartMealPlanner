@@ -132,13 +132,19 @@ include("header.php");
             placeholder="Rechercher un produit..." oninput="filtrerProduitsCat()">
         </div>
         <div class="col-md-4">
-          <select id="sortProdCat" class="sort-select w-100" onchange="filtrerProduitsCat()">
-            <option value="">— Trier —</option>
-            <option value="nom-asc">Nom A → Z</option>
-            <option value="nom-desc">Nom Z → A</option>
-            <option value="prix-asc">Prix croissant ↑</option>
-            <option value="prix-desc">Prix décroissant ↓</option>
-          </select>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="sortProdCat" class="sort-select" style="flex:1;" onchange="filtrerProduitsCat();toggleResetBtnCat()">
+              <option value="">— Trier —</option>
+              <option value="nom-asc">Nom A → Z</option>
+              <option value="nom-desc">Nom Z → A</option>
+              <option value="prix-asc">Prix croissant ↑</option>
+              <option value="prix-desc">Prix décroissant ↓</option>
+            </select>
+            <button id="reset-sort-cat-btn" onclick="resetSortCat()" title="Annuler le tri"
+              style="display:none;background:#ce1212;color:white;border:none;border-radius:50%;width:32px;height:32px;flex-shrink:0;cursor:pointer;font-size:0.85rem;transition:0.2s;align-items:center;justify-content:center;">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
         </div>
         <div class="col-md-3">
           <select id="filterStatutCat" class="sort-select w-100" onchange="filtrerProduitsCat()">
@@ -502,9 +508,11 @@ document.addEventListener('DOMContentLoaded',function(){
                   <div style="position:relative;">
                     <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:0.85rem;color:#999;">📞</span>
                     <input type="tel" class="form-control" id="co-phone" placeholder="Phone number (for delivery)"
-                      oninput="this.value=this.value.replace(/[^0-9+\s\-]/g,'')"
+                      oninput="this.value=this.value.replace(/[^0-9+\s\-]/g,'');validatePhoneLive(this)"
+                      autocomplete="tel"
                       style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px 10px 36px;">
                   </div>
+                  <div id="co-phone-err" style="display:none;font-size:0.75rem;color:#dc3545;margin-top:4px;"><i class="bi bi-exclamation-circle me-1"></i><span id="co-phone-err-msg">Invalid number</span></div>
                 </div>
               </div>
               <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;">
@@ -604,6 +612,44 @@ function attachNomValidation(inputId) {
 attachNomValidation('co-prenom');
 attachNomValidation('co-nom');
 
+// ── Phone validation ──
+var phoneRegex = /^(\+216|00216)?[2-9]\d{7}$/;
+function validerPhone(val) {
+  var normalized = val.replace(/[\s\-]/g, '');
+  return phoneRegex.test(normalized);
+}
+function validatePhoneLive(el) {
+  var val = el.value.trim();
+  if (val === '') { el.style.borderColor = '#e0e0e0'; document.getElementById('co-phone-err').style.display = 'none'; return; }
+  var ok = validerPhone(val);
+  el.style.borderColor = ok ? '#28a745' : '#dc3545';
+  document.getElementById('co-phone-err').style.display = ok ? 'none' : 'block';
+  document.getElementById('co-phone-err-msg').textContent = ok ? '' : 'Invalid number. Example: 20 123 456 or +216 20 123 456.';
+}
+
+// ── Achievements (shared with produits.php via localStorage) ──
+var ACH_TIERS = [
+  { id: 1, target: 5,   discount: 5  },
+  { id: 2, target: 15,  discount: 15 },
+  { id: 3, target: 20,  discount: 20 },
+  { id: 4, target: 30,  discount: 30 },
+  { id: 5, target: 50,  discount: 50 },
+  { id: 6, target: 75,  discount: 70 },
+  { id: 7, target: 100, discount: 80 }
+];
+function getMealsCount() { return parseInt(localStorage.getItem('smp_meals_count') || '0', 10); }
+function setMealsCount(n) { localStorage.setItem('smp_meals_count', n); }
+function getActiveDiscount() {
+  var count = getMealsCount(), discount = 0;
+  ACH_TIERS.forEach(function(t) { if (count >= t.target) discount = t.discount; });
+  return discount;
+}
+function trackMealsPurchased(items) {
+  var prev = getMealsCount(), added = 0;
+  items.forEach(function(p) { added += p.quantite; });
+  setMealsCount(prev + added);
+}
+
 function togglePaiement(){
   var val=document.querySelector('input[name="livraison"]:checked').value;
   var cardDiv=document.getElementById('card-details');
@@ -684,9 +730,30 @@ function confirmerCommande(e){
   var panier=getPanier();
   var subtotal=panier.reduce(function(s,p){return s+p.prix*p.quantite;},0);
   var freeDelivery=subtotal>=100;
-  var total=(method==='livraison'&&!freeDelivery)?subtotal+8:subtotal;
+  var achDiscount=getActiveDiscount();
+  var discountedSub=achDiscount>0?subtotal*(1-achDiscount/100):subtotal;
+  var total=(method==='livraison'&&!freeDelivery)?discountedSub+8:discountedSub;
   var items=panier.map(function(p){return {id:p.id,quantite:p.quantite};});
   var methodLabel=method==='carte'?'Credit Card':(freeDelivery?'Home Delivery (FREE 🎁)':'Home Delivery (+8,00 DT)');
+  if(achDiscount>0) methodLabel+=' (-'+achDiscount+'% loyalty discount)';
+
+  // Validate phone
+  var phoneEl=document.getElementById('co-phone');
+  var phoneVal=phoneEl?phoneEl.value.trim():'';
+  if(!phoneVal){
+    phoneEl.style.borderColor='#dc3545';
+    document.getElementById('co-phone-err-msg').textContent='Phone number is required.';
+    document.getElementById('co-phone-err').style.display='block';
+    phoneEl.focus(); return;
+  }
+  if(!validerPhone(phoneVal)){
+    phoneEl.style.borderColor='#dc3545';
+    document.getElementById('co-phone-err-msg').textContent='Invalid number. Example: 20 123 456 or +216 20 123 456.';
+    document.getElementById('co-phone-err').style.display='block';
+    phoneEl.focus(); return;
+  }
+  phoneEl.style.borderColor='#28a745';
+  document.getElementById('co-phone-err').style.display='none';
 
   if(method==='carte'){
     var cardNum=document.getElementById('co-card-num').value.replace(/\D/g,'');
@@ -710,6 +777,9 @@ function confirmerCommande(e){
   var invoiceItems=panier.map(function(p){return {nom:p.nom,quantite:p.quantite,prix:p.prix};});
 
   savePanier([]);
+
+  // Track meals for achievements
+  trackMealsPurchased(invoiceItems);
 
   fetch('update_stock.php',{
     method:'POST',
@@ -783,6 +853,23 @@ function filtrerProduitsCat() {
     vis.forEach(function(el){ grid.appendChild(el); });
   }
   document.getElementById('no-result-prodcat').style.display = visible === 0 ? '' : 'none';
+}
+
+function toggleResetBtnCat() {
+  var sel = document.getElementById('sortProdCat');
+  var btn = document.getElementById('reset-sort-cat-btn');
+  if (!btn) return;
+  btn.style.display = sel.value ? 'flex' : 'none';
+}
+
+function resetSortCat() {
+  var sel = document.getElementById('sortProdCat');
+  sel.value = '';
+  toggleResetBtnCat();
+  var grid  = document.getElementById('produitsCatGrid');
+  var items = Array.from(document.querySelectorAll('.produit-cat-item'));
+  items.forEach(function(el) { grid.appendChild(el); });
+  filtrerProduitsCat();
 }
 </script>
 
@@ -1080,14 +1167,20 @@ document.getElementById('modal-avis-form').addEventListener('submit', function(e
       <div class="row align-items-center gy-2">
         <div class="col-md-8">
           <input type="text" id="searchCat" class="form-control search-input"
-            placeholder="Rechercher une catégorie..." oninput="filtrerCategories()">
+            placeholder="Search a category..." oninput="filtrerCategories()">
         </div>
         <div class="col-md-4">
-          <select id="sortCat" class="sort-select w-100" onchange="filtrerCategories()">
-            <option value="">— Trier —</option>
-            <option value="nom-asc">Nom A → Z</option>
-            <option value="nom-desc">Nom Z → A</option>
-          </select>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="sortCat" class="sort-select" style="flex:1;" onchange="filtrerCategories();toggleResetBtnCat2()">
+              <option value="">— Sort —</option>
+              <option value="nom-asc">Name A → Z</option>
+              <option value="nom-desc">Name Z → A</option>
+            </select>
+            <button id="reset-sort-cat2-btn" onclick="resetSortCategories()" title="Clear sort"
+              style="display:none;background:#ce1212;color:white;border:none;border-radius:50%;width:32px;height:32px;flex-shrink:0;cursor:pointer;font-size:0.85rem;transition:0.2s;align-items:center;justify-content:center;">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1149,10 +1242,337 @@ function filtrerCategories() {
   }
   document.getElementById('no-result-cat').style.display = visible === 0 ? '' : 'none';
 }
+
+// Store original order on page load
+var _catOriginalOrder = [];
+document.addEventListener('DOMContentLoaded', function() {
+  _catOriginalOrder = Array.from(document.querySelectorAll('.cat-item'));
+});
+
+function toggleResetBtnCat2() {
+  var sel = document.getElementById('sortCat');
+  var btn = document.getElementById('reset-sort-cat2-btn');
+  if (!btn) return;
+  btn.style.display = sel.value ? 'flex' : 'none';
+}
+
+function resetSortCategories() {
+  // Reset select
+  document.getElementById('sortCat').value = '';
+  toggleResetBtnCat2();
+  // Restore original DOM order
+  var grid = document.getElementById('categoriesGrid');
+  _catOriginalOrder.forEach(function(el) { grid.appendChild(el); });
+  // Re-apply search filter only (no sort)
+  filtrerCategories();
+}
 function updateBadge(){var t=JSON.parse(localStorage.getItem('panier')||'[]').reduce(function(s,p){return s+p.quantite;},0);var b=document.getElementById('panier-badge');if(b){b.textContent=t;b.style.display=t>0?'inline-block':'none';}}
-function ouvrirPanier(){window.location.href='produits.php';}
+
+// ── Panier & Wishlist functions for categories list page ──
+function getPanier(){return JSON.parse(localStorage.getItem('panier')||'[]');}
+function savePanier(p){localStorage.setItem('panier',JSON.stringify(p));updateBadge();}
+function getWishlist(){return JSON.parse(localStorage.getItem('wishlist')||'[]');}
+function saveWishlist(w){localStorage.setItem('wishlist',JSON.stringify(w));updateWishlistBadge();}
+function updateWishlistBadge(){var c=getWishlist().length;var b=document.getElementById('wishlist-badge');if(b){b.textContent=c;b.style.display=c>0?'inline-block':'none';}}
+
+function ouvrirPanier(){
+  var panier=getPanier(),c=document.getElementById('panier-contenu-cat'),tEl=document.getElementById('panier-total-cat');
+  if(!panier.length){c.innerHTML='<p class="text-muted text-center py-3">Your cart is empty.</p>';tEl.textContent='0,00';}
+  else{
+    var html='<table class="table align-middle"><thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead><tbody>';
+    var total=0;
+    panier.forEach(function(p){
+      var sous=p.prix*p.quantite;total+=sous;
+      html+='<tr><td><div class="d-flex align-items-center gap-2">';
+      if(p.image)html+='<img src="'+p.image+'" style="width:48px;height:48px;object-fit:cover;border-radius:6px;">';
+      html+='<strong>'+p.nom+'</strong></div></td>';
+      html+='<td>'+p.prix.toFixed(2).replace('.',',')+' DT</td>';
+      html+='<td><div class="d-flex align-items-center gap-2"><button class="btn btn-sm btn-outline-secondary" onclick="changerQteCat(\''+p.id+'\',-1)">−</button><span>'+p.quantite+'</span><button class="btn btn-sm btn-outline-secondary" onclick="changerQteCat(\''+p.id+'\',1)">+</button></div></td>';
+      html+='<td>'+sous.toFixed(2).replace('.',',')+' DT</td>';
+      html+='<td><button class="btn btn-sm btn-outline-danger" onclick="supprimerArticleCat(\''+p.id+'\')"><i class="bi bi-trash"></i></button></td></tr>';
+    });
+    html+='</tbody></table>';
+    c.innerHTML=html;tEl.textContent=total.toFixed(2).replace('.',',');
+  }
+  new bootstrap.Modal(document.getElementById('modalPanierCat')).show();
+}
+function changerQteCat(id,d){var p=getPanier(),i=p.find(function(x){return x.id===id;});if(i){i.quantite+=d;if(i.quantite<=0)p=p.filter(function(x){return x.id!==id;});}savePanier(p);ouvrirPanier();}
+function supprimerArticleCat(id){savePanier(getPanier().filter(function(p){return p.id!==id;}));ouvrirPanier();}
+function viderPanierCat(){savePanier([]);ouvrirPanier();}
+function allerAuCheckout(){
+  var panier=getPanier();if(!panier.length)return;
+  var subtotal=panier.reduce(function(s,p){return s+p.prix*p.quantite;},0);
+  var freeDelivery=subtotal>=100;
+  var lines='';
+  panier.forEach(function(p){lines+='<tr><td style="font-size:0.82rem;">'+p.nom+'</td><td style="font-size:0.82rem;">x'+p.quantite+'</td><td style="font-size:0.82rem;font-weight:600;color:#ce1212;">'+(p.prix*p.quantite).toFixed(2).replace('.',',')+' DT</td></tr>';});
+  document.getElementById('checkout-order-lines').innerHTML=lines;
+  var livRow=document.getElementById('checkout-livraison-row');
+  livRow.style.display='flex';
+  livRow.innerHTML=freeDelivery
+    ?'<span style="font-size:0.82rem;color:#2e7d32;"><i class="bi bi-truck me-1"></i>Delivery fee <span style="background:#e8f5e9;border-radius:10px;padding:1px 8px;font-size:0.72rem;font-weight:700;">FREE 🎁</span></span><span style="font-size:0.82rem;color:#2e7d32;font-weight:700;text-decoration:line-through;opacity:0.5;">8,00 DT</span>'
+    :'<span style="font-size:0.82rem;color:#555;"><i class="bi bi-truck me-1" style="color:#ce1212;"></i>Delivery fee</span><span style="font-size:0.82rem;color:#555;">8,00 DT</span>';
+  document.getElementById('checkout-order-total').textContent=freeDelivery?subtotal.toFixed(2).replace('.',',')+' DT':(subtotal+8).toFixed(2).replace('.',',')+' DT';
+  var m=bootstrap.Modal.getInstance(document.getElementById('modalPanierCat'));if(m)m.hide();
+  setTimeout(function(){new bootstrap.Modal(document.getElementById('modalCheckout')).show();},300);
+}
+
+function ouvrirWishlist(){
+  var w=getWishlist(),contenu=document.getElementById('wishlist-contenu-cat');
+  if(!w.length){
+    contenu.innerHTML='<p class="text-muted text-center py-4"><i class="bi bi-heart" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Your wishlist is empty.</p>';
+  }else{
+    var html='<div class="row g-3">';
+    w.forEach(function(p){
+      html+='<div class="col-12 col-md-6">';
+      html+='<div style="position:relative;background:white;border-radius:14px;box-shadow:0 3px 12px rgba(0,0,0,0.08);">';
+      html+='<button onclick="removeFromWishlistCat(\''+p.id+'\')" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:#ce1212;color:white;border:2px solid white;font-size:0.75rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;">✕</button>';
+      html+='<div style="display:flex;gap:0;border-radius:14px;overflow:hidden;">';
+      html+='<div style="width:110px;flex-shrink:0;">';
+      if(p.image)html+='<img src="'+p.image+'" style="width:110px;height:110px;object-fit:cover;">';
+      else html+='<div style="width:110px;height:110px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image" style="color:#ccc;font-size:1.5rem;"></i></div>';
+      html+='</div>';
+      html+='<div style="padding:12px 14px;flex:1;">';
+      html+='<div style="font-size:0.85rem;font-weight:700;color:#2d2d2d;margin-bottom:6px;">'+p.nom+'</div>';
+      html+='<div style="font-size:0.95rem;font-weight:700;color:#ce1212;margin-bottom:8px;">'+p.prix.toFixed(2).replace('.',',')+' DT</div>';
+      html+='<button onclick="wishlistAddToCartCat(\''+p.id+'\')" style="background:#ce1212;color:white;border:none;border-radius:20px;padding:5px 14px;font-size:0.75rem;font-weight:600;cursor:pointer;"><i class="bi bi-cart-plus me-1"></i>Add to Cart</button>';
+      html+='</div></div></div></div>';
+    });
+    html+='</div>';
+    contenu.innerHTML=html;
+  }
+  var ct=document.getElementById('wishlist-count-title-cat');
+  if(ct)ct.textContent=w.length?'('+w.length+' item'+(w.length>1?'s':'')+')'  :'';
+  new bootstrap.Modal(document.getElementById('modalWishlistCat')).show();
+}
+function removeFromWishlistCat(id){
+  saveWishlist(getWishlist().filter(function(x){return x.id!==id;}));
+  ouvrirWishlist();
+}
+function wishlistAddToCartCat(id){
+  var p=getWishlist().find(function(x){return x.id===id;});
+  if(!p)return;
+  var panier=getPanier(),ex=panier.find(function(x){return x.id===id;});
+  if(ex){ex.quantite+=1;}else{panier.push({id:p.id,nom:p.nom,prix:p.prix,image:p.image,quantite:1});}
+  savePanier(panier);
+  removeFromWishlistCat(id);
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  updateBadge();
+  updateWishlistBadge();
+});
 updateBadge();
 </script>
+
+<!-- ── MODAL PANIER (categories list) ── -->
+<div class="modal fade" id="modalPanierCat" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🛒 My Cart</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="panier-contenu-cat"><p class="text-muted text-center">Your cart is empty.</p></div>
+      <div class="modal-footer d-flex justify-content-between align-items-center">
+        <strong>Total: <span id="panier-total-cat">0,00</span> DT</strong>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-danger btn-sm" onclick="viderPanierCat()">Clear</button>
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Continue Shopping</button>
+          <button class="btn btn-danger" onclick="allerAuCheckout()"><i class="bi bi-bag-check me-2"></i>Checkout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL WISHLIST (categories list) ── -->
+<div class="modal fade" id="modalWishlistCat" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:1px solid #f0f0f0;padding:16px 24px;flex-wrap:wrap;gap:10px;">
+        <h5 class="modal-title" style="font-family:'Amatic SC',cursive;font-size:1.6rem;font-weight:700;color:#2d2d2d;">
+          <i class="bi bi-heart-fill me-2" style="color:#ce1212;"></i>My Wishlist
+          <span id="wishlist-count-title-cat" style="font-size:0.9rem;color:#999;font-family:'Inter',sans-serif;font-weight:400;margin-left:8px;"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" style="margin-left:auto;"></button>
+      </div>
+      <div class="modal-body" style="padding:20px 24px;" id="wishlist-contenu-cat">
+        <p class="text-muted text-center py-4">Your wishlist is empty.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHECKOUT MODAL (categories list) ── -->
+<div class="modal fade" id="modalCheckout" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:1px solid #f0f0f0;padding:18px 24px;">
+        <h5 class="modal-title" style="font-family:'Amatic SC',cursive;font-size:1.6rem;font-weight:700;color:#2d2d2d;">
+          <i class="bi bi-bag-check-fill me-2" style="color:#ce1212;"></i>Checkout
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:24px;">
+        <div class="row g-4">
+          <div class="col-md-7">
+            <form id="checkoutFormCat" onsubmit="confirmerCommandeCat(event)">
+              <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;">
+                <i class="bi bi-person-fill" style="color:#ce1212;"></i> Personal Information
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <input type="text" class="form-control" id="cat-prenom" placeholder="First name" required style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px;">
+                </div>
+                <div class="col-6">
+                  <input type="text" class="form-control" id="cat-nom" placeholder="Last name" required style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px;">
+                </div>
+                <div class="col-12">
+                  <input type="email" class="form-control" id="cat-email" placeholder="Email address" required style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px;">
+                </div>
+                <div class="col-12">
+                  <input type="text" class="form-control" id="cat-adresse" placeholder="Street address" required style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px;">
+                </div>
+                <div class="col-12">
+                  <input type="text" class="form-control" id="cat-localisation" placeholder="City / Region" required style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px;">
+                </div>
+                <div class="col-12">
+                  <div style="position:relative;">
+                    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:0.85rem;color:#999;">📞</span>
+                    <input type="tel" class="form-control" id="cat-phone" placeholder="Phone number (for delivery)"
+                      oninput="this.value=this.value.replace(/[^0-9+\s\-]/g,'')"
+                      autocomplete="tel"
+                      style="border-radius:10px;border:1px solid #e0e0e0;font-size:0.85rem;padding:10px 14px 10px 36px;">
+                  </div>
+                  <div id="cat-phone-err" style="display:none;font-size:0.75rem;color:#dc3545;margin-top:4px;"><i class="bi bi-exclamation-circle me-1"></i><span id="cat-phone-err-msg">Invalid number</span></div>
+                </div>
+              </div>
+              <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;">
+                <i class="bi bi-truck" style="color:#ce1212;"></i> Delivery Method
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label style="display:flex;align-items:center;gap:10px;border:2px solid #ce1212;border-radius:12px;padding:12px 14px;cursor:pointer;background:#fff8f8;">
+                    <input type="radio" name="cat-livraison" value="livraison" checked style="accent-color:#ce1212;">
+                    <div>
+                      <div style="font-size:0.82rem;font-weight:600;color:#2d2d2d;"><i class="bi bi-truck me-1" style="color:#ce1212;"></i>Home Delivery</div>
+                      <div style="font-size:0.7rem;color:#999;">Pay on delivery</div>
+                    </div>
+                  </label>
+                </div>
+                <div class="col-6">
+                  <label style="display:flex;align-items:center;gap:10px;border:2px solid #e0e0e0;border-radius:12px;padding:12px 14px;cursor:pointer;background:white;">
+                    <input type="radio" name="cat-livraison" value="carte" style="accent-color:#ce1212;">
+                    <div>
+                      <div style="font-size:0.82rem;font-weight:600;color:#2d2d2d;"><i class="bi bi-credit-card me-1" style="color:#1a73e8;"></i>Credit Card</div>
+                      <div style="font-size:0.7rem;color:#999;">Pay now online</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-danger w-100" style="border-radius:25px;padding:12px;font-weight:600;font-size:0.9rem;">
+                <i class="bi bi-check-circle me-2"></i>Confirm Order
+              </button>
+            </form>
+          </div>
+          <div class="col-md-5">
+            <div style="background:#f9f9f9;border-radius:14px;padding:18px;">
+              <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;">
+                <i class="bi bi-receipt" style="color:#ce1212;"></i> Order Summary
+              </div>
+              <table class="table table-borderless mb-0" style="font-size:0.82rem;">
+                <tbody id="checkout-order-lines"></tbody>
+              </table>
+              <hr style="border-color:#e0e0e0;">
+              <div id="checkout-livraison-row" style="display:none;justify-content:space-between;align-items:center;margin-bottom:8px;"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:0.85rem;font-weight:600;color:#2d2d2d;">Total</span>
+                <span style="font-size:1.2rem;font-weight:700;color:#ce1212;" id="checkout-order-total">0,00 DT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var catPhoneRegex = /^(\+216|00216)?[2-9]\d{7}$/;
+function confirmerCommandeCat(e) {
+  e.preventDefault();
+  var prenom = document.getElementById('cat-prenom').value.trim();
+  var nom    = document.getElementById('cat-nom').value.trim();
+  var phone  = document.getElementById('cat-phone').value.trim();
+  var normalized = phone.replace(/[\s\-]/g,'');
+
+  if (!phone) {
+    document.getElementById('cat-phone').style.borderColor='#dc3545';
+    document.getElementById('cat-phone-err-msg').textContent='Phone number is required.';
+    document.getElementById('cat-phone-err').style.display='block';
+    document.getElementById('cat-phone').focus(); return;
+  }
+  if (!catPhoneRegex.test(normalized)) {
+    document.getElementById('cat-phone').style.borderColor='#dc3545';
+    document.getElementById('cat-phone-err-msg').textContent='Invalid number. Example: 20 123 456 or +216 20 123 456.';
+    document.getElementById('cat-phone-err').style.display='block';
+    document.getElementById('cat-phone').focus(); return;
+  }
+
+  var method  = document.querySelector('input[name="cat-livraison"]:checked').value;
+  var panier  = getPanier();
+  var subtotal = panier.reduce(function(s,p){return s+p.prix*p.quantite;},0);
+  var freeDelivery = subtotal >= 100;
+  var total   = (method==='livraison' && !freeDelivery) ? subtotal+8 : subtotal;
+  var methodLabel = method==='carte' ? 'Credit Card' : (freeDelivery ? 'Home Delivery (FREE 🎁)' : 'Home Delivery (+8,00 DT)');
+  var invoiceItems = panier.map(function(p){return {nom:p.nom,quantite:p.quantite,prix:p.prix};});
+  var email = document.getElementById('cat-email').value.trim();
+
+  var m = bootstrap.Modal.getInstance(document.getElementById('modalCheckout'));
+  if(m) m.hide();
+
+  savePanier([]);
+  setMealsCount(getMealsCount() + invoiceItems.reduce(function(s,p){return s+p.quantite;},0));
+
+  fetch('/ryhem/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/send_invoice.php',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({prenom:prenom,nom:nom,email:email,phone:phone,method:methodLabel,items:invoiceItems,total:total})
+  }).catch(function(){});
+
+  document.getElementById('modalCheckout').addEventListener('hidden.bs.modal',function onH(){
+    document.getElementById('modalCheckout').removeEventListener('hidden.bs.modal',onH);
+    var t=document.getElementById('order-success-toast-cat');
+    if(t){
+      document.getElementById('order-success-name-cat').textContent=prenom+' '+nom;
+      document.getElementById('order-success-total-cat').textContent=total.toFixed(2).replace('.',',')+' DT';
+      t.style.display='flex';
+      setTimeout(function(){t.style.display='none';},6000);
+    }
+  },{once:true});
+}
+function getMealsCount(){return parseInt(localStorage.getItem('smp_meals_count')||'0',10);}
+function setMealsCount(n){localStorage.setItem('smp_meals_count',n);}
+</script>
+
+<!-- ── ORDER SUCCESS TOAST (categories list) ── -->
+<div id="order-success-toast-cat" style="display:none;position:fixed;bottom:28px;right:28px;z-index:9999;
+     background:white;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);
+     padding:20px 24px;max-width:340px;border-left:5px solid #28a745;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="font-size:1.8rem;line-height:1;">✅</div>
+    <div>
+      <div style="font-weight:700;font-size:0.95rem;color:#2d2d2d;margin-bottom:4px;">Order Confirmed!</div>
+      <div style="font-size:0.82rem;color:#555;">
+        Thank you, <strong id="order-success-name-cat"></strong>!<br>
+        Total: <strong style="color:#ce1212;" id="order-success-total-cat"></strong>
+      </div>
+    </div>
+    <button onclick="document.getElementById('order-success-toast-cat').style.display='none'"
+      style="background:none;border:none;font-size:1.1rem;color:#999;cursor:pointer;margin-left:auto;padding:0;">✕</button>
+  </div>
+</div>
+
 <?php endif; ?>
 
 <?php include("footer.php"); ?>

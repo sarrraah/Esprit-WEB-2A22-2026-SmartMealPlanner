@@ -41,16 +41,45 @@ INSERT INTO produit (nom, description, prix, quantiteStock, estDurable, dateExpi
 -- PACKS INTELLIGENTS (categorie = 2) — 10 produits
 -- ============================================================
 INSERT INTO produit (nom, description, prix, quantiteStock, estDurable, dateExpiration, image, statut, categorie) VALUES
-('Pack Fruits Rouges',      'Fraises, framboises et myrtilles — antioxydants puissants pour booster votre immunité.',        9.90,  25, 0, '2026-05-06', 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600', 'Disponible', 2),
-('Pack Légumes Verts',      'Épinards, brocoli, courgette et haricots verts — le combo détox idéal.',                       8.50,  30, 0, '2026-05-08', 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600', 'Disponible', 2),
-('Pack Protéines Maigres',  'Poulet, thon et œufs bio — pack protéiné pour sportifs et actifs.',                           18.90,  20, 0, '2026-05-05', 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600', 'Disponible', 2),
-('Pack Céréales Complètes', 'Quinoa, flocons d\'avoine et riz complet — énergie durable toute la journée.',                12.50,  40, 1, '2027-01-01', 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600', 'Disponible', 2),
-('Pack Smoothie Détox',     'Épinards, banane, gingembre et citron — tous les ingrédients pour votre smoothie vert.',        7.90,  35, 0, '2026-05-07', 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=600', 'Disponible', 2),
-('Pack Snack Healthy',      'Amandes, noix de cajou, dattes et fruits secs — snacking sain et énergisant.',                11.90,  30, 1, '2026-12-01', 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=600', 'Disponible', 2),
-('Pack Salade Complète',    'Roquette, tomates cerises, avocat, feta et graines — salade repas en 5 minutes.',             10.50,  25, 0, '2026-05-06', 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600', 'Disponible', 2),
-('Pack Petit-Déjeuner',     'Flocons d\'avoine, fruits rouges, yaourt grec et miel — breakfast équilibré prêt à préparer.',13.90,  20, 0, '2026-05-10', 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=600', 'Disponible', 2),
-('Pack Anti-Inflammatoire', 'Curcuma, gingembre, myrtilles et noix — combo puissant contre l\'inflammation.',              14.50,  15, 1, '2026-10-01', 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=600', 'Disponible', 2),
-('Pack Vegan Complet',      'Tofu, pois chiches, lentilles et légumes — protéines végétales pour une journée complète.',   15.90,  20, 0, '2026-05-09', 'https://images.unsplash.com/photo-1543362906-acfc16c67564?w=600', 'Disponible', 2);
+('Pack Fruits Rouges',
+ 'Fraises (250g) · Framboises (150g) · Myrtilles (150g) · Cerises (200g) · Groseilles (100g) — 5 fruits rouges de saison, riches en antioxydants et vitamine C.',
+ 11.90, 25, 0, '2026-05-06', 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600', 'Disponible', 2),
+
+('Pack Légumes Verts Détox',
+ 'Épinards (200g) · Brocoli (300g) · Courgette (2 pcs) · Haricots verts (200g) · Concombre (1 pc) · Céleri (2 branches) — 6 légumes verts pour une cure détox complète.',
+ 9.90, 30, 0, '2026-05-08', 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600', 'Disponible', 2),
+
+('Pack Protéines Maigres',
+ 'Filet de poulet (300g) · Thon en boîte (2×160g) · Œufs bio (×6) · Blanc de dinde (200g) · Fromage blanc 0% (250g) — 5 sources de protéines maigres pour sportifs et actifs.',
+ 21.90, 20, 0, '2026-05-05', 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600', 'Disponible', 2),
+
+('Pack Céréales & Graines',
+ 'Quinoa bio (500g) · Flocons d\'avoine (500g) · Riz complet (500g) · Graines de chia (200g) · Graines de lin (200g) · Boulgour (300g) — 6 céréales et graines pour une énergie durable.',
+ 14.90, 40, 1, '2027-01-01', 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600', 'Disponible', 2),
+
+('Pack Smoothie Vert',
+ 'Épinards (150g) · Banane (2 pcs) · Gingembre frais (50g) · Citron (2 pcs) · Pomme verte (2 pcs) · Concombre (1 pc) — 6 ingrédients pour 4 smoothies verts détox maison.',
+ 8.90, 35, 0, '2026-05-07', 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=600', 'Disponible', 2),
+
+('Pack Snack Healthy',
+ 'Amandes naturelles (100g) · Noix de cajou (100g) · Noix (80g) · Dattes Medjool (150g) · Abricots secs (100g) · Raisins secs (80g) — 6 snacks sains pour grignoter sans culpabilité.',
+ 13.90, 30, 1, '2026-12-01', 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=600', 'Disponible', 2),
+
+('Pack Salade Repas',
+ 'Roquette (100g) · Tomates cerises (200g) · Avocat (1 pc) · Feta (100g) · Graines de tournesol (50g) · Olives noires (80g) · Vinaigrette balsamique — tout pour une salade repas en 5 minutes.',
+ 12.50, 25, 0, '2026-05-06', 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600', 'Disponible', 2),
+
+('Pack Breakfast Équilibré',
+ 'Flocons d\'avoine (400g) · Fruits rouges mélangés (200g) · Yaourt grec nature (500g) · Miel bio (250g) · Banane (2 pcs) · Beurre d\'amande (200g) — 6 ingrédients pour 5 breakfasts équilibrés.',
+ 15.90, 20, 0, '2026-05-10', 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=600', 'Disponible', 2),
+
+('Pack Anti-Inflammatoire',
+ 'Curcuma frais (100g) · Gingembre frais (100g) · Myrtilles (200g) · Noix (100g) · Saumon (200g) · Huile d\'olive extra vierge (250ml) · Thé vert (20 sachets) — 7 alliés naturels contre l\'inflammation.',
+ 17.90, 15, 1, '2026-10-01', 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=600', 'Disponible', 2),
+
+('Pack Vegan Power',
+ 'Tofu ferme (300g) · Pois chiches cuits (400g) · Lentilles vertes (300g) · Tempeh (200g) · Edamame (200g) · Noix de cajou (100g) · Lait de coco (400ml) — 7 protéines végétales pour une journée 100% vegan.',
+ 18.90, 20, 0, '2026-05-09', 'https://images.unsplash.com/photo-1543362906-acfc16c67564?w=600', 'Disponible', 2);
 
 -- ============================================================
 -- MEAL PREP PACKS (categorie = 3) — 10 produits
