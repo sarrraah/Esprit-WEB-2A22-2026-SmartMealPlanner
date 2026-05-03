@@ -28,6 +28,11 @@ require_once __DIR__ . '/partials/sidebar.php';
             <?= htmlspecialchars($recette['nom_recette']) ?>
         </h5>
         <div class="d-flex gap-2">
+            <a href="export_recette_pdf.php?id=<?= $recette['id_recette'] ?>"
+               target="_blank"
+               class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf me-1"></i>Exporter PDF
+            </a>
             <a href="edit_recette.php?id=<?= $recette['id_recette'] ?>" class="btn btn-sm btn-outline-warning">
                 <i class="bi bi-pencil me-1"></i>Modifier
             </a>

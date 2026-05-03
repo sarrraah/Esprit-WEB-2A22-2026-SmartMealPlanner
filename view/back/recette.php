@@ -3,8 +3,15 @@ defined('APP_ROOT') || require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../model/Recette.php';
 
 $recetteModel = new Recette();
-// Jointure : recette + nombre de repas associés
-$recettes     = $recetteModel->getAllRecettesWithRepasCount();
+
+// Récupérer les paramètres de tri depuis l'URL (GET)
+// orderBy : colonne de tri — 'id_recette' par défaut, 'total_calories' pour trier par calories
+// orderDir : direction — 'ASC' (croissant) ou 'DESC' (décroissant)
+$orderBy  = $_GET['orderBy']  ?? 'id_recette';
+$orderDir = $_GET['orderDir'] ?? 'ASC';
+
+// Récupérer les recettes avec le nombre de repas et le total de calories, triées selon le choix
+$recettes = $recetteModel->getAllRecettesWithRepasCount($orderBy, $orderDir);
 
 $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $project = str_replace('\\', '/', dirname(__DIR__, 2));
@@ -18,7 +25,17 @@ require_once __DIR__ . '/partials/sidebar.php';
 <div class="admin-main">
     <div class="admin-topbar">
         <h5><i class="bi bi-journal-richtext me-2" style="color:var(--accent)"></i>Gestion des Recettes</h5>
-        <a href="add_recette.php" class="btn btn-yummy btn-sm"><i class="bi bi-plus-lg me-1"></i>Ajouter une Recette</a>
+        <div class="d-flex gap-2">
+            <!-- Bouton export PDF : transmet le tri actif à la page d'export -->
+            <a href="export_recettes_pdf.php?orderBy=<?= htmlspecialchars($orderBy) ?>&orderDir=<?= htmlspecialchars($orderDir) ?>"
+               target="_blank"
+               class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-file-earmark-pdf me-1"></i>Exporter PDF
+            </a>
+            <a href="add_recette.php" class="btn btn-yummy btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Ajouter une Recette
+            </a>
+        </div>
     </div>
     <div class="admin-content">
         <?php if (isset($_GET['success'])): ?>
@@ -27,6 +44,48 @@ require_once __DIR__ . '/partials/sidebar.php';
         <?php if (isset($_GET['deleted'])): ?>
             <div class="alert alert-info alert-dismissible alert-auto fade show"><i class="bi bi-trash me-2"></i>Recette supprimée.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
         <?php endif; ?>
+
+        <!-- ── Barre de tri par calories ─────────────────────────────────── -->
+        <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+            <span class="text-muted small fw-semibold"><i class="bi bi-sort-down me-1"></i>Trier par calories :</span>
+
+            <?php
+            // Construire les URLs de tri en conservant les autres paramètres GET
+            $urlAsc  = '?' . http_build_query(array_merge($_GET, ['orderBy' => 'total_calories', 'orderDir' => 'ASC']));
+            $urlDesc = '?' . http_build_query(array_merge($_GET, ['orderBy' => 'total_calories', 'orderDir' => 'DESC']));
+            $urlDef  = '?' . http_build_query(array_merge($_GET, ['orderBy' => 'id_recette',     'orderDir' => 'ASC']));
+
+            $isCalAsc  = ($orderBy === 'total_calories' && $orderDir === 'ASC');
+            $isCalDesc = ($orderBy === 'total_calories' && $orderDir === 'DESC');
+            $isDef     = ($orderBy === 'id_recette');
+            ?>
+
+            <!-- Tri croissant : moins caloriques en premier -->
+            <a href="<?= $urlAsc ?>"
+               class="btn btn-sm <?= $isCalAsc ? 'btn-yummy' : 'btn-outline-secondary' ?>">
+                <i class="bi bi-sort-numeric-up me-1"></i>Moins caloriques
+            </a>
+
+            <!-- Tri décroissant : plus caloriques en premier -->
+            <a href="<?= $urlDesc ?>"
+               class="btn btn-sm <?= $isCalDesc ? 'btn-yummy' : 'btn-outline-secondary' ?>">
+                <i class="bi bi-sort-numeric-down me-1"></i>Plus caloriques
+            </a>
+
+            <!-- Réinitialiser le tri -->
+            <a href="<?= $urlDef ?>"
+               class="btn btn-sm <?= $isDef ? 'btn-secondary' : 'btn-outline-secondary' ?>">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Par défaut
+            </a>
+
+            <!-- Indicateur du tri actif -->
+            <?php if ($orderBy === 'total_calories'): ?>
+                <span class="badge bg-warning text-dark ms-1">
+                    <i class="bi bi-fire me-1"></i>
+                    Trié par calories (<?= $orderDir === 'ASC' ? '↑ croissant' : '↓ décroissant' ?>)
+                </span>
+            <?php endif; ?>
+        </div>
 
         <?php if (empty($recettes)): ?>
             <div class="admin-card card"><div class="card-body p-5 text-center text-muted">
@@ -58,6 +117,11 @@ require_once __DIR__ . '/partials/sidebar.php';
                             <span class="badge bg-secondary">
                                 <i class="bi bi-bowl-hot me-1"></i><?= $rec['nb_repas'] ?? 0 ?> repas
                             </span>
+                            <?php if (($rec['total_calories'] ?? 0) > 0): ?>
+                            <span class="badge bg-danger">
+                                <i class="bi bi-fire me-1"></i><?= number_format($rec['total_calories'], 0, ',', ' ') ?> kcal total
+                            </span>
+                            <?php endif; ?>
                         </div>
                         <div class="d-flex gap-3 text-muted small mb-2">
                             <?php if (!empty($rec['temps_prep'])): ?><span><i class="bi bi-clock me-1"></i><?= $rec['temps_prep'] ?> min</span><?php endif; ?>
@@ -71,6 +135,7 @@ require_once __DIR__ . '/partials/sidebar.php';
                     <div class="card-footer bg-white border-0 d-flex gap-2 pb-3 px-3">
                         <a href="view_recette.php?id=<?= $rec['id_recette'] ?>" class="btn btn-sm btn-outline-primary flex-fill"><i class="bi bi-eye me-1"></i>Voir</a>
                         <a href="edit_recette.php?id=<?= $rec['id_recette'] ?>" class="btn btn-sm btn-outline-warning flex-fill"><i class="bi bi-pencil me-1"></i>Modifier</a>
+                        <a href="export_recette_pdf.php?id=<?= $rec['id_recette'] ?>" target="_blank" class="btn btn-sm btn-outline-danger flex-fill"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
                         <a href="../../controller/RecetteController.php?action=delete&id=<?= $rec['id_recette'] ?>" class="btn btn-sm btn-outline-danger flex-fill" onclick="return confirm('Supprimer ?')"><i class="bi bi-trash me-1"></i>Supprimer</a>
                     </div>
                 </div>
