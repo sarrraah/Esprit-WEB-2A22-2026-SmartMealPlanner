@@ -98,6 +98,31 @@ include("header.php");
 }
 .btn-back:hover { background: #ce1212; color: white; border-color: #ce1212; }
 
+/* ── FILTERS ── */
+.filters-section {
+  background: white;
+  padding: 20px 24px;
+  border-radius: 15px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.sort-select {
+  padding: 8px 16px;
+  border-radius: 25px;
+  border: 1px solid #ddd;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+.search-input {
+  border-radius: 25px !important;
+  border: 1px solid #ddd !important;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  padding: 8px 16px !important;
+}
+
 /* ── WISHLIST HEART ── */
 .btn-wishlist {
   position: absolute; bottom: 10px; right: 10px;
@@ -125,22 +150,22 @@ include("header.php");
     </div>
 
     <!-- Search & Sort -->
-    <div style="background:white;padding:16px 20px;border-radius:15px;margin-bottom:24px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+    <div class="filters-section">
       <div class="row align-items-center gy-2">
         <div class="col-md-5">
           <input type="text" id="searchProdCat" class="form-control search-input"
-            placeholder="Rechercher un produit..." oninput="filtrerProduitsCat()">
+            placeholder="Search a product..." oninput="filtrerProduitsCat()">
         </div>
         <div class="col-md-4">
           <div style="display:flex;gap:6px;align-items:center;">
             <select id="sortProdCat" class="sort-select" style="flex:1;" onchange="filtrerProduitsCat();toggleResetBtnCat()">
-              <option value="">— Trier —</option>
-              <option value="nom-asc">Nom A → Z</option>
-              <option value="nom-desc">Nom Z → A</option>
-              <option value="prix-asc">Prix croissant ↑</option>
-              <option value="prix-desc">Prix décroissant ↓</option>
+              <option value="">— Sort —</option>
+              <option value="nom-asc">Name A → Z</option>
+              <option value="nom-desc">Name Z → A</option>
+              <option value="prix-asc">Price low → high ↑</option>
+              <option value="prix-desc">Price high → low ↓</option>
             </select>
-            <button id="reset-sort-cat-btn" onclick="resetSortCat()" title="Annuler le tri"
+            <button id="reset-sort-cat-btn" onclick="resetSortCat()" title="Clear sort"
               style="display:none;background:#ce1212;color:white;border:none;border-radius:50%;width:32px;height:32px;flex-shrink:0;cursor:pointer;font-size:0.85rem;transition:0.2s;align-items:center;justify-content:center;">
               <i class="bi bi-x-lg"></i>
             </button>
@@ -148,10 +173,10 @@ include("header.php");
         </div>
         <div class="col-md-3">
           <select id="filterStatutCat" class="sort-select w-100" onchange="filtrerProduitsCat()">
-            <option value="">Tous les statuts</option>
-            <option value="Disponible">Disponible</option>
-            <option value="Rupture">Rupture</option>
-            <option value="Épuisé">Épuisé</option>
+            <option value="">All statuses</option>
+            <option value="Available">Available</option>
+            <option value="Out of Stock">Out of Stock</option>
+            <option value="Expired">Expired</option>
           </select>
         </div>
       </div>
@@ -176,7 +201,7 @@ include("header.php");
         elseif (str_starts_with($img, 'meals/')) $imgSrc = '../../view/assets/img/' . $img;
         else                                      $imgSrc = UPLOAD_URL . $img;
         $statut   = determinerStatut($produit['quantiteStock'], $produit['dateExpiration']);
-        $badgeCls = match($statut) { 'Disponible'=>'badge-dispo','Rupture'=>'badge-rupture',default=>'badge-epuise' };
+        $badgeCls = match($statut) { 'Available'=>'badge-dispo','Out of Stock'=>'badge-rupture',default=>'badge-epuise' };
         $isMealPrep = (int)($produit['categorie'] ?? $produit['id_categorie'] ?? 0) === 3
                    || strtolower($produit['categorie_nom'] ?? '') === 'meal prep packs';
         ?>
@@ -216,7 +241,7 @@ include("header.php");
               <div class="product-title"><?= htmlspecialchars($produit['nom']) ?></div>
               <div class="product-desc"><?= htmlspecialchars($produit['description'] ?? '') ?></div>
               <div class="product-price"><?= number_format((float)$produit['prix'],2,',',' ') ?> DT</div>
-              <?php if ($statut === 'Disponible'): ?>
+              <?php if ($statut === 'Available'): ?>
                 <button class="btn-cart btn-ajouter-panier"
                         onclick="event.stopPropagation();"
                         data-id="<?= (int)$produit['id'] ?>"

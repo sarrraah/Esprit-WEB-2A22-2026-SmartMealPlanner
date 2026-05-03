@@ -76,6 +76,31 @@ class AvisController
     }
 
     /**
+     * Add a new review with sentiment emoji.
+     */
+    public function addAvisWithSentiment($avis, string $sentiment)
+    {
+        $db = config::getConnexion();
+        // Try with sentiment column first
+        try {
+            $stmt = $db->prepare("
+                INSERT INTO avis (note, commentaire, date_avis, id_produit, sentiment)
+                VALUES (:note, :commentaire, :date_avis, :id_produit, :sentiment)
+            ");
+            return $stmt->execute([
+                'note'        => $avis->getNote(),
+                'commentaire' => $avis->getCommentaire(),
+                'date_avis'   => $avis->getDateAvis(),
+                'id_produit'  => $avis->getIdProduit(),
+                'sentiment'   => $sentiment,
+            ]);
+        } catch (Exception $e) {
+            // Fallback without sentiment
+            return $this->addAvis($avis);
+        }
+    }
+
+    /**
      * Update an existing review.
      */
     public function updateAvis($avis)

@@ -16,19 +16,19 @@ try {
     die("Erreur de connexion à la base de données: " . $e->getMessage());
 }
 
-// Fonction pour déterminer le statut automatiquement
+// Function to automatically determine product status
 function determinerStatut($quantiteStock, $dateExpiration) {
     $dateActuelle = new DateTime();
     $dateExp = DateTime::createFromFormat('Y-m-d', $dateExpiration);
     
     if ($dateExp && $dateExp < $dateActuelle) {
-        return 'Épuisé';
+        return 'Expired';
     } else if ($quantiteStock == 0) {
-        return 'Rupture';
+        return 'Out of Stock';
     } else if ($quantiteStock > 0) {
-        return 'Disponible';
+        return 'Available';
     }
-    return 'Inconnu';
+    return 'Unknown';
 }
 
 // Direction du dossier d'uploads

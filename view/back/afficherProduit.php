@@ -75,7 +75,7 @@ if ($filterCategorie > 0) {
 $totalProduits   = count($allProduits);
 $totalCategories = count($allCategories);
 $totalStock      = array_sum(array_column($allProduits, 'quantiteStock'));
-$totalDispo      = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Disponible'));
+$totalDispo      = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Available'));
 
 include("header.php");
 ?>
@@ -223,8 +223,8 @@ include("header.php");
   <!-- STATS -->
   <?php
   // Prepare data for charts
-  $totalRupture = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Rupture'));
-  $totalEpuise  = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Épuisé'));
+  $totalRupture = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Out of Stock'));
+  $totalEpuise  = count(array_filter($allProduits, fn($p) => $p['statut'] === 'Expired'));
 
   // Products per category
   $catData = [];
@@ -391,9 +391,9 @@ include("header.php");
           <div class="col-md-4">
             <select id="filter-statut" class="filter-input">
               <option value="">All statuses</option>
-              <option value="Disponible">Available</option>
-              <option value="Rupture">Out of stock</option>
-              <option value="Épuisé">Expired</option>
+              <option value="Available">Available</option>
+              <option value="Out of Stock">Out of stock</option>
+              <option value="Expired">Expired</option>
             </select>
           </div>
           <div class="col-md-3">
@@ -425,8 +425,8 @@ include("header.php");
               elseif (str_starts_with($img,'http'))    $imgSrc = $img;
               elseif (str_starts_with($img,'meals/'))  $imgSrc = '../../view/assets/img/'.$img;
               else                                      $imgSrc = UPLOAD_URL.$img;
-              $badgeCls = match($p['statut']) { 'Disponible'=>'badge-dispo','Rupture'=>'badge-rupture',default=>'badge-epuise' };
-              $badgeTxt = match($p['statut']) { 'Disponible'=>'Available','Rupture'=>'Out of stock',default=>'Expired' };
+              $badgeCls = match($p['statut']) { 'Available'=>'badge-dispo','Out of Stock'=>'badge-rupture',default=>'badge-epuise' };
+              $badgeTxt = match($p['statut']) { 'Available'=>'Available','Out of Stock'=>'Out of stock',default=>'Expired' };
             ?>
               <tr data-nom="<?= htmlspecialchars(strtolower($p['nom']),ENT_QUOTES) ?>"
                   data-statut="<?= htmlspecialchars($p['statut'],ENT_QUOTES) ?>"

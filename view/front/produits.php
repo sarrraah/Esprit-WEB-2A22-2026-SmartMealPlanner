@@ -185,11 +185,11 @@ include("header.php");
       <div class="col-lg-5 order-2 order-lg-1">
         <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#fff0f0,#ffe8e8);border:1px solid rgba(206,18,18,0.2);border-radius:20px;padding:5px 12px;margin-bottom:12px;">
           <i class="bi bi-stars" style="color:#ce1212;font-size:0.8rem;"></i>
-          <span style="font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ce1212;">Recommandé par notre IA</span>
+          <span style="font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ce1212;">Recommended by our AI</span>
         </div>
-        <h1>Découvrez nos <span>produits</span> frais &amp; sains</h1>
-        <p>Ingrédients frais, packs intelligents et meal prep — tout ce qu'il vous faut pour cuisiner sain au quotidien.</p>
-        <a href="#produitsGrid" class="btn-browse">Voir les produits</a>
+        <h1>Discover our <span>fresh</span> &amp; healthy products</h1>
+        <p>Fresh ingredients, smart packs and meal prep — everything you need to cook healthy every day.</p>
+        <a href="#produitsGrid" class="btn-browse">Browse products</a>
       </div>
       <div class="col-lg-7 order-1 order-lg-2">
         <!-- AI Recommendations in hero -->
@@ -205,8 +205,8 @@ include("header.php");
 
 <section id="produits" class="section light-background py-3">
   <div class="container section-title" style="padding-bottom:10px;">
-    <h2>Boutique</h2>
-    <p><span>Nos</span> <span class="description-title">Produits</span></p>
+    <h2>Shop</h2>
+    <p><span>Our</span> <span class="description-title">Products</span></p>
   </div>
 
   <div class="container">
@@ -235,15 +235,15 @@ include("header.php");
             <div style="background:linear-gradient(135deg,#ce1212,#ff4444);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
               <i class="bi bi-stars" style="color:white;font-size:0.85rem;"></i>
             </div>
-            <span style="font-size:1rem;font-weight:700;color:#2d2d2d;">Sélection IA — Nos meilleurs repas</span>
+            <span style="font-size:1rem;font-weight:700;color:#2d2d2d;">AI Selection — Our best meals</span>
           </div>
           <div style="font-size:0.8rem;color:#888;margin-left:36px;">
-            Notre IA analyse les notes clients, la popularité et la diversité nutritionnelle pour vous proposer les 3 meilleurs choix du moment.
+            Our AI analyzes customer ratings, popularity and nutritional diversity to suggest the 3 best picks right now.
           </div>
         </div>
         <button onclick="loadRecommendations()" id="reco-refresh-btn"
           style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:5px 14px;font-size:0.75rem;color:#999;cursor:pointer;transition:0.2s;display:flex;align-items:center;gap:5px;flex-shrink:0;">
-          <i class="bi bi-arrow-clockwise"></i> Actualiser
+          <i class="bi bi-arrow-clockwise"></i> Refresh
         </button>
       </div>
 
@@ -276,14 +276,14 @@ include("header.php");
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div>
           <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;">
-            <i class="bi bi-trophy-fill" style="color:#ce1212;"></i> Objectifs & Récompenses
+            <i class="bi bi-trophy-fill" style="color:#ce1212;"></i> Goals & Rewards
           </div>
           <div style="font-size:0.82rem;color:#555;margin-top:2px;">
-            Achetez plus de repas et débloquez des remises exclusives 🎯
+            Buy more meals and unlock exclusive discounts 🎯
           </div>
         </div>
         <div id="achievement-active-badge" style="display:none;color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;">
-          <i class="bi bi-percent me-1"></i><span id="achievement-active-text">Remise active !</span>
+          <i class="bi bi-percent me-1"></i><span id="achievement-active-text">Discount active!</span>
         </div>
       </div>
 
@@ -303,7 +303,7 @@ include("header.php");
               <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-1" style="width:0%;background:linear-gradient(90deg,#ce1212,#ff6b35);"></div></div>
             </div>
             <div class="ach-label">🥄 First Step</div>
-            <div class="ach-sublabel"><span id="ach-count-1">0</span>/5 repas</div>
+            <div class="ach-sublabel"><span id="ach-count-1">0</span>/5 meals</div>
           </div>
         </div>
 
@@ -320,7 +320,7 @@ include("header.php");
               <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-2" style="width:0%;background:linear-gradient(90deg,#ff6b00,#ffb300);"></div></div>
             </div>
             <div class="ach-label">🌱 Healthy Starter</div>
-            <div class="ach-sublabel"><span id="ach-count-2">0</span>/15 repas</div>
+            <div class="ach-sublabel"><span id="ach-count-2">0</span>/15 meals</div>
           </div>
         </div>
 
@@ -337,7 +337,7 @@ include("header.php");
               <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-3" style="width:0%;background:linear-gradient(90deg,#f9a825,#ffe082);"></div></div>
             </div>
             <div class="ach-label">🔥 Discipline Builder</div>
-            <div class="ach-sublabel"><span id="ach-count-3">0</span>/20 repas</div>
+            <div class="ach-sublabel"><span id="ach-count-3">0</span>/20 meals</div>
           </div>
         </div>
 
@@ -360,7 +360,7 @@ include("header.php");
                 <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-4" style="width:0%;background:linear-gradient(90deg,#2e7d32,#66bb6a);"></div></div>
               </div>
               <div class="ach-label">🥗 Clean Eater</div>
-              <div class="ach-sublabel"><span id="ach-count-4">0</span>/30 repas</div>
+              <div class="ach-sublabel"><span id="ach-count-4">0</span>/30 meals</div>
             </div>
           </div>
 
@@ -377,7 +377,7 @@ include("header.php");
                 <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-5" style="width:0%;background:linear-gradient(90deg,#1565c0,#42a5f5);"></div></div>
               </div>
               <div class="ach-label">💪 Habit Keeper</div>
-              <div class="ach-sublabel"><span id="ach-count-5">0</span>/50 repas</div>
+              <div class="ach-sublabel"><span id="ach-count-5">0</span>/50 meals</div>
             </div>
           </div>
 
@@ -394,7 +394,7 @@ include("header.php");
                 <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-6" style="width:0%;background:linear-gradient(90deg,#6a1b9a,#ce93d8);"></div></div>
               </div>
               <div class="ach-label">⚡ Consistency Pro</div>
-              <div class="ach-sublabel"><span id="ach-count-6">0</span>/75 repas</div>
+              <div class="ach-sublabel"><span id="ach-count-6">0</span>/75 meals</div>
             </div>
           </div>
 
@@ -411,7 +411,7 @@ include("header.php");
                 <div class="ach-progress-bar"><div class="ach-progress-fill" id="ach-fill-7" style="width:0%;background:linear-gradient(90deg,#212121,#ffd700);"></div></div>
               </div>
               <div class="ach-label">🏆 Healthy Champion</div>
-              <div class="ach-sublabel"><span id="ach-count-7">0</span>/100 repas</div>
+              <div class="ach-sublabel"><span id="ach-count-7">0</span>/100 meals</div>
             </div>
           </div>
 
@@ -567,8 +567,8 @@ include("header.php");
     <div class="filters-section">
       <div class="row align-items-center gy-2">
         <div class="col-md-5">
-          <strong style="font-size:13px;font-family:'Inter',sans-serif;">Filtrer par catégorie :</strong><br class="d-md-none">
-          <a class="filter-btn active" href="produits.php" id="btn-all">Tous (<?= $total ?>)</a>
+          <strong style="font-size:13px;font-family:'Inter',sans-serif;">Filter by category:</strong><br class="d-md-none">
+          <a class="filter-btn active" href="produits.php" id="btn-all">All (<?= $total ?>)</a>
           <?php foreach ($categories as $cat): ?>
             <a class="filter-btn" href="categories.php?id=<?= (int)$cat['id_categorie'] ?>">
               <?= htmlspecialchars($cat['nom']) ?>
@@ -577,18 +577,18 @@ include("header.php");
         </div>
         <div class="col-md-4">
           <input type="text" id="searchInput" class="form-control search-input"
-            placeholder="Rechercher un produit..." oninput="filtrerProduits()">
+            placeholder="Search a product..." oninput="filtrerProduits()">
         </div>
         <div class="col-md-3">
           <div style="display:flex;gap:6px;align-items:center;">
             <select id="sortSel" class="sort-select" style="flex:1;" onchange="filtrerProduits();toggleResetBtn()">
-              <option value="">— Trier —</option>
-              <option value="nom-asc">Nom A → Z</option>
-              <option value="nom-desc">Nom Z → A</option>
-              <option value="prix-asc">Prix croissant ↑</option>
-              <option value="prix-desc">Prix décroissant ↓</option>
+              <option value="">— Sort —</option>
+              <option value="nom-asc">Name A → Z</option>
+              <option value="nom-desc">Name Z → A</option>
+              <option value="prix-asc">Price low → high ↑</option>
+              <option value="prix-desc">Price high → low ↓</option>
             </select>
-            <button id="reset-sort-btn" onclick="resetSort()" title="Annuler le tri"
+            <button id="reset-sort-btn" onclick="resetSort()" title="Clear sort"
               style="display:none;background:#ce1212;color:white;border:none;border-radius:50%;width:32px;height:32px;flex-shrink:0;cursor:pointer;font-size:0.85rem;transition:0.2s;display:none;align-items:center;justify-content:center;">
               <i class="bi bi-x-lg"></i>
             </button>
@@ -619,9 +619,9 @@ include("header.php");
 
         $statut = determinerStatut($produit['quantiteStock'], $produit['dateExpiration']);
         $badgeCls = match($statut) {
-          'Disponible' => 'badge-dispo',
-          'Rupture'    => 'badge-rupture',
-          default      => 'badge-epuise',
+          'Available'    => 'badge-dispo',
+          'Out of Stock' => 'badge-rupture',
+          default        => 'badge-epuise',
         };
         ?>
         <div class="col-lg-4 col-md-6 product-item"
@@ -659,6 +659,16 @@ include("header.php");
               </span>
             </div>
             <div class="product-info">
+              <?php if ((int)$produit['quantiteStock'] > 0 && (int)$produit['quantiteStock'] <= 5): ?>
+              <!-- Low stock indicator — visible under image in product info -->
+              <div style="display:flex;align-items:center;gap:6px;background:#fff8e1;border:1px solid #ffc107;
+                          border-radius:8px;padding:6px 12px;margin-bottom:8px;">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#f57c00;font-size:0.85rem;flex-shrink:0;"></i>
+                <span style="font-size:0.8rem;font-weight:700;color:#e65100;">
+                  Only <?= (int)$produit['quantiteStock'] ?> left in stock!
+                </span>
+              </div>
+              <?php endif; ?>
               <div class="product-title"><?= htmlspecialchars($produit['nom']) ?></div>
               <?php
               $isMealPrep = (int)($produit['categorie'] ?? $produit['id_categorie'] ?? 0) === 3
@@ -680,10 +690,10 @@ include("header.php");
               <?php endif; ?>
               <div class="product-cat">
                 <i class="bi bi-tag-fill"></i>
-                <?= htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie') ?>
+                <?= htmlspecialchars($produit['categorie_nom'] ?? 'No category') ?>
               </div>
               <div class="product-price"><?= number_format((float)$produit['prix'], 2, ',', ' ') ?> DT</div>
-              <?php if ($statut === 'Disponible'): ?>
+              <?php if ($statut === 'Available'): ?>
                 <button class="btn-cart btn-ajouter-panier"
                         onclick="event.stopPropagation();"
                         data-id="<?= (int)$produit['id'] ?>"
@@ -711,7 +721,7 @@ include("header.php");
                data-prix="<?= (float)$produit['prix'] ?>"
                data-stock="<?= (int)$produit['quantiteStock'] ?>"
                data-expiration="<?= htmlspecialchars($produit['dateExpiration'] ?? '', ENT_QUOTES) ?>"
-               data-categorie="<?= htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie', ENT_QUOTES) ?>"
+               data-categorie="<?= htmlspecialchars($produit['categorie_nom'] ?? 'No category', ENT_QUOTES) ?>"
                data-statut="<?= htmlspecialchars($statut, ENT_QUOTES) ?>"
                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                data-calories="<?= rand(150, 550) ?>"
@@ -779,7 +789,10 @@ function ouvrirPanier() {
     html += '</tbody></table>';
     contenu.innerHTML = html; totalEl.textContent = total.toFixed(2).replace('.',',');
   }
-  new bootstrap.Modal(document.getElementById('modalPanier')).show();
+  // Reuse existing Bootstrap instance to avoid backdrop stacking issues
+  var panierEl = document.getElementById('modalPanier');
+  var instance = bootstrap.Modal.getInstance(panierEl) || new bootstrap.Modal(panierEl);
+  instance.show();
 }
 function changerQte(id,delta) {
   var panier = getPanier(), item = panier.find(function(p){ return p.id===id; });
@@ -790,6 +803,80 @@ function supprimerArticle(id) { savePanier(getPanier().filter(function(p){ retur
 function viderPanier() { savePanier([]); ouvrirPanier(); }
 function acheter() {
   var panier = getPanier(); if (!panier.length) return;
+
+  // ── Stock validation BEFORE opening checkout ──────────────────────────
+  // Remove any previous stock error banner in cart
+  var prevBanner = document.getElementById('panier-stock-error-banner');
+  if (prevBanner) prevBanner.remove();
+
+  // Check stock for each cart item using data attributes
+  var stockErrors = [];
+  panier.forEach(function(p) {
+    var dataEl = document.querySelector('.product-data[data-id="' + p.id + '"]');
+    if (dataEl) {
+      var stockDispo = parseInt(dataEl.dataset.stock) || 0;
+      if (p.quantite > stockDispo) {
+        stockErrors.push({
+          id: p.id,
+          nom: p.nom,
+          stockDisponible: stockDispo,
+          quantiteDemandee: p.quantite
+        });
+      }
+    }
+  });
+
+  if (stockErrors.length > 0) {
+    // Build error banner HTML
+    var html = '<div id="panier-stock-error-banner" style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:12px;padding:14px 16px;margin-bottom:14px;">';
+    html += '<div style="font-weight:700;font-size:0.88rem;color:#856404;margin-bottom:8px;"><i class="bi bi-exclamation-triangle-fill me-2"></i>Stock insuffisant</div>';
+    stockErrors.forEach(function(e) {
+      html += '<div style="font-size:0.82rem;color:#555;margin-bottom:5px;">';
+      if (e.stockDisponible === 0) {
+        html += '<strong>' + e.nom + '</strong> est en rupture de stock.';
+      } else {
+        html += '<strong>' + e.nom + '</strong> : il ne reste que <strong>' + e.stockDisponible + '</strong> en stock (vous en avez demandé ' + e.quantiteDemandee + ').';
+      }
+      html += '</div>';
+    });
+    html += '<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">';
+    html += '<button id="btn-panier-ajuster" style="background:#ce1212;color:white;border:none;border-radius:20px;padding:7px 16px;font-size:0.8rem;font-weight:600;cursor:pointer;"><i class="bi bi-cart-check me-1"></i>Ajuster les quantités</button>';
+    html += '<button id="btn-panier-annuler-stock" style="background:white;color:#555;border:1px solid #ddd;border-radius:20px;padding:7px 16px;font-size:0.8rem;font-weight:600;cursor:pointer;"><i class="bi bi-x-circle me-1"></i>Annuler</button>';
+    html += '</div></div>';
+
+    // Insert at top of cart modal body
+    var contenu = document.getElementById('panier-contenu');
+    contenu.insertAdjacentHTML('afterbegin', html);
+
+    // Attach button listeners
+    document.getElementById('btn-panier-ajuster').addEventListener('click', function() {
+      // Adjust cart quantities to available stock
+      var p2 = getPanier();
+      stockErrors.forEach(function(e) {
+        var item = p2.find(function(x){ return String(x.id) === String(e.id); });
+        if (item) {
+          if (e.stockDisponible === 0) {
+            p2 = p2.filter(function(x){ return String(x.id) !== String(e.id); });
+          } else {
+            item.quantite = e.stockDisponible;
+          }
+        }
+      });
+      savePanier(p2);
+      // Refresh cart view (removes banner and shows updated quantities)
+      ouvrirPanier();
+    });
+
+    document.getElementById('btn-panier-annuler-stock').addEventListener('click', function() {
+      var banner = document.getElementById('panier-stock-error-banner');
+      if (banner) banner.remove();
+    });
+
+    // Do NOT proceed to checkout
+    return;
+  }
+  // ── End stock validation ───────────────────────────────────────────────
+
   var subtotal = panier.reduce(function(s,p){ return s+p.prix*p.quantite; },0);
   var achDiscount   = getActiveDiscount();
   var discountedSub = achDiscount > 0 ? subtotal * (1 - achDiscount / 100) : subtotal;
@@ -1713,52 +1800,165 @@ function confirmerCommande(e) {
     }
   }
 
-  // Close modal first
-  var checkoutModal = bootstrap.Modal.getInstance(document.getElementById('modalCheckout'));
-  if (checkoutModal) checkoutModal.hide();
-
-  // Capture invoice data BEFORE clearing cart
+  // Capture invoice data BEFORE any async work
   var email = document.getElementById('co-email').value.trim();
   var phone = document.getElementById('co-phone') ? document.getElementById('co-phone').value.trim() : '';
   var invoiceItems = panier.map(function(p){
     return {nom: p.nom, quantite: p.quantite, prix: p.prix};
   });
 
-  // Clear cart
-  savePanier([]);
+  // Disable confirm button to prevent double-submit
+  var confirmBtn = document.querySelector('#modalCheckout button[type="submit"]');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Vérification du stock...'; }
 
-  // Track meals for achievements
-  trackMealsPurchased(invoiceItems);
-
-  // Decrement stock (fire and forget)
+  // Validate stock BEFORE clearing cart or closing modal
   fetch('update_stock.php', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({items: items})
-  }).catch(function(){});
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(result) {
+    // Re-enable button
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirm Order'; }
 
-  // Send invoice email
-  fetch('/ryhem/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/send_invoice.php', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      prenom: prenom, nom: nom, email: email, phone: phone,
-      method: methodLabel, items: invoiceItems, total: total
-    })
-  }).then(function(r){ return r.json(); })
-    .then(function(d){ console.log('[Invoice]', d); })
-    .catch(function(e){ console.error('[Invoice error]', e); });
+    if (!result.success && result.stockErrors && result.stockErrors.length > 0) {
+      // ── Stock error: show inline error and offer two options ──
+      afficherErreurStock(result.stockErrors, prenom, nom, email, phone, method, methodLabel, total, freeDelivery);
+      return;
+    }
 
-  // Show success toast after modal animation completes
-  document.getElementById('modalCheckout').addEventListener('hidden.bs.modal', function onHidden() {
-    document.getElementById('modalCheckout').removeEventListener('hidden.bs.modal', onHidden);
-    var msg = document.getElementById('order-success-toast');
-    document.getElementById('order-success-name').textContent = prenom + ' ' + nom;
-    document.getElementById('order-success-method').textContent = methodLabel;
-    document.getElementById('order-success-total').textContent = total.toFixed(2).replace('.',',') + ' DT';
-    msg.style.display = 'flex';
-    setTimeout(function(){ msg.style.display = 'none'; }, 6000);
-  }, {once: true});
+    // ── Stock OK: proceed with order confirmation ──
+    var checkoutModal = bootstrap.Modal.getInstance(document.getElementById('modalCheckout'));
+    if (checkoutModal) checkoutModal.hide();
+
+    // Clear cart
+    savePanier([]);
+
+    // Track meals for achievements
+    trackMealsPurchased(invoiceItems);
+
+    // Send invoice email
+    fetch('/ryhem/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/send_invoice.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        prenom: prenom, nom: nom, email: email, phone: phone,
+        method: methodLabel, items: invoiceItems, total: total
+      })
+    }).then(function(r){ return r.json(); })
+      .then(function(d){ console.log('[Invoice]', d); })
+      .catch(function(e){ console.error('[Invoice error]', e); });
+
+    // Show success toast after modal animation completes
+    document.getElementById('modalCheckout').addEventListener('hidden.bs.modal', function onHidden() {
+      document.getElementById('modalCheckout').removeEventListener('hidden.bs.modal', onHidden);
+      var msg = document.getElementById('order-success-toast');
+      document.getElementById('order-success-name').textContent = prenom + ' ' + nom;
+      document.getElementById('order-success-method').textContent = methodLabel;
+      document.getElementById('order-success-total').textContent = total.toFixed(2).replace('.',',') + ' DT';
+      msg.style.display = 'flex';
+      setTimeout(function(){ msg.style.display = 'none'; }, 6000);
+    }, {once: true});
+  })
+  .catch(function(err) {
+    // Network error — re-enable button and show generic error
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirm Order'; }
+    console.error('[Stock check error]', err);
+    alert('Une erreur réseau est survenue. Veuillez réessayer.');
+  });
+}
+
+/**
+ * Display a stock error message inside the checkout modal and offer two options:
+ * - Adjust quantities to available stock
+ * - Cancel (keep cart as-is)
+ */
+// Store stockErrors globally so buttons can access them without inline JSON
+var _pendingStockErrors = [];
+
+function afficherErreurStock(stockErrors, prenom, nom, email, phone, method, methodLabel, total, freeDelivery) {
+  // Save errors for button handlers
+  _pendingStockErrors = stockErrors;
+
+  // Build error HTML — no inline JSON to avoid quote escaping issues
+  var html = '<div id="stock-error-banner" style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:12px;padding:16px 18px;margin-bottom:16px;">';
+  html += '<div style="font-weight:700;font-size:0.9rem;color:#856404;margin-bottom:10px;"><i class="bi bi-exclamation-triangle-fill me-2"></i>Stock insuffisant</div>';
+  stockErrors.forEach(function(e) {
+    html += '<div style="font-size:0.85rem;color:#555;margin-bottom:6px;">';
+    html += '<strong>' + e.nom + '</strong> : ';
+    if (e.stockDisponible === 0) {
+      html += 'ce produit est en rupture de stock.';
+    } else {
+      html += 'il ne reste que <strong>' + e.stockDisponible + '</strong> en stock (vous en avez demandé ' + e.quantiteDemandee + ').';
+    }
+    html += '</div>';
+  });
+  html += '<div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">';
+  html += '<button id="btn-ajuster-stock" '
+        + 'style="background:#ce1212;color:white;border:none;border-radius:20px;padding:8px 18px;font-size:0.82rem;font-weight:600;cursor:pointer;">'
+        + '<i class="bi bi-cart-check me-1"></i>Ajuster la quantité</button>';
+  html += '<button id="btn-annuler-commande" '
+        + 'style="background:white;color:#555;border:1px solid #ddd;border-radius:20px;padding:8px 18px;font-size:0.82rem;font-weight:600;cursor:pointer;">'
+        + '<i class="bi bi-x-circle me-1"></i>Annuler</button>';
+  html += '</div></div>';
+
+  // Remove any existing error banner
+  var existing = document.getElementById('stock-error-banner');
+  if (existing) existing.parentNode.removeChild(existing);
+
+  // Insert at top of checkout form
+  var form = document.getElementById('checkoutForm');
+  if (form) {
+    form.insertAdjacentHTML('afterbegin', html);
+    form.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+
+  // Attach event listeners after insertion (avoids inline onclick + JSON escaping issues)
+  var btnAjuster = document.getElementById('btn-ajuster-stock');
+  if (btnAjuster) {
+    btnAjuster.addEventListener('click', function() {
+      ajusterPanierStock(_pendingStockErrors);
+    });
+  }
+  var btnAnnuler = document.getElementById('btn-annuler-commande');
+  if (btnAnnuler) {
+    btnAnnuler.addEventListener('click', function() {
+      annulerCommande();
+    });
+  }
+}
+
+/**
+ * Adjust cart quantities to match available stock, then reopen cart modal.
+ */
+function ajusterPanierStock(stockErrors) {
+  var panier = getPanier();
+  stockErrors.forEach(function(e) {
+    var item = panier.find(function(p) { return String(p.id) === String(e.id); });
+    if (item) {
+      if (e.stockDisponible === 0) {
+        // Remove item entirely
+        panier = panier.filter(function(p) { return String(p.id) !== String(e.id); });
+      } else {
+        item.quantite = e.stockDisponible;
+      }
+    }
+  });
+  savePanier(panier);
+
+  // Close checkout modal and reopen cart
+  var checkoutModal = bootstrap.Modal.getInstance(document.getElementById('modalCheckout'));
+  if (checkoutModal) checkoutModal.hide();
+  setTimeout(function() { ouvrirPanier(); }, 350);
+}
+
+/**
+ * Cancel order — just close the checkout modal, keep cart intact.
+ */
+function annulerCommande() {
+  var checkoutModal = bootstrap.Modal.getInstance(document.getElementById('modalCheckout'));
+  if (checkoutModal) checkoutModal.hide();
 }
 </script>
 
@@ -1881,7 +2081,7 @@ function confirmerCommande(e) {
             <!-- ── AVIS SECTION ── -->
             <div style="border-top:1px solid #f0f0f0;padding-top:14px;margin-bottom:16px;">
               <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-                <i class="bi bi-star-fill" style="color:#f39c12;"></i> Avis clients
+                <i class="bi bi-star-fill" style="color:#f39c12;"></i> Customer Reviews
                 <span id="modal-avg-stars" style="color:#f39c12;font-size:0.9rem;margin-left:4px;"></span>
                 <span id="modal-avg-text" style="font-size:0.72rem;color:#bbb;font-weight:400;text-transform:none;letter-spacing:0;"></span>
               </div>
@@ -1900,17 +2100,17 @@ function confirmerCommande(e) {
                     <span class="mstar" data-val="5" style="font-size:1.8rem;color:#ddd;transition:color 0.1s;">★</span>
                   </div>
                   <input type="hidden" id="modal-note-value" name="note" value="">
-                  <div style="font-size:0.7rem;color:#bbb;margin-top:2px;" id="modal-star-hint">Cliquez pour noter</div>
+                  <div style="font-size:0.7rem;color:#bbb;margin-top:2px;" id="modal-star-hint">Click to rate</div>
                 </div>
                 <textarea name="commentaire" id="modal-avis-comment" rows="2"
                   style="border-radius:6px;border:1px solid #e0e0e0;padding:8px 12px;font-size:0.82rem;width:100%;outline:none;resize:none;font-family:'Inter',sans-serif;margin-bottom:8px;"
-                  placeholder="Votre commentaire..."></textarea>
+                  placeholder="Your comment..."></textarea>
                 <button type="submit" id="modal-avis-submit"
                   style="background:#ce1212;color:white;border:none;border-radius:20px;padding:7px 20px;font-size:0.8rem;font-weight:600;cursor:pointer;">
-                  <i class="bi bi-send me-1"></i>Envoyer
+                  <i class="bi bi-send me-1"></i>Submit
                 </button>
                 <span id="modal-avis-success" style="display:none;font-size:0.8rem;color:#2e7d32;margin-left:10px;">
-                  <i class="bi bi-check-circle-fill me-1"></i>Merci pour votre avis !
+                  <i class="bi bi-check-circle-fill me-1"></i>Thank you for your review!
                 </span>
               </form>
             </div>
@@ -1983,13 +2183,30 @@ function openProductModal(id) {
   // Status badge
   var badge = document.getElementById('modal-statut');
   badge.textContent = statut;
-  badge.style.background = statut==='Disponible' ? '#e8f5e9' : statut==='Rupture' ? '#fdecea' : '#f5f5f5';
-  badge.style.color      = statut==='Disponible' ? '#2e7d32' : statut==='Rupture' ? '#c62828' : '#757575';
+  badge.style.background = statut==='Available' ? '#e8f5e9' : statut==='Out of Stock' ? '#fdecea' : '#f5f5f5';
+  badge.style.color      = statut==='Available' ? '#2e7d32' : statut==='Out of Stock' ? '#c62828' : '#757575';
+
+  // Translate status for display
+  var statutLabel = statut === 'Available' ? 'Available' : statut === 'Out of Stock' ? 'Out of Stock' : 'Expired';
+  badge.textContent = statutLabel;
+
+  // Low stock indicator in modal
+  var existingLowStock = document.getElementById('modal-low-stock');
+  if (existingLowStock) existingLowStock.remove();
+  if (stock > 0 && stock <= 5) {
+    var lowStockEl = document.createElement('div');
+    lowStockEl.id = 'modal-low-stock';
+    lowStockEl.style.cssText = 'display:flex;align-items:center;gap:6px;background:#fff8e1;border:1px solid #ffc107;border-radius:8px;padding:7px 12px;margin-bottom:12px;';
+    lowStockEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="color:#f57c00;font-size:0.9rem;flex-shrink:0;"></i>'
+      + '<span style="font-size:0.82rem;font-weight:700;color:#e65100;">Only ' + stock + ' left in stock!</span>';
+    var priceEl = document.getElementById('modal-price');
+    priceEl.parentNode.insertBefore(lowStockEl, priceEl);
+  }
 
   // Image badge
   var imgBadge = document.getElementById('modal-badge');
-  imgBadge.textContent = statut;
-  imgBadge.style.background = statut==='Disponible' ? '#28a745' : statut==='Rupture' ? '#dc3545' : '#6c757d';
+  imgBadge.textContent = statutLabel;
+  imgBadge.style.background = statut==='Available' ? '#28a745' : statut==='Out of Stock' ? '#dc3545' : '#6c757d';
   imgBadge.style.color = 'white';
 
   // Image
@@ -2003,7 +2220,7 @@ function openProductModal(id) {
   btn.innerHTML = isMealPrep
     ? '<i class="bi bi-basket2 me-2"></i>Get Ingredients'
     : '<i class="bi bi-cart-plus me-2"></i>Add to Cart';
-  if (statut === 'Disponible') {
+  if (statut === 'Available') {
     btn.disabled = false;
     btn.style.background = '#ce1212';
     btn.onclick = function() {
@@ -2011,7 +2228,7 @@ function openProductModal(id) {
       var ex = panier.find(function(p){ return p.id===String(id); });
       if (ex) { ex.quantite+=1; } else { panier.push({id:String(id),nom:nom,prix:prix,image:image,quantite:1}); }
       savePanier(panier);
-      document.getElementById('panier-toast-msg').textContent = '"'+nom+'" ajouté !';
+      document.getElementById('panier-toast-msg').textContent = '"'+nom+'" added to cart!';
       var t=document.getElementById('panier-toast'); t.style.display='flex';
       setTimeout(function(){ t.style.display='none'; },3000);
       bootstrap.Modal.getInstance(document.getElementById('modalProduitDetail')).hide();
@@ -2038,14 +2255,14 @@ function loadModalAvis(produitId) {
     .then(function(r){ return r.json(); })
     .then(function(data) {
       if (!data.avis || data.avis.length === 0) {
-        list.innerHTML = '<div style="font-size:0.8rem;color:#bbb;font-style:italic;padding:4px 0;">Aucun avis. Soyez le premier !</div>';
+        list.innerHTML = '<div style="font-size:0.8rem;color:#bbb;font-style:italic;padding:4px 0;">No reviews yet. Be the first!</div>';
         avgStars.textContent = '';
         avgText.textContent  = '';
         return;
       }
       var avg = parseFloat(data.avg) || 0;
       avgStars.textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
-      avgText.textContent  = avg.toFixed(1) + '/5 (' + data.total + ' avis)';
+      avgText.textContent  = avg.toFixed(1) + '/5 (' + data.total + ' review' + (data.total > 1 ? 's' : '') + ')';
       var html = '';
       data.avis.forEach(function(a) {
         var stars = '★'.repeat(parseInt(a.note)) + '☆'.repeat(5 - parseInt(a.note));
@@ -2060,7 +2277,7 @@ function loadModalAvis(produitId) {
       list.innerHTML = html;
     })
     .catch(function() {
-      list.innerHTML = '<div style="font-size:0.8rem;color:#bbb;">Impossible de charger les avis.</div>';
+      list.innerHTML = '<div style="font-size:0.8rem;color:#bbb;">Could not load reviews.</div>';
     });
 }
 
@@ -2073,7 +2290,7 @@ var currentNote = 0;
 function resetModalStars() {
   currentNote = 0;
   document.querySelectorAll('.mstar').forEach(function(s){ s.style.color = '#ddd'; });
-  document.getElementById('modal-star-hint').textContent = 'Cliquez pour noter';
+  document.getElementById('modal-star-hint').textContent = 'Click to rate';
 }
 document.querySelectorAll('.mstar').forEach(function(star) {
   star.addEventListener('mouseover', function() {

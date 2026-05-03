@@ -227,6 +227,10 @@
     <div class="nav-section">System</div>
     <a href="#"><i class="bi bi-bar-chart"></i> Statistics</a>
     <a href="#"><i class="bi bi-people"></i> Users</a>
+    <a href="afficherReclamations.php"
+       class="<?= $currentPage === 'afficherReclamations.php' ? 'active' : '' ?>">
+      <i class="bi bi-megaphone"></i> Complaints
+    </a>
   </nav>
   <div class="front-btn">
     <a href="../front/interfaceclient.php">
@@ -252,6 +256,7 @@
       'ajouterCategorie.php'  => 'Add Category',
       'modifierCategorie.php' => 'Edit Category',
       'supprimerCategorie.php'=> 'Delete Category',
+      'afficherReclamations.php' => 'Complaints',
     ];
     echo $titles[$currentPage] ?? 'Dashboard';
     ?>
