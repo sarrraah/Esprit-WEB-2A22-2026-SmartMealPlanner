@@ -397,16 +397,22 @@ include("header.php");
             </select>
           </div>
           <div class="col-md-3">
-            <select id="filter-tri" class="filter-input">
-              <option value="">— Sort —</option>
-              <option value="nom-asc">Name A → Z</option>
-              <option value="nom-desc">Name Z → A</option>
-              <option value="expiration-asc">Expiring Soon ↑</option>
-              <option value="prix-asc">Price ↑</option>
-              <option value="prix-desc">Price ↓</option>
-              <option value="stock-asc">Stock ↑</option>
-              <option value="stock-desc">Stock ↓</option>
-            </select>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="filter-tri" class="filter-input" style="flex:1;" onchange="filtrerProduits();toggleResetTriBtn()">
+                <option value="">— Sort —</option>
+                <option value="nom-asc">Name A → Z</option>
+                <option value="nom-desc">Name Z → A</option>
+                <option value="expiration-asc">Expiring Soon ↑</option>
+                <option value="prix-asc">Price ↑</option>
+                <option value="prix-desc">Price ↓</option>
+                <option value="stock-asc">Stock ↑</option>
+                <option value="stock-desc">Stock ↓</option>
+              </select>
+              <button id="reset-tri-btn" onclick="resetTri()" title="Clear sort"
+                style="display:none;background:#e74c3c;color:white;border:none;border-radius:50%;width:30px;height:30px;flex-shrink:0;cursor:pointer;font-size:0.8rem;align-items:center;justify-content:center;">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -662,7 +668,7 @@ include("header.php");
 var tbody = document.getElementById('tbody-produits');
 Array.from(tbody.querySelectorAll('tr:not(#no-result)')).forEach(function(r,i){ r.dataset.index=i; });
 
-function filtrerEtTrier() {
+function filtrerProduits() {
   var q=document.getElementById('search-produit').value.toLowerCase().trim();
   var st=document.getElementById('filter-statut').value;
   var tri=document.getElementById('filter-tri').value;
@@ -691,9 +697,19 @@ function filtrerEtTrier() {
   }
   document.getElementById('no-result').style.display=visible===0?'':'none';
 }
-document.getElementById('search-produit').addEventListener('input',filtrerEtTrier);
-document.getElementById('filter-statut').addEventListener('change',filtrerEtTrier);
-document.getElementById('filter-tri').addEventListener('change',filtrerEtTrier);
+function toggleResetTriBtn() {
+  var sel = document.getElementById('filter-tri');
+  var btn = document.getElementById('reset-tri-btn');
+  if (!btn) return;
+  btn.style.display = sel.value ? 'flex' : 'none';
+}
+function resetTri() {
+  document.getElementById('filter-tri').value = '';
+  toggleResetTriBtn();
+  filtrerProduits();
+}
+document.getElementById('search-produit').addEventListener('input',filtrerProduits);
+document.getElementById('filter-statut').addEventListener('change',filtrerProduits);
 </script>
 
 <?php include("footer.php"); ?>

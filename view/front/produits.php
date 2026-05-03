@@ -189,7 +189,33 @@ include("header.php");
         </div>
         <h1>Discover our <span>fresh</span> &amp; healthy products</h1>
         <p>The top-rated product from each category — handpicked based on customer reviews.</p>
-        <a href="#produitsGrid" class="btn-browse">Browse products</a>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <a href="#produitsGrid"
+             onclick="event.preventDefault();document.getElementById('produitsGrid').scrollIntoView({behavior:'smooth',block:'start'})"
+             class="btn-browse">
+            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Browse products
+          </a>
+          <a href="#ai-reco-section"
+             onclick="event.preventDefault();scrollToReco()"
+             style="display:inline-flex;align-items:center;gap:6px;background:white;color:#ce1212;
+                    border:2px solid #ce1212;padding:11px 22px;border-radius:25px;
+                    font-family:'Inter',sans-serif;font-weight:600;font-size:14px;
+                    text-decoration:none;transition:0.3s;"
+             onmouseover="this.style.background='#fff0f0'"
+             onmouseout="this.style.background='white'">
+            <i class="bi bi-stars"></i> AI Picks
+          </a>
+          <a href="#achievements-section"
+             onclick="event.preventDefault();scrollToGoals()"
+             style="display:inline-flex;align-items:center;gap:6px;background:white;color:#2d2d2d;
+                    border:2px solid #e0e0e0;padding:11px 22px;border-radius:25px;
+                    font-family:'Inter',sans-serif;font-weight:600;font-size:14px;
+                    text-decoration:none;transition:0.3s;"
+             onmouseover="this.style.borderColor='#ce1212';this.style.color='#ce1212'"
+             onmouseout="this.style.borderColor='#e0e0e0';this.style.color='#2d2d2d'">
+            <i class="bi bi-trophy-fill"></i> My Goals
+          </a>
+        </div>
       </div>
       <div class="col-lg-7 order-1 order-lg-2">
         <!-- Best meal per category in hero -->
@@ -736,6 +762,10 @@ include("header.php");
       </div>
     </div>
 
+    <!-- PAGINATION -->
+    <div id="pagination-container" style="display:flex;justify-content:center;align-items:center;gap:6px;margin:28px 0 8px;flex-wrap:wrap;">
+    </div>
+
   </div>
 </section>
 
@@ -920,28 +950,98 @@ document.querySelectorAll('.btn-ajouter-panier').forEach(function(btn) {
   });
 });
 
+var ITEMS_PER_PAGE = 9;
+var currentPage   = 1;
+
 function filtrerProduits() {
-  var q   = document.getElementById('searchInput').value.toLowerCase().trim();
-  var tri = document.getElementById('sortSel').value;
+  currentPage = 1;
+  renderPage();
+}
+
+function renderPage() {
+  var q    = document.getElementById('searchInput').value.toLowerCase().trim();
+  var tri  = document.getElementById('sortSel').value;
   var items = Array.from(document.querySelectorAll('.product-item'));
-  var visible = 0;
-  items.forEach(function(el) {
-    var nom = el.dataset.nom || '';
-    el.style.display = (!q || nom.includes(q)) ? '' : 'none';
-    if (el.style.display !== 'none') visible++;
+
+  // Filter
+  var visible = items.filter(function(el) {
+    return !q || (el.dataset.nom || '').includes(q);
   });
+
+  // Sort
   if (tri) {
     var field = tri.split('-')[0], dir = tri.split('-')[1];
-    var vis = items.filter(function(el){ return el.style.display !== 'none'; });
-    vis.sort(function(a,b) {
-      if (field==='nom')   { return dir==='asc' ? (a.dataset.nom||'').localeCompare(b.dataset.nom||'') : (b.dataset.nom||'').localeCompare(a.dataset.nom||''); }
-      if (field==='prix')  { var va=parseFloat(a.dataset.prix)||0, vb=parseFloat(b.dataset.prix)||0; return dir==='asc'?va-vb:vb-va; }
-      if (field==='stock') { var va=parseInt(a.dataset.stock)||0,  vb=parseInt(b.dataset.stock)||0;  return dir==='asc'?va-vb:vb-va; }
+    visible.sort(function(a, b) {
+      if (field === 'nom')   return dir === 'asc' ? (a.dataset.nom||'').localeCompare(b.dataset.nom||'') : (b.dataset.nom||'').localeCompare(a.dataset.nom||'');
+      if (field === 'prix')  { var va = parseFloat(a.dataset.prix)||0, vb = parseFloat(b.dataset.prix)||0; return dir==='asc'?va-vb:vb-va; }
+      if (field === 'stock') { var va = parseInt(a.dataset.stock)||0,  vb = parseInt(b.dataset.stock)||0;  return dir==='asc'?va-vb:vb-va; }
     });
-    var grid = document.getElementById('produitsGrid');
-    vis.forEach(function(el){ grid.appendChild(el); });
   }
-  document.getElementById('no-result').style.display = visible === 0 ? '' : 'none';
+
+  // Hide all first
+  items.forEach(function(el) { el.style.display = 'none'; });
+
+  // Paginate
+  var total     = visible.length;
+  var totalPages = Math.ceil(total / ITEMS_PER_PAGE) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  var start = (currentPage - 1) * ITEMS_PER_PAGE;
+  var end   = start + ITEMS_PER_PAGE;
+  var grid  = document.getElementById('produitsGrid');
+
+  visible.forEach(function(el, i) {
+    if (i >= start && i < end) {
+      el.style.display = '';
+      grid.appendChild(el); // maintain sort order
+    }
+  });
+
+  document.getElementById('no-result').style.display = total === 0 ? '' : 'none';
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  var container = document.getElementById('pagination-container');
+  if (!container) return;
+
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  var btnBase = 'style="min-width:36px;height:36px;border-radius:50%;border:1.5px solid #e0e0e0;'
+              + 'background:white;font-family:\'Inter\',sans-serif;font-size:0.82rem;font-weight:600;'
+              + 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:0.2s;"';
+
+  var html = '';
+
+  // Prev
+  html += '<button ' + btnBase + (currentPage === 1 ? ' disabled style="min-width:36px;height:36px;border-radius:50%;border:1.5px solid #e0e0e0;background:#f5f5f5;font-family:\'Inter\',sans-serif;font-size:0.82rem;font-weight:600;cursor:not-allowed;display:inline-flex;align-items:center;justify-content:center;opacity:0.4;"' : '')
+         + ' onclick="goToPage(' + (currentPage - 1) + ')">'
+         + '<i class="bi bi-chevron-left"></i></button>';
+
+  // Page numbers
+  for (var p = 1; p <= totalPages; p++) {
+    var isActive = p === currentPage;
+    var s = isActive
+      ? 'style="min-width:36px;height:36px;border-radius:50%;border:none;background:#ce1212;color:white;font-family:\'Inter\',sans-serif;font-size:0.82rem;font-weight:700;cursor:default;display:inline-flex;align-items:center;justify-content:center;"'
+      : btnBase + ' onmouseover="this.style.borderColor=\'#ce1212\';this.style.color=\'#ce1212\'" onmouseout="this.style.borderColor=\'#e0e0e0\';this.style.color=\'\'"';
+    html += '<button ' + s + (isActive ? '' : ' onclick="goToPage(' + p + ')"') + '>' + p + '</button>';
+  }
+
+  // Next
+  html += '<button ' + btnBase + (currentPage === totalPages ? ' disabled style="min-width:36px;height:36px;border-radius:50%;border:1.5px solid #e0e0e0;background:#f5f5f5;font-family:\'Inter\',sans-serif;font-size:0.82rem;font-weight:600;cursor:not-allowed;display:inline-flex;align-items:center;justify-content:center;opacity:0.4;"' : '')
+         + ' onclick="goToPage(' + (currentPage + 1) + ')">'
+         + '<i class="bi bi-chevron-right"></i></button>';
+
+  container.innerHTML = html;
+}
+
+function goToPage(p) {
+  currentPage = p;
+  renderPage();
+  // Smooth scroll to grid top
+  var grid = document.getElementById('produitsGrid');
+  if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function toggleResetBtn() {
@@ -1166,9 +1266,78 @@ function recoAddToCart(id, nom, prix, image) {
   setTimeout(function() { t.style.display = 'none'; }, 3000);
 }
 
+// ── SCROLL TO AI RECO + ZOOM ANIMATION ───────────────────────────────────
+function scrollToReco() {
+  var section = document.getElementById('ai-reco-section');
+  if (!section) return;
+
+  section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  setTimeout(function() {
+    section.style.transition   = 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease';
+    section.style.transform    = 'scale(1.025)';
+    section.style.boxShadow    = '0 0 0 4px rgba(206,18,18,0.25), 0 8px 32px rgba(206,18,18,0.18)';
+    section.style.borderRadius = '18px';
+
+    setTimeout(function() {
+      section.style.transform = 'scale(1)';
+      section.style.boxShadow = '0 2px 10px rgba(0,0,0,0.05)';
+      setTimeout(function() { section.style.transition = ''; }, 200);
+    }, 380);
+
+    // Staggered bounce on each reco card
+    var cards = section.querySelectorAll('#reco-list > div > div');
+    cards.forEach(function(card, i) {
+      setTimeout(function() {
+        card.style.transition = 'transform 0.22s cubic-bezier(0.34,1.56,0.64,1)';
+        card.style.transform  = 'translateY(-10px) scale(1.04)';
+        setTimeout(function() {
+          card.style.transform = '';
+          setTimeout(function() { card.style.transition = ''; }, 220);
+        }, 260);
+      }, i * 100);
+    });
+  }, 620);
+}
+
+// ── SCROLL TO GOALS + ZOOM ANIMATION ─────────────────────────────────────
+function scrollToGoals() {
+  var section = document.getElementById('achievements-section');
+  if (!section) return;
+
+  section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  setTimeout(function() {
+    section.style.transition   = 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease';
+    section.style.transform    = 'scale(1.035)';
+    section.style.boxShadow    = '0 0 0 4px rgba(206,18,18,0.25), 0 8px 32px rgba(206,18,18,0.18)';
+    section.style.borderRadius = '18px';
+
+    setTimeout(function() {
+      section.style.transform = 'scale(1)';
+      section.style.boxShadow = '0 2px 10px rgba(0,0,0,0.05)';
+      setTimeout(function() { section.style.transition = ''; }, 200);
+    }, 380);
+
+    // Staggered bounce on each achievement card
+    var cards = section.querySelectorAll('.achievement-card');
+    cards.forEach(function(card, i) {
+      setTimeout(function() {
+        card.style.transition = 'transform 0.22s cubic-bezier(0.34,1.56,0.64,1)';
+        card.style.transform  = 'translateY(-8px) scale(1.06)';
+        setTimeout(function() {
+          card.style.transform = '';
+          setTimeout(function() { card.style.transition = ''; }, 220);
+        }, 260);
+      }, i * 80);
+    });
+  }, 620);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  loadBestByCategory();   // hero: best per category
-  loadRecommendations();  // middle: personal AI picks
+  renderPage();             // initialize product grid with pagination
+  loadBestByCategory();     // hero: best per category
+  loadRecommendations();    // middle: personal AI picks
 });
 
 // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────

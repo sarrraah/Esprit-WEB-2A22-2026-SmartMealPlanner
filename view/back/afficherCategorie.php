@@ -276,11 +276,17 @@ include("header.php");
             <input type="text" id="search-categorie" class="filter-input" placeholder="Search categories...">
           </div>
           <div class="col-md-5">
-            <select id="sort-categorie" class="filter-input">
-              <option value="">— Sort —</option>
-              <option value="nom-asc">Name A → Z</option>
-              <option value="nom-desc">Name Z → A</option>
-            </select>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="sort-categorie" class="filter-input" style="flex:1;" onchange="filtrerCategories();toggleResetSortCat()">
+                <option value="">— Sort —</option>
+                <option value="nom-asc">Name A → Z</option>
+                <option value="nom-desc">Name Z → A</option>
+              </select>
+              <button id="reset-sort-cat-btn" onclick="resetSortCat()" title="Clear sort"
+                style="display:none;background:#e74c3c;color:white;border:none;border-radius:50%;width:30px;height:30px;flex-shrink:0;cursor:pointer;font-size:0.8rem;align-items:center;justify-content:center;">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
           </div>
         </div>
         <div class="table-responsive">
@@ -357,8 +363,18 @@ function filtrerCategories() {
   }
   document.getElementById('no-result-cat').style.display = visible === 0 ? '' : 'none';
 }
+function toggleResetSortCat() {
+  var sel = document.getElementById('sort-categorie');
+  var btn = document.getElementById('reset-sort-cat-btn');
+  if (!btn) return;
+  btn.style.display = sel.value ? 'flex' : 'none';
+}
+function resetSortCat() {
+  document.getElementById('sort-categorie').value = '';
+  toggleResetSortCat();
+  filtrerCategories();
+}
 document.getElementById('search-categorie').addEventListener('input', filtrerCategories);
-document.getElementById('sort-categorie').addEventListener('change', filtrerCategories);
 </script>
 
 <?php include("footer.php"); ?>

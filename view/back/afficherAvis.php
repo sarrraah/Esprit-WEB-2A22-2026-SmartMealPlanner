@@ -103,40 +103,11 @@ foreach ($allAvis as $a) {
     if ($n >= 1 && $n <= 5) $noteDistrib[$n]++;
 }
 
-// ── Satisfaction rate over time (monthly avg note + satisfaction %) ────────
-// satisfaction = % of reviews with note >= 4
-$stmtSat = $db->query("
-    SELECT
-        DATE_FORMAT(date_avis, '%Y-%m')          AS mois,
-        ROUND(AVG(note), 2)                      AS avg_note,
-        ROUND(SUM(note >= 4) / COUNT(*) * 100, 1) AS taux_satisfaction,
-        COUNT(*)                                  AS nb_avis
-    FROM avis
-    WHERE date_avis IS NOT NULL
-    GROUP BY mois
-    ORDER BY mois ASC
-    LIMIT 24
-");
-$satData = $stmtSat->fetchAll();
-
-// Format labels as "Jan 2025" etc.
-$satLabels  = [];
-$satAvg     = [];
-$satTaux    = [];
-$satCounts  = [];
-foreach ($satData as $row) {
-    $dt = DateTime::createFromFormat('Y-m', $row['mois']);
-    $satLabels[] = $dt ? $dt->format('M Y') : $row['mois'];
-    $satAvg[]    = (float)$row['avg_note'];
-    $satTaux[]   = (float)$row['taux_satisfaction'];
-    $satCounts[] = (int)$row['nb_avis'];
-}
-
-// Overall satisfaction rate
-$satisfaits     = count(array_filter($allAvis, fn($a) => (int)$a['note'] >= 4));
-$tauxGlobal     = $totalAvis > 0 ? round($satisfaits / $totalAvis * 100, 1) : 0;
-$insatisfaits   = count(array_filter($allAvis, fn($a) => (int)$a['note'] <= 2));
-$tauxInsatisf   = $totalAvis > 0 ? round($insatisfaits / $totalAvis * 100, 1) : 0;
+// ── Overall satisfaction rate (kept for stat cards) ────────────────────────
+$satisfaits   = count(array_filter($allAvis, fn($a) => (int)$a['note'] >= 4));
+$tauxGlobal   = $totalAvis > 0 ? round($satisfaits / $totalAvis * 100, 1) : 0;
+$insatisfaits = count(array_filter($allAvis, fn($a) => (int)$a['note'] <= 2));
+$tauxInsatisf = $totalAvis > 0 ? round($insatisfaits / $totalAvis * 100, 1) : 0;
 
 // ── Star helper ────────────────────────────────────────────────────────────
 function renderStars(int $note): string {
@@ -289,29 +260,6 @@ include('header.php');
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- SATISFACTION CURVE -->
-  <div style="background:#fff;border-radius:14px;padding:20px 24px;box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-bottom:28px;">
-    <div style="font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#2d2d2d;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-      <i class="bi bi-graph-up-arrow" style="color:#2e7d32;"></i> Satisfaction Rate Over Time
-      <span style="margin-left:auto;display:flex;gap:16px;font-size:0.68rem;font-weight:400;letter-spacing:0;text-transform:none;">
-        <span style="display:flex;align-items:center;gap:5px;"><span style="width:24px;height:3px;background:#2e7d32;border-radius:2px;display:inline-block;"></span> Satisfaction % (≥4★)</span>
-        <span style="display:flex;align-items:center;gap:5px;"><span style="width:24px;height:3px;background:#1a73e8;border-radius:2px;display:inline-block;"></span> Avg Note /5</span>
-        <span style="display:flex;align-items:center;gap:5px;"><span style="width:24px;height:3px;background:#e74c3c;border-radius:2px;display:inline-block;border-style:dashed;"></span> Reviews count</span>
-      </span>
-    </div>
-    <div style="font-size:0.72rem;color:#999;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;">
-      Monthly evolution — satisfaction = % of reviews with note ≥ 4
-    </div>
-    <?php if (empty($satLabels)): ?>
-      <div style="text-align:center;padding:40px 0;color:#bbb;font-size:0.85rem;">
-        <i class="bi bi-graph-up" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-        Not enough data to display the curve yet.
-      </div>
-    <?php else: ?>
-      <canvas id="chartSatisfaction" height="90"></canvas>
-    <?php endif; ?>
   </div>
 
   <!-- ANALYTICS SECTION -->
@@ -550,7 +498,7 @@ include('header.php');
   </script>
 
   <!-- TABLE CARD -->
-  <div class="section-card">
+  <div class="section-card" id="table-section">
     <div class="section-card-title">
       <i class="bi bi-chat-square-text-fill"></i> All Reviews
       <span class="ms-auto" style="font-size:0.72rem;color:#999;font-weight:300;letter-spacing:0;">
@@ -559,7 +507,7 @@ include('header.php');
     </div>
 
     <!-- Filters -->
-    <form method="GET" action="afficherAvis.php">
+    <form method="GET" action="afficherAvis.php#table-section">
       <div class="row g-2 mb-3">
         <div class="col-md-4">
           <select name="produit" class="filter-input" onchange="this.form.submit()">

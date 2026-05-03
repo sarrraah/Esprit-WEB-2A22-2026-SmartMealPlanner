@@ -1180,10 +1180,23 @@ document.getElementById('modal-avis-form').addEventListener('submit', function(e
 
 <?php else: ?>
 <!-- ── MODE: LISTE DES CATÉGORIES ── -->
-<section class="section light-background py-5">
-  <div class="container section-title">
+<section class="section light-background py-3">
+  <div class="container section-title" style="padding-bottom:0;margin-bottom:0;">
     <h2>Boutique</h2>
-    <p><span>Nos</span> <span class="description-title">Catégories</span></p>
+    <p style="margin-bottom:12px;"><span>Nos</span> <span class="description-title">Catégories</span></p>
+    <div style="display:flex;justify-content:center;margin-bottom:16px;">
+      <a href="#best-picks-section"
+         onclick="event.preventDefault();scrollToBestPicks()"
+         style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#ce1212,#ff4444);
+                color:white;border:none;padding:7px 16px;border-radius:20px;
+                font-family:'Inter',sans-serif;font-weight:600;font-size:0.78rem;
+                text-decoration:none;box-shadow:0 3px 10px rgba(206,18,18,0.25);transition:0.3s;"
+         onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 5px 16px rgba(206,18,18,0.38)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='0 3px 10px rgba(206,18,18,0.25)'">
+        <i class="bi bi-grid-3x3-gap-fill" style="font-size:0.75rem;"></i> Best Picks per Category
+        <i class="bi bi-arrow-down-short"></i>
+      </a>
+    </div>
   </div>
   <div class="container">
 
@@ -1240,6 +1253,25 @@ document.getElementById('modal-avis-form').addEventListener('submit', function(e
         Aucune catégorie trouvée.
       </div>
     </div>
+
+    <!-- BEST PICKS PER CATEGORY WIDGET — below the grid -->
+    <div id="best-picks-section" style="background:white;border-radius:16px;padding:24px;margin-top:36px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="background:linear-gradient(135deg,#ce1212,#ff4444);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="bi bi-grid-3x3-gap-fill" style="color:white;font-size:0.85rem;"></i>
+        </div>
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:#2d2d2d;">Best Meal per Category</div>
+          <div style="font-size:0.8rem;color:#888;">Top-rated product from each category, based on customer reviews.</div>
+        </div>
+      </div>
+      <div id="cat-best-loading" style="display:flex;align-items:center;gap:10px;color:#bbb;font-size:0.85rem;padding:12px 0;">
+        <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
+        Loading best picks...
+      </div>
+      <div id="cat-best-list" style="display:none;"></div>
+    </div>
+
   </div>
 </section>
 
@@ -1385,8 +1417,137 @@ function wishlistAddToCartCat(id){
 document.addEventListener('DOMContentLoaded',function(){
   updateBadge();
   updateWishlistBadge();
+  loadCatBestPicks();
 });
 updateBadge();
+
+// ── SCROLL TO BEST PICKS + ZOOM ───────────────────────────────────────────
+function scrollToBestPicks() {
+  var section = document.getElementById('best-picks-section');
+  if (!section) return;
+
+  section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  setTimeout(function() {
+    section.style.transition   = 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease';
+    section.style.transform    = 'scale(1.025)';
+    section.style.boxShadow    = '0 0 0 4px rgba(206,18,18,0.22), 0 8px 32px rgba(206,18,18,0.15)';
+    section.style.borderRadius = '18px';
+
+    setTimeout(function() {
+      section.style.transform = 'scale(1)';
+      section.style.boxShadow = '0 2px 10px rgba(0,0,0,0.05)';
+      setTimeout(function() { section.style.transition = ''; }, 200);
+    }, 380);
+
+    // Staggered bounce on each card
+    var cards = section.querySelectorAll('#cat-best-list > div > div');
+    cards.forEach(function(card, i) {
+      setTimeout(function() {
+        card.style.transition = 'transform 0.22s cubic-bezier(0.34,1.56,0.64,1)';
+        card.style.transform  = 'translateY(-8px) scale(1.04)';
+        setTimeout(function() {
+          card.style.transform = '';
+          setTimeout(function() { card.style.transition = ''; }, 220);
+        }, 260);
+      }, i * 90);
+    });
+  }, 620);
+}
+
+// ── BEST PICKS PER CATEGORY ───────────────────────────────────────────────
+function loadCatBestPicks() {
+  var loading = document.getElementById('cat-best-loading');
+  var list    = document.getElementById('cat-best-list');
+  if (!loading || !list) return;
+
+  fetch('get_best_by_category.php')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.style.display = 'none';
+      if (!Array.isArray(data) || data.length === 0) {
+        list.innerHTML = '<p style="color:#bbb;font-size:0.85rem;text-align:center;padding:12px 0;">No products available yet.</p>';
+        list.style.display = 'block';
+        return;
+      }
+
+      var cols = data.length <= 3 ? data.length : (data.length <= 4 ? 2 : 3);
+      var html = '<div style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:14px;">';
+
+      data.forEach(function(item) {
+        var safeNom = item.nom.replace(/'/g, "\\'");
+        var safeImg = (item.image||'').replace(/'/g, "\\'");
+        var priceStr = item.prix.toFixed(2).replace('.', ',') + ' DT';
+        var bgStyle  = item.image
+          ? 'background:url(\'' + item.image + '\') center/cover no-repeat;'
+          : 'background:linear-gradient(135deg,#1a1a1a,#2d2d2d);';
+
+        var starsHtml = '';
+        if (item.avg_note > 0) {
+          var full = Math.round(item.avg_note);
+          starsHtml = '<span style="color:#f39c12;font-size:0.7rem;">'
+                    + '★'.repeat(full) + '<span style="opacity:0.3;">' + '★'.repeat(5-full) + '</span></span>'
+                    + '<span style="font-size:0.6rem;color:rgba(255,255,255,0.55);margin-left:3px;">'
+                    + item.avg_note + ' · ' + item.nb_avis + ' review' + (item.nb_avis !== 1 ? 's' : '') + '</span>';
+        }
+
+        var card = '<div style="' + bgStyle
+          + 'border-radius:16px;overflow:hidden;position:relative;height:220px;cursor:pointer;'
+          + 'transition:transform 0.3s,box-shadow 0.3s;" '
+          + 'onclick="openProductModalCat(' + item.id + ')" '
+          + 'onmouseover="this.style.transform=\'scale(1.03)\';this.style.boxShadow=\'0 16px 40px rgba(0,0,0,0.3)\'" '
+          + 'onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
+
+        card += '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.1) 55%,transparent 100%);border-radius:16px;"></div>';
+
+        // Cart button top-right
+        card += '<div style="position:absolute;top:12px;right:12px;z-index:2;">'
+              + '<button onclick="event.stopPropagation();catBestAddToCart(' + item.id + ',\'' + safeNom + '\',' + item.prix + ',\'' + safeImg + '\')" '
+              + 'style="width:34px;height:34px;border-radius:50%;background:white;border:none;cursor:pointer;'
+              + 'display:flex;align-items:center;justify-content:center;font-size:0.85rem;'
+              + 'box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:transform 0.2s;" '
+              + 'onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'\'">'
+              + '<i class="bi bi-cart-plus" style="color:#ce1212;"></i></button>'
+              + '</div>';
+
+        // Bottom content
+        card += '<div style="position:absolute;bottom:0;left:0;right:0;padding:14px;z-index:2;">';
+        card += '<span style="display:inline-block;background:rgba(206,18,18,0.85);color:white;border-radius:12px;'
+              + 'padding:2px 9px;font-size:0.6rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">'
+              + item.categorie + '</span><br>';
+        if (starsHtml) card += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">' + starsHtml + '</div>';
+        card += '<div style="font-size:0.88rem;font-weight:800;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + item.nom + '</div>';
+        card += '<div style="font-size:1.15rem;font-weight:900;color:white;text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + priceStr + '</div>';
+        card += '</div></div>';
+
+        html += card;
+      });
+
+      html += '</div>';
+      list.innerHTML = html;
+      list.style.display = 'block';
+    })
+    .catch(function() {
+      loading.style.display = 'none';
+      list.innerHTML = '<p style="color:#bbb;font-size:0.85rem;text-align:center;padding:12px 0;"><i class="bi bi-exclamation-circle me-1"></i>Could not load picks.</p>';
+      list.style.display = 'block';
+    });
+}
+
+function catBestAddToCart(id, nom, prix, image) {
+  var panier = getPanier();
+  var ex = panier.find(function(p) { return p.id === String(id); });
+  if (ex) { ex.quantite += 1; } else { panier.push({id: String(id), nom: nom, prix: prix, image: image, quantite: 1}); }
+  savePanier(panier);
+  document.getElementById('panier-toast-msg').textContent = '"' + nom + '" ajouté !';
+  var t = document.getElementById('panier-toast'); t.style.display = 'flex';
+  setTimeout(function() { t.style.display = 'none'; }, 3000);
+}
+
+function openProductModalCat(id) {
+  // Redirect to produits.php with the product modal open
+  window.location.href = 'produits.php#product-' + id;
+}
 </script>
 
 <!-- ── MODAL PANIER (categories list) ── -->
