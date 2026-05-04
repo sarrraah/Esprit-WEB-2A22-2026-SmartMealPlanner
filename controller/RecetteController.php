@@ -29,6 +29,7 @@ function getRecetteFields(): array {
         'temps_cuisson'=> (isset($_POST['temps_cuisson']) && $_POST['temps_cuisson'] !== '') ? (int)$_POST['temps_cuisson'] : null,
         'difficulte'   => $_POST['difficulte'] ?? 'Facile',
         'nb_personnes' => (int)($_POST['nb_personnes'] ?? 2),
+        'video_youtube'=> trim($_POST['video_youtube'] ?? '') ?: null,
     ];
 }
 /**
@@ -83,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add') {
 
     $image = uploadRecetteImage('image_recette');
     if ($f['nom'] !== '') {
-        $newId = $model->addRecette($f['nom'], $f['etapes'], $f['temps_prep'], $f['temps_cuisson'], $f['difficulte'], $f['nb_personnes'], $image);
+        $newId = $model->addRecette($f['nom'], $f['etapes'], $f['temps_prep'], $f['temps_cuisson'], $f['difficulte'], $f['nb_personnes'], $image, $f['video_youtube']);
         header('Location: ' . $base . '/view/back/add_recette.php?id_recette=' . $newId);
     } else {
         header('Location: ' . $list . '?success=1');
@@ -108,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'update') {
     $new     = uploadRecetteImage('image_recette');
     $image   = $new ?: $current;
     if ($id > 0 && $f['nom'] !== '')
-        $model->updateRecette($id, $f['nom'], $f['etapes'], $f['temps_prep'], $f['temps_cuisson'], $f['difficulte'], $f['nb_personnes'], $image);
+        $model->updateRecette($id, $f['nom'], $f['etapes'], $f['temps_prep'], $f['temps_cuisson'], $f['difficulte'], $f['nb_personnes'], $image, $f['video_youtube']);
     header('Location: ' . $list . '?success=1'); exit;
 }
 

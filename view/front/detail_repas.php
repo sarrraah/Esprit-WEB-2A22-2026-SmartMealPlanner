@@ -235,6 +235,36 @@ require_once __DIR__ . '/partials/header.php';
                     </div>
                 </div>
                 <?php endif; ?>
+
+                <!-- ── Vidéo YouTube de la recette ── -->
+                <?php if (!empty($repas['video_youtube'])): ?>
+                <div class="card border-0 shadow-sm mt-4" style="border-radius:16px;overflow:hidden;">
+                    <div class="card-body p-4 pb-2">
+                        <h5 style="font-family:'Amatic SC',sans-serif;font-size:1.5rem;color:#37373f;">
+                            <i class="bi bi-youtube me-2" style="color:#ff0000;"></i>Vidéo de la recette
+                        </h5>
+                        <p class="text-muted small mb-3">Regardez comment préparer cette recette en vidéo.</p>
+                    </div>
+                    <!-- Player YouTube responsive (ratio 16:9) -->
+                    <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
+                        <iframe
+                            src="https://www.youtube.com/embed/<?= htmlspecialchars($repas['video_youtube']) ?>?rel=0&modestbranding=1&color=red"
+                            title="Vidéo recette : <?= htmlspecialchars($repas['nom_recette'] ?? $repas['nom']) ?>"
+                            style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen
+                            loading="lazy">
+                        </iframe>
+                    </div>
+                    <div class="card-body p-3 pt-2">
+                        <a href="https://www.youtube.com/watch?v=<?= htmlspecialchars($repas['video_youtube']) ?>"
+                           target="_blank" rel="noopener noreferrer"
+                           class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Voir sur YouTube
+                        </a>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
         </div>

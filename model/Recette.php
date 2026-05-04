@@ -43,14 +43,14 @@ class Recette
     public function addRecette(
         string $nom, string $etapes = '', ?int $tempsPrep = null,
         ?int $tempsCuisson = null, string $difficulte = 'Facile',
-        int $nbPersonnes = 2, ?string $image = null
+        int $nbPersonnes = 2, ?string $image = null, ?string $videoYoutube = null
     ): int {
         $stmt = $this->pdo->prepare("
             INSERT INTO recette_repas
-                (nom_recette, etapes, temps_prep, temps_cuisson, difficulte, nb_personnes, image_recette)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (nom_recette, etapes, temps_prep, temps_cuisson, difficulte, nb_personnes, image_recette, video_youtube)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$nom, $etapes, $tempsPrep, $tempsCuisson, $difficulte, $nbPersonnes, $image]);
+        $stmt->execute([$nom, $etapes, $tempsPrep, $tempsCuisson, $difficulte, $nbPersonnes, $image, $videoYoutube]);
 
         // Retourner l'id auto-incrémenté de la recette insérée
         return (int) $this->pdo->lastInsertId();
@@ -199,19 +199,19 @@ class Recette
     public function updateRecette(
         int $id, string $nom, string $etapes = '', ?int $tempsPrep = null,
         ?int $tempsCuisson = null, string $difficulte = 'Facile',
-        int $nbPersonnes = 2, ?string $image = null
+        int $nbPersonnes = 2, ?string $image = null, ?string $videoYoutube = null
     ): bool {
         if ($image !== null && $image !== '') {
             // Mise à jour avec changement d'image
             $stmt = $this->pdo->prepare("
                 UPDATE recette_repas
                 SET nom_recette=?, etapes=?, temps_prep=?, temps_cuisson=?,
-                    difficulte=?, nb_personnes=?, image_recette=?
+                    difficulte=?, nb_personnes=?, image_recette=?, video_youtube=?
                 WHERE id_recette=?
             ");
             return $stmt->execute([
                 $nom, $etapes, $tempsPrep, $tempsCuisson,
-                $difficulte, $nbPersonnes, $image, $id
+                $difficulte, $nbPersonnes, $image, $videoYoutube, $id
             ]);
         }
 
@@ -219,12 +219,12 @@ class Recette
         $stmt = $this->pdo->prepare("
             UPDATE recette_repas
             SET nom_recette=?, etapes=?, temps_prep=?, temps_cuisson=?,
-                difficulte=?, nb_personnes=?
+                difficulte=?, nb_personnes=?, video_youtube=?
             WHERE id_recette=?
         ");
         return $stmt->execute([
             $nom, $etapes, $tempsPrep, $tempsCuisson,
-            $difficulte, $nbPersonnes, $id
+            $difficulte, $nbPersonnes, $videoYoutube, $id
         ]);
     }
 

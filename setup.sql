@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS recette_repas (
     difficulte      ENUM('Facile','Moyen','Difficile') NOT NULL DEFAULT 'Facile',
     nb_personnes    INT           NOT NULL DEFAULT 2,
     image_recette   VARCHAR(255)  NULL,
+    video_youtube   VARCHAR(20)   NULL COMMENT 'ID de la vidéo YouTube (ex: dQw4w9WgXcQ)',
     created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id_recette)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

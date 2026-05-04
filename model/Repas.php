@@ -90,7 +90,8 @@ class Repas
                 rr.temps_cuisson,
                 rr.nb_personnes,
                 rr.etapes,
-                rr.image_recette
+                rr.image_recette,
+                rr.video_youtube
             FROM repas r
             LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
             WHERE r.id_repas = ?
