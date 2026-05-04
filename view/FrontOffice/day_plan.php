@@ -78,6 +78,42 @@ session_start();
 $sessionKey = 'consumed_' . $plan->id . '_' . $dateStr;
 $consumed   = $_SESSION[$sessionKey] ?? [];
 
+// Calculate consumed nutrients (only from consumed meals)
+$consumedCalories = 0;
+$consumedProtein  = 0;
+$consumedCarbs    = 0;
+$consumedFats     = 0;
+$skippedMeals     = []; // meals in plan but not consumed
+
+foreach ($suggested as $slot) {
+    $meal = $slot['meal'];
+    if (!$meal) continue;
+    if (isset($consumed[$slot['type']])) {
+        $consumedCalories += $meal->calories;
+        $consumedProtein  += (int) round($meal->calories * 0.30 / 4);
+        $consumedCarbs    += (int) round($meal->calories * 0.45 / 4);
+        $consumedFats     += (int) round($meal->calories * 0.25 / 9);
+    } else {
+        $skippedMeals[] = ['type' => $slot['type'], 'meal' => $meal];
+    }
+}
+
+// Build chatbot context
+$chatContext = [
+    'plan_name'        => $plan->nom,
+    'objective'        => $plan->objectif,
+    'daily_target'     => $dailyKcal,
+    'total_planned'    => $totalPlanned,
+    'consumed_cal'     => $consumedCalories,
+    'remaining_cal'    => max(0, $dailyKcal - $consumedCalories),
+    'consumed_protein' => $consumedProtein,
+    'consumed_carbs'   => $consumedCarbs,
+    'consumed_fats'    => $consumedFats,
+    'skipped_meals'    => array_map(fn($s) => $s['type'] . ': ' . $s['meal']->name, $skippedMeals),
+    'date'             => $dateStr,
+    'day_num'          => $dayNum,
+];
+
 $daysElapsed = $plan->daysElapsed();
 $progress    = $plan->progressPercent();
 
@@ -150,6 +186,13 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
     /* Bottom bar */
     .bottom-bar { background: #fff; border-top: 1px solid #f0f0f0; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; border-radius: 0 0 16px 16px; margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem; }
     .bottom-bar p { font-size: .95rem; color: #777; margin: 0; }
+
+    /* Chatbot */
+    .chat-msg { display:flex; }
+    .chat-bubble { max-width:85%; padding:.6rem .9rem; border-radius:12px; font-size:.88rem; line-height:1.5; }
+    .bot-bubble { background:#f8f9fa; color:#212529; border-radius:4px 12px 12px 12px; }
+    .user-bubble { background:#ce1212; color:#fff; border-radius:12px 4px 12px 12px; margin-left:auto; }
+    .chat-msg.user { justify-content:flex-end; }
   </style>
 </head>
 <body>
@@ -246,8 +289,8 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
               <div style="position:relative;width:110px;height:110px;flex-shrink:0;">
                 <canvas id="statsChart" width="110" height="110" style="width:110px;height:110px;"></canvas>
                 <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1.2;">
-                  <span style="font-size:.7rem;color:#999;">Planned</span><br>
-                  <span style="font-size:.95rem;font-weight:700;color:#ce1212;"><?php echo $totalPlanned; ?></span>
+                  <span style="font-size:.7rem;color:#999;">Consumed</span><br>
+                  <span id="stat-center-val" style="font-size:.95rem;font-weight:700;color:#ce1212;"><?php echo $consumedCalories; ?></span>
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:.75rem;">
@@ -258,13 +301,13 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
                 </div>
                 <div style="display:flex;align-items:center;gap:.5rem;">
                   <span style="width:12px;height:12px;background:#f59e0b;border-radius:50%;flex-shrink:0;"></span>
-                  <span class="stat-label" style="margin:0;">Total Planned</span>
-                  <span class="stat-val" style="margin:0;margin-left:.5rem;"><?php echo $totalPlanned; ?> kcal</span>
+                  <span class="stat-label" style="margin:0;">Consumed</span>
+                  <span class="stat-val" id="stat-consumed" style="margin:0;margin-left:.5rem;"><?php echo $consumedCalories; ?> kcal</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:.5rem;">
                   <span style="width:12px;height:12px;background:#10b981;border-radius:50%;flex-shrink:0;"></span>
                   <span class="stat-label" style="margin:0;">Remaining</span>
-                  <span class="stat-val <?php echo $remaining <= 100 ? 'green' : ''; ?>" style="margin:0;margin-left:.5rem;"><?php echo $remaining; ?> kcal</span>
+                  <span class="stat-val green" id="stat-remaining" style="margin:0;margin-left:.5rem;"><?php echo max(0, $dailyKcal - $consumedCalories); ?> kcal</span>
                 </div>
               </div>
             </div>
@@ -309,16 +352,55 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
             </div>
             <?php endforeach; ?>
 
-            <!-- Nutrient summary — doughnut charts -->
+            <!-- AI Chatbot -->
+            <div style="background:#fff;border-radius:16px;border:1px solid #f0f0f0;margin-top:1.5rem;overflow:hidden;">
+              <div style="background:linear-gradient(135deg,#ce1212,#ff6b6b);padding:1rem 1.25rem;display:flex;align-items:center;gap:.75rem;">
+                <span style="font-size:1.5rem;">🤖</span>
+                <div>
+                  <p style="color:#fff;font-weight:700;margin:0;font-size:1rem;">Smart Meal Assistant</p>
+                  <p style="color:rgba(255,255,255,.8);margin:0;font-size:.8rem;">Powered by your meal data</p>
+                </div>
+              </div>
+              <div id="chat-messages" style="height:220px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.75rem;">
+                <div class="chat-msg bot">
+                  <div class="chat-bubble bot-bubble">
+                    👋 Hi! I'm your Smart Meal Assistant. I can help you track your nutrition, suggest meals, and guide you toward your <strong><?php echo htmlspecialchars($objectifLabel); ?></strong> goal. Ask me anything!
+                  </div>
+                </div>
+              </div>
+              <div style="padding:.75rem 1rem;border-top:1px solid #f0f0f0;display:flex;gap:.5rem;">
+                <input type="text" id="chat-input" placeholder="Ask about your meals, nutrition, goals..." 
+                  style="flex:1;border:1.5px solid #eee;border-radius:20px;padding:.5rem 1rem;font-size:.9rem;outline:none;"
+                  onkeydown="if(event.key==='Enter') sendChat()">
+                <button onclick="sendChat()" style="background:#ce1212;color:#fff;border:none;border-radius:20px;padding:.5rem 1.25rem;font-weight:600;cursor:pointer;">Send</button>
+              </div>
+              <!-- Quick prompts -->
+              <div style="padding:.5rem 1rem .75rem;display:flex;flex-wrap:wrap;gap:.4rem;">
+                <?php
+                  $quickPrompts = [
+                    'How many calories have I consumed?',
+                    'What meals did I skip?',
+                    'Suggest a replacement meal',
+                    'How am I doing today?',
+                    'Explain my meal plan',
+                  ];
+                  foreach ($quickPrompts as $qp):
+                ?>
+                <button onclick="sendQuick('<?php echo htmlspecialchars($qp, ENT_QUOTES); ?>')"
+                  style="background:#fff8f8;color:#ce1212;border:1px solid #fde8e8;border-radius:20px;padding:.25rem .75rem;font-size:.8rem;cursor:pointer;">
+                  <?php echo htmlspecialchars($qp); ?>
+                </button>
+                <?php endforeach; ?>
+              </div>
+            </div>
+
+            <!-- Nutrient summary — consumed only -->
             <div class="nutrient-bar">
               <div style="flex:1;min-width:140px;">
                 <p class="fw-bold mb-0" style="font-size:1rem;">Nutrient Summary</p>
-                <p class="text-muted mb-0" style="font-size:.9rem;">Good balance! You're hitting your daily targets.</p>
+                <p class="text-muted mb-0" style="font-size:.9rem;">Based on <strong>consumed</strong> meals only.</p>
               </div>
               <?php
-                $protein = (int) round($totalPlanned * 0.30 / 4);
-                $carbs   = (int) round($totalPlanned * 0.45 / 4);
-                $fats    = (int) round($totalPlanned * 0.25 / 9);
                 $pTarget = $dailyKcal ? (int) round($dailyKcal * 0.30 / 4) : 100;
                 $cTarget = $dailyKcal ? (int) round($dailyKcal * 0.45 / 4) : 200;
                 $fTarget = $dailyKcal ? (int) round($dailyKcal * 0.25 / 9) : 65;
@@ -326,17 +408,17 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
               <div class="nutrient-item text-center">
                 <canvas id="proteinChart" width="70" height="70" style="width:70px;height:70px;"></canvas>
                 <p class="nutrient-label mt-1">Protein</p>
-                <p class="nutrient-val"><?php echo $protein; ?>g / <?php echo $pTarget; ?>g</p>
+                <p class="nutrient-val" id="protein-val"><?php echo $consumedProtein; ?>g / <?php echo $pTarget; ?>g</p>
               </div>
               <div class="nutrient-item text-center">
                 <canvas id="carbsChart" width="70" height="70" style="width:70px;height:70px;"></canvas>
                 <p class="nutrient-label mt-1">Carbs</p>
-                <p class="nutrient-val"><?php echo $carbs; ?>g / <?php echo $cTarget; ?>g</p>
+                <p class="nutrient-val" id="carbs-val"><?php echo $consumedCarbs; ?>g / <?php echo $cTarget; ?>g</p>
               </div>
               <div class="nutrient-item text-center">
                 <canvas id="fatsChart" width="70" height="70" style="width:70px;height:70px;"></canvas>
                 <p class="nutrient-label mt-1">Fats</p>
-                <p class="nutrient-val"><?php echo $fats; ?>g / <?php echo $fTarget; ?>g</p>
+                <p class="nutrient-val" id="fats-val"><?php echo $consumedFats; ?>g / <?php echo $fTarget; ?>g</p>
               </div>
             </div>
 
@@ -360,16 +442,16 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="<?php echo $assetPrefix; ?>js/main.js"></script>
   <script>
-  // Stats doughnut — 3 segments: target, planned, remaining
-  new Chart(document.getElementById('statsChart'), {
+  // Stats doughnut — 3 segments: target, consumed, remaining
+  var statsChartObj = new Chart(document.getElementById('statsChart'), {
     type: 'doughnut',
     data: {
-      labels: ['Daily Target', 'Total Planned', 'Remaining'],
+      labels: ['Daily Target', 'Consumed', 'Remaining'],
       datasets: [{
         data: [
           <?php echo $dailyKcal; ?>,
-          <?php echo $totalPlanned; ?>,
-          <?php echo max(0, $remaining); ?>
+          <?php echo $consumedCalories; ?>,
+          <?php echo max(0, $dailyKcal - $consumedCalories); ?>
         ],
         backgroundColor: ['#ce1212', '#f59e0b', '#10b981'],
         borderWidth: 2,
@@ -388,7 +470,7 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
 
   // Nutrient doughnut charts
   function nutrientChart(id, val, target, color) {
-    new Chart(document.getElementById(id), {
+    return new Chart(document.getElementById(id), {
       type: 'doughnut',
       data: {
         datasets: [{ 
@@ -400,9 +482,203 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
       options: { cutout: '68%', responsive: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed + 'g' } } } }
     });
   }
-  nutrientChart('proteinChart', <?php echo $protein; ?>, <?php echo $pTarget; ?>, '#3b82f6');
-  nutrientChart('carbsChart',   <?php echo $carbs; ?>,   <?php echo $cTarget; ?>, '#f59e0b');
-  nutrientChart('fatsChart',    <?php echo $fats; ?>,    <?php echo $fTarget; ?>, '#10b981');
+  var proteinChartObj = nutrientChart('proteinChart', <?php echo $consumedProtein; ?>, <?php echo $pTarget; ?>, '#3b82f6');
+  var carbsChartObj   = nutrientChart('carbsChart',   <?php echo $consumedCarbs; ?>,   <?php echo $cTarget; ?>, '#f59e0b');
+  var fatsChartObj    = nutrientChart('fatsChart',    <?php echo $consumedFats; ?>,    <?php echo $fTarget; ?>, '#10b981');
+
+  // ── Chatbot engine ──────────────────────────────────────────
+  var CTX = <?php echo json_encode($chatContext); ?>;
+  var ALL_MEALS = <?php echo json_encode(array_map(fn($m) => ['id'=>$m->id,'name'=>$m->name,'type'=>$m->mealType,'calories'=>$m->calories], $allMeals)); ?>;
+
+  // Meal calories per type for live chart updates
+  var MEAL_CALORIES = <?php
+    $mealCalByType = [];
+    foreach ($suggested as $slot) {
+        if ($slot['meal']) $mealCalByType[$slot['type']] = $slot['meal']->calories;
+    }
+    echo json_encode($mealCalByType);
+  ?>;
+
+  var DAILY_TARGET = <?php echo $dailyKcal ?: 2000; ?>;
+
+  // Targets
+  var P_TARGET = Math.round(DAILY_TARGET * 0.30 / 4);
+  var C_TARGET = Math.round(DAILY_TARGET * 0.45 / 4);
+  var F_TARGET = Math.round(DAILY_TARGET * 0.25 / 9);
+
+  // Track consumed state in JS (mirrors session)
+  var consumedState = <?php echo json_encode(array_keys($consumed)); ?>;
+
+  function getConsumedNutrients() {
+    var cal = 0, prot = 0, carbs = 0, fats = 0;
+    consumedState.forEach(function(type) {
+      var c = MEAL_CALORIES[type] || 0;
+      cal   += c;
+      prot  += Math.round(c * 0.30 / 4);
+      carbs += Math.round(c * 0.45 / 4);
+      fats  += Math.round(c * 0.25 / 9);
+    });
+    return { cal: cal, prot: prot, carbs: carbs, fats: fats };
+  }
+
+  function updateCharts() {
+    var n = getConsumedNutrients();
+
+    // Update nutrient chart data
+    proteinChartObj.data.datasets[0].data = [Math.min(n.prot, P_TARGET), Math.max(0, P_TARGET - n.prot)];
+    carbsChartObj.data.datasets[0].data   = [Math.min(n.carbs, C_TARGET), Math.max(0, C_TARGET - n.carbs)];
+    fatsChartObj.data.datasets[0].data    = [Math.min(n.fats, F_TARGET), Math.max(0, F_TARGET - n.fats)];
+    proteinChartObj.update();
+    carbsChartObj.update();
+    fatsChartObj.update();
+
+    // Update labels
+    document.getElementById('protein-val').textContent = n.prot + 'g / ' + P_TARGET + 'g';
+    document.getElementById('carbs-val').textContent   = n.carbs + 'g / ' + C_TARGET + 'g';
+    document.getElementById('fats-val').textContent    = n.fats + 'g / ' + F_TARGET + 'g';
+
+    // Update stats chart
+    var rem = Math.max(0, DAILY_TARGET - n.cal);
+    statsChartObj.data.datasets[0].data = [DAILY_TARGET, n.cal, rem];
+    statsChartObj.update();
+
+    // Update stat labels
+    document.getElementById('stat-consumed').textContent  = n.cal + ' kcal';
+    document.getElementById('stat-remaining').textContent = rem + ' kcal';
+    document.getElementById('stat-center-val').textContent = n.cal;
+
+    // Update CTX for chatbot
+    CTX.consumed_cal     = n.cal;
+    CTX.consumed_protein = n.prot;
+    CTX.consumed_carbs   = n.carbs;
+    CTX.consumed_fats    = n.fats;
+    CTX.remaining_cal    = rem;
+  }
+
+  var OBJECTIVE_TIPS = {
+    'lose_weight':     'Focus on low-calorie, high-fiber meals. Aim for a 300-500 kcal daily deficit.',
+    'maintain_weight': 'Balance your intake with your daily target. Consistency is key.',
+    'gain_muscle':     'Prioritize high-protein meals. Aim for 1.6-2.2g of protein per kg of body weight.',
+    'eat_healthy':     'Choose whole foods, plenty of vegetables, and balanced macros.'
+  };
+
+  function getBotReply(msg) {
+    var m = msg.toLowerCase();
+    var consumed = CTX.consumed_cal;
+    var target   = CTX.daily_target;
+    var remaining = CTX.remaining_cal;
+    var skipped  = CTX.skipped_meals;
+    var obj      = CTX.objective;
+
+    // Calories consumed
+    if (m.includes('calori') || m.includes('how much') || m.includes('consumed')) {
+      var pct = target > 0 ? Math.round((consumed / target) * 100) : 0;
+      return '🔥 You\'ve consumed <strong>' + consumed + ' kcal</strong> today (' + pct + '% of your ' + target + ' kcal target). ' +
+        (remaining > 0 ? 'You have <strong>' + remaining + ' kcal</strong> remaining.' : '✅ You\'ve hit your daily target!');
+    }
+
+    // Protein
+    if (m.includes('protein')) {
+      return '💪 You\'ve consumed <strong>' + CTX.consumed_protein + 'g of protein</strong> out of your ' + Math.round(target * 0.30 / 4) + 'g target. ' +
+        (obj === 'gain_muscle' ? 'Keep it up — protein is essential for muscle growth!' : 'Good progress!');
+    }
+
+    // Carbs
+    if (m.includes('carb')) {
+      return '🌾 You\'ve consumed <strong>' + CTX.consumed_carbs + 'g of carbs</strong> out of your ' + Math.round(target * 0.45 / 4) + 'g target.';
+    }
+
+    // Fats
+    if (m.includes('fat')) {
+      return '🥑 You\'ve consumed <strong>' + CTX.consumed_fats + 'g of fats</strong> out of your ' + Math.round(target * 0.25 / 9) + 'g target.';
+    }
+
+    // Skipped meals
+    if (m.includes('skip') || m.includes('miss') || m.includes('avoid')) {
+      if (skipped.length === 0) return '✅ Great job! You\'ve consumed all your planned meals today!';
+      var skippedList = skipped.join(', ');
+      var suggestions = ALL_MEALS.filter(function(meal) {
+        return skipped.some(function(s) { return s.startsWith(meal.type); });
+      }).slice(0, 3).map(function(m) { return '• ' + m.name + ' (' + m.calories + ' kcal)'; }).join('<br>');
+      return '⚠️ You\'ve skipped: <strong>' + skippedList + '</strong>.<br><br>Here are some alternatives you might enjoy:<br>' + suggestions;
+    }
+
+    // Suggest meal
+    if (m.includes('suggest') || m.includes('recommend') || m.includes('alternative') || m.includes('replacement')) {
+      var typeMatch = ['breakfast','lunch','dinner','snack'].find(t => m.includes(t));
+      var pool = ALL_MEALS.filter(function(meal) { return !typeMatch || meal.type === typeMatch; });
+      var picks = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+      return '🍽️ Here are some meal suggestions' + (typeMatch ? ' for ' + typeMatch : '') + ':<br>' +
+        picks.map(function(p) { return '• <strong>' + p.name + '</strong> (' + p.calories + ' kcal)'; }).join('<br>');
+    }
+
+    // How am I doing
+    if (m.includes('doing') || m.includes('progress') || m.includes('status')) {
+      var pct = target > 0 ? Math.round((consumed / target) * 100) : 0;
+      var msg2 = pct >= 100 ? '🎉 Excellent! You\'ve hit your calorie target!' :
+                 pct >= 75  ? '👍 Great progress! Almost there.' :
+                 pct >= 50  ? '💪 Halfway through your daily goal.' :
+                              '🌱 Just getting started. Keep going!';
+      return msg2 + '<br>Consumed: <strong>' + consumed + ' kcal</strong> / ' + target + ' kcal (' + pct + '%)' +
+        (skipped.length > 0 ? '<br>⚠️ ' + skipped.length + ' meal(s) not yet consumed.' : '<br>✅ All meals consumed!');
+    }
+
+    // Explain meal plan
+    if (m.includes('explain') || m.includes('how') || m.includes('work') || m.includes('routine') || m.includes('plan')) {
+      return '📋 <strong>How your meal plan works:</strong><br>' +
+        '1. Your plan <strong>' + CTX.plan_name + '</strong> runs for ' + <?php echo $plan->duree; ?> + ' days.<br>' +
+        '2. Each day has 4 meal slots: Breakfast, Lunch, Dinner & Snack.<br>' +
+        '3. Your daily calorie target is <strong>' + target + ' kcal</strong>.<br>' +
+        '4. Click <strong>Replace</strong> to swap any meal with one from the gallery.<br>' +
+        '5. Click <strong>Mark Consumed</strong> when you\'ve eaten a meal.<br>' +
+        '6. The charts update based on what you\'ve actually consumed.';
+    }
+
+    // Goal tips
+    if (m.includes('goal') || m.includes('tip') || m.includes('advice') || m.includes('achieve')) {
+      var tip = OBJECTIVE_TIPS[obj] || 'Stay consistent with your meal plan for best results.';
+      return '🎯 <strong>Goal: ' + obj.replace('_',' ') + '</strong><br>' + tip;
+    }
+
+    // Nutrients overview
+    if (m.includes('nutrient') || m.includes('macro') || m.includes('breakdown')) {
+      return '📊 <strong>Today\'s consumed nutrients:</strong><br>' +
+        '🔴 Calories: <strong>' + consumed + ' kcal</strong><br>' +
+        '💪 Protein: <strong>' + CTX.consumed_protein + 'g</strong><br>' +
+        '🌾 Carbs: <strong>' + CTX.consumed_carbs + 'g</strong><br>' +
+        '🥑 Fats: <strong>' + CTX.consumed_fats + 'g</strong>';
+    }
+
+    // Default
+    return '🤔 I can help you with:<br>• Calories & nutrients consumed<br>• Skipped meals & suggestions<br>• Your goal tips<br>• How your meal plan works<br><br>Try asking: <em>"How many calories have I consumed?"</em> or <em>"Suggest a meal"</em>';
+  }
+
+  function addMessage(text, isUser) {
+    var box = document.getElementById('chat-messages');
+    var div = document.createElement('div');
+    div.className = 'chat-msg ' + (isUser ? 'user' : '');
+    var bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ' + (isUser ? 'user-bubble' : 'bot-bubble');
+    bubble.innerHTML = text;
+    div.appendChild(bubble);
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function sendChat() {
+    var input = document.getElementById('chat-input');
+    var msg = input.value.trim();
+    if (!msg) return;
+    addMessage(msg, true);
+    input.value = '';
+    setTimeout(function() { addMessage(getBotReply(msg), false); }, 300);
+  }
+
+  function sendQuick(msg) {
+    addMessage(msg, true);
+    setTimeout(function() { addMessage(getBotReply(msg), false); }, 300);
+  }
+  // ── End chatbot ──────────────────────────────────────────────
 
   function toggleConsumed(mealType, date, btn) {
     var fd = new FormData();
@@ -415,14 +691,18 @@ $planEnd  = $plan->dateFin ? strtotime($plan->dateFin) : strtotime("+{$plan->dur
           btn.textContent = '✔ Consumed';
           btn.style.background = '#2e7d32';
           btn.style.color = '#fff';
+          if (!consumedState.includes(mealType)) consumedState.push(mealType);
         } else {
           btn.textContent = '✔ Mark Consumed';
           btn.style.background = '#e8f5e9';
           btn.style.color = '#2e7d32';
+          consumedState = consumedState.filter(t => t !== mealType);
         }
+        updateCharts();
       });
   }
   </script>
+  <script src="meal_notifications.js"></script>
 </body>
 </html>
 

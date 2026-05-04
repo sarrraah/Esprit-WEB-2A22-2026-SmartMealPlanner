@@ -217,6 +217,7 @@ $featured = array_slice($meals, 0, 4);
   <script src="https://cdn.jsdelivr.net/npm/glightbox@3.3.0/dist/js/glightbox.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script src="main.js"></script>
+  <script src="meal_notifications.js"></script>
 </body>
 
 </html>

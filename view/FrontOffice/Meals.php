@@ -378,7 +378,6 @@ function resolveImageUrl(string $image, string $prefix): string {
       });
     });
   </script>
+  <script src="meal_notifications.js"></script>
 </body>
-
 </html>
-

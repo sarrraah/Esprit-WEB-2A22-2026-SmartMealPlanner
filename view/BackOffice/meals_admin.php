@@ -6,6 +6,23 @@
  * always resolve correctly.
  */
 
+require_once __DIR__ . '/../../model/Meal.php';
+
+$allMeals = Meal::all();
+$stats = ['breakfast' => 0, 'lunch' => 0, 'dinner' => 0, 'snack' => 0];
+$totalCal = ['breakfast' => 0, 'lunch' => 0, 'dinner' => 0, 'snack' => 0];
+foreach ($allMeals as $m) {
+    if (isset($stats[$m->mealType])) {
+        $stats[$m->mealType]++;
+        $totalCal[$m->mealType] += $m->calories;
+    }
+}
+$total = array_sum($stats);
+$avgCal = [];
+foreach ($stats as $type => $count) {
+    $avgCal[$type] = $count > 0 ? (int) round($totalCal[$type] / $count) : 0;
+}
+
 ?><!DOCTYPE html>
 <html lang="en">
 
@@ -145,6 +162,42 @@
       </section>
 
     </div>
+
+    <!-- Charts row -->
+    <div class="row g-4 mt-2">
+      <div class="col-md-4">
+        <div class="bo-panel text-center">
+          <h2 style="font-size:1rem;">Meal Type Distribution</h2>
+          <canvas id="typeChart" height="220"></canvas>
+          <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+            <?php
+              $colors = ['breakfast'=>'#f59e0b','lunch'=>'#10b981','dinner'=>'#ce1212','snack'=>'#6366f1'];
+              $icons  = ['breakfast'=>'☀️','lunch'=>'🥗','dinner'=>'🍽️','snack'=>'🍎'];
+              foreach ($stats as $type => $count):
+                $pct = $total > 0 ? round(($count/$total)*100) : 0;
+            ?>
+            <span style="font-size:.8rem;display:flex;align-items:center;gap:.3rem;">
+              <span style="width:10px;height:10px;background:<?php echo $colors[$type]; ?>;border-radius:50%;display:inline-block;"></span>
+              <?php echo $icons[$type]; ?> <?php echo ucfirst($type); ?> (<?php echo $count; ?>)
+            </span>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="bo-panel">
+          <h2 style="font-size:1rem;">Avg Calories per Type</h2>
+          <canvas id="calChart" height="220"></canvas>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="bo-panel">
+          <h2 style="font-size:1rem;">Meals Count</h2>
+          <canvas id="countChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
@@ -155,7 +208,63 @@
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="backoffice-meals.js"></script>
+  <script>
+    var TYPES  = ['Breakfast','Lunch','Dinner','Snack'];
+    var COLORS = ['#f59e0b','#10b981','#ce1212','#6366f1'];
+    var COUNTS = [<?php echo implode(',', array_values($stats)); ?>];
+    var AVGCAL = [<?php echo implode(',', array_values($avgCal)); ?>];
+
+    // Doughnut — type distribution
+    new Chart(document.getElementById('typeChart'), {
+      type: 'doughnut',
+      data: {
+        labels: TYPES,
+        datasets: [{ data: COUNTS, backgroundColor: COLORS, borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }]
+      },
+      options: {
+        cutout: '60%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed + ' meals (' + Math.round(ctx.parsed / COUNTS.reduce((a,b)=>a+b,0) * 100) + '%)' } }
+        }
+      }
+    });
+
+    // Bar — avg calories
+    new Chart(document.getElementById('calChart'), {
+      type: 'bar',
+      data: {
+        labels: TYPES,
+        datasets: [{ label: 'Avg kcal', data: AVGCAL, backgroundColor: COLORS, borderRadius: 8, borderSkipped: false }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 11 } } },
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+
+    // Horizontal bar — count
+    new Chart(document.getElementById('countChart'), {
+      type: 'bar',
+      data: {
+        labels: TYPES,
+        datasets: [{ label: 'Meals', data: COUNTS, backgroundColor: COLORS, borderRadius: 8, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+  </script>
 </div><!-- /bo-main-content -->
 </div><!-- /bo-layout -->
 </body>

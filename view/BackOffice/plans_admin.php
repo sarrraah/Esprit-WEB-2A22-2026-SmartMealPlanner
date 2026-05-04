@@ -76,6 +76,34 @@ if ($plan && preg_match('/Daily target:\s*(\d+)/i', $plan->description, $m2)) {
 }
 $totalKcal = array_sum(array_column($dayMeals, 'calories'));
 
+// Build weekly chart data: target vs planned calories per day
+$weeklyChartLabels  = [];
+$weeklyChartTarget  = [];
+$weeklyChartPlanned = [];
+
+if ($plan) {
+    foreach ($weekDays as $day) {
+        $weeklyChartLabels[] = date('D M j', strtotime($day));
+        $weeklyChartTarget[] = $dailyKcal;
+
+        // Sum calories from plan_detail for this day
+        $dayCal = 0;
+        try {
+            $pdo = Database::pdo();
+            $ks = $pdo->prepare('
+                SELECT SUM(m.calories)
+                FROM plan_detail pd
+                JOIN meal m ON m.id_meal = pd.meal_id
+                WHERE pd.plan_id = :pid AND pd.meal_date = :dt
+            ');
+            $ks->execute([':pid' => $plan->id, ':dt' => $day]);
+            $dayCal = (int) $ks->fetchColumn();
+        } catch (Throwable $e) {}
+
+        $weeklyChartPlanned[] = $dayCal ?: $dailyKcal;
+    }
+}
+
 // All meals for the add form
 $allMeals = Meal::all();
 
@@ -472,6 +500,29 @@ $objectifLabels = [
       </div>
 
     </div>
+
+    <?php if ($plan): ?>
+    <!-- Calories Chart -->
+    <div class="bo-card mt-4" style="max-width:400px;">
+      <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:1rem;text-align:center;">Daily Calories — Target vs Planned</h2>
+      <canvas id="weeklyCalChart" width="300" height="300" style="display:block;margin:0 auto;"></canvas>
+      <div class="d-flex justify-content-center gap-4 mt-3">
+        <span style="font-size:.85rem;display:flex;align-items:center;gap:.4rem;">
+          <span style="width:12px;height:12px;background:#ce1212;border-radius:50%;display:inline-block;"></span>
+          Target: <strong><?php echo $dailyKcal; ?> kcal</strong>
+        </span>
+        <span style="font-size:.85rem;display:flex;align-items:center;gap:.4rem;">
+          <span style="width:12px;height:12px;background:#f59e0b;border-radius:50%;display:inline-block;"></span>
+          Planned: <strong><?php echo $totalKcal; ?> kcal</strong>
+        </span>
+        <span style="font-size:.85rem;display:flex;align-items:center;gap:.4rem;">
+          <span style="width:12px;height:12px;background:#10b981;border-radius:50%;display:inline-block;"></span>
+          Remaining: <strong><?php echo max(0, $dailyKcal - $totalKcal); ?> kcal</strong>
+        </span>
+      </div>
+    </div>
+    <?php endif; ?>
+
     <?php endif; ?>
 
   </main>
@@ -479,6 +530,34 @@ $objectifLabels = [
 </div><!-- /bo-layout -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  <?php if ($plan): ?>
+  new Chart(document.getElementById('weeklyCalChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Planned', 'Remaining'],
+      datasets: [{
+        data: [
+          <?php echo $totalKcal; ?>,
+          <?php echo max(0, $dailyKcal - $totalKcal); ?>
+        ],
+        backgroundColor: ['#f59e0b', '#10b981'],
+        borderColor: ['#fff','#fff'],
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      cutout: '65%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + ' kcal' } }
+      }
+    }
+  });
+  <?php endif; ?>
+</script>
 <script>
 const BASE = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/FrontOffice/';
 

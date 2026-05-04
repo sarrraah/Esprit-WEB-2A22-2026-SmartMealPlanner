@@ -368,6 +368,7 @@ $objectifLabel = $objectifLabels[$plan->objectif] ?? ucfirst($plan->objectif);
       }
     });
   </script>
+  <script src="meal_notifications.js"></script>
 </body>
 </html>
 

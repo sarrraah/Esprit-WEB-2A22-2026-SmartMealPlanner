@@ -190,6 +190,7 @@ $assetPrefix = '/3rdV/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/';
   <div id="preloader"></div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="<?php echo $assetPrefix; ?>js/main.js"></script>
+  <script src="meal_notifications.js"></script>
 </body>
 </html>
 
