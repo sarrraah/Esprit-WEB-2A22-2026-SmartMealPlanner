@@ -22,7 +22,8 @@ class EvenementController
                 $row['prix'],
                 $row['statut'],
                 $row['type'],
-                $row['image'] ?? null
+                $row['image'] ?? null,
+                isset($row['likes']) ? (int)$row['likes'] : 0
             );
         }
         return $evenements;
@@ -49,7 +50,8 @@ class EvenementController
                 $row['prix'],
                 $row['statut'],
                 $row['type'],
-                $row['image'] ?? null
+                $row['image'] ?? null,
+                isset($row['likes']) ? (int)$row['likes'] : 0
             );
         } catch (Exception $e) {
             die('Error: ' . $e->getMessage());
@@ -58,8 +60,9 @@ class EvenementController
 
     function addEvenement($evenement)
     {
-        $sql = "INSERT INTO evenement
-                VALUES (NULL, :titre, :description, :date_debut, :date_fin, :lieu, :capacite_max, :prix, :statut, :type, :image)";
+        // Use explicit columns to stay compatible with schema changes (e.g. likes column).
+        $sql = "INSERT INTO evenement (titre, description, date_debut, date_fin, lieu, capacite_max, prix, statut, type, image, likes)
+                VALUES (:titre, :description, :date_debut, :date_fin, :lieu, :capacite_max, :prix, :statut, :type, :image, :likes)";
         $db = config::getConnexion();
         try {
             $query = $db->prepare($sql);
@@ -74,6 +77,7 @@ class EvenementController
                 'statut'       => $evenement->getStatut(),
                 'type'         => $evenement->getType(),
                 'image'        => $evenement->getImage(),
+                'likes'        => method_exists($evenement, 'getLikes') ? $evenement->getLikes() : 0,
             ]);
         } catch (Exception $e) {
             echo 'Error: ' . $e->getMessage();

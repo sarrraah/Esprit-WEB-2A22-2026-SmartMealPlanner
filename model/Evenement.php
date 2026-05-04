@@ -12,6 +12,7 @@ class Evenement
     private ?string $statut       = null;
     private ?string $type         = null;
     private ?string $image        = null;
+    private ?int    $likes        = null;
 
     public function __construct(
         $id   = null,
@@ -24,7 +25,8 @@ class Evenement
         $p    = null,
         $s    = null,
         $ty   = null,
-        $img  = null
+        $img  = null,
+        $likes = null
     ) {
         $this->id_event     = $id;
         $this->titre        = $t;
@@ -37,6 +39,7 @@ class Evenement
         $this->statut       = $s;
         $this->type         = $ty;
         $this->image        = $img;
+        $this->likes        = $likes;
     }
 
     public function getIdEvent()   { return $this->id_event; }
@@ -70,5 +73,8 @@ class Evenement
 
     public function getImage()          { return $this->image; }
     public function setImage($img)      { $this->image = $img; return $this; }
+
+    public function getLikes()          { return (int)($this->likes ?? 0); }
+    public function setLikes($likes)    { $this->likes = (int)$likes; return $this; }
 }
 ?>

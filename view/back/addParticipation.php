@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../controller/EvenementController.php';
 require_once __DIR__ . '/../../controller/ParticipationController.php';
+require_once __DIR__ . '/../../model/Database.php';
 
 $id_event  = isset($_GET['id_event']) ? (int)$_GET['id_event'] : 0;
 $evCtrl    = new EvenementController();
@@ -14,8 +15,9 @@ if (!$evenement || !str_contains(strtolower($evenement->getStatut()), 'actif')) 
 $isFree     = ($evenement->getPrix() == 0);
 $priceLabel = $isFree ? 'Gratuit' : number_format($evenement->getPrix(), 2) . ' TND';
 
-$errors  = [];
-$success = false;
+$errors      = [];
+$success     = false;
+$promoApplied = null; // will hold promo row if valid
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nom    = trim($_POST['nom']    ?? '');
@@ -23,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email  = trim($_POST['email']  ?? '');
     $places = (int)($_POST['nombre_places_reservees'] ?? 1);
     $mode   = $_POST['mode_paiement'] ?? '';
+    $promoCode = strtoupper(trim($_POST['promo_code'] ?? ''));
 
     if (strlen($nom) < 2)
         $errors[] = "Le nom doit contenir au moins 2 caractères.";
@@ -39,6 +42,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Veuillez choisir un mode de paiement.";
     }
 
+    // Validate promo code if provided
+    if (!$isFree && $promoCode !== '') {
+        try {
+            $pdo = Database::getConnection();
+            $stmt = $pdo->prepare(
+                "SELECT * FROM promo_code
+                 WHERE code = ?
+                   AND active = 1
+                   AND (id_event IS NULL OR id_event = ?)
+                   AND (expires_at IS NULL OR expires_at > NOW())
+                   AND (max_uses IS NULL OR used_count < max_uses)
+                 LIMIT 1"
+            );
+            $stmt->execute([$promoCode, $id_event]);
+            $promoRow = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($promoRow) {
+                $promoApplied = $promoRow;
+            } else {
+                $errors[] = "Code promo invalide ou expiré.";
+            }
+        } catch (Throwable $e) {
+            // promo_code table may not exist yet — ignore silently
+        }
+    }
+
     if (empty($errors)) {
         $ctrl = new ParticipationController();
         $p = new Participation(
@@ -46,6 +74,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $places, $mode, 'en_attente', date('Y-m-d H:i:s')
         );
         $ctrl->addParticipation($p);
+
+        // Increment promo usage counter
+        if ($promoApplied) {
+            try {
+                $pdo = Database::getConnection();
+                $pdo->prepare("UPDATE promo_code SET used_count = used_count + 1 WHERE id = ?")
+                    ->execute([$promoApplied['id']]);
+            } catch (Throwable $e) {}
+        }
+
+        // Send confirmation email
+        require_once __DIR__ . '/sendMail.php';
+        $event_date = date('d/m/Y', strtotime($evenement->getDateDebut()));
+        sendConfirmationEmail(
+            $email,
+            $prenom . ' ' . $nom,
+            $evenement->getTitre(),
+            $event_date,
+            $evenement->getLieu(),
+            (float)$evenement->getPrix(),
+            $places,
+            'en_attente'
+        );
+
         $success = true;
     }
 }
@@ -57,33 +109,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inscription – <?= htmlspecialchars($evenement->getTitre()) ?></title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root{
+  --bg:#ffffff;
+  --text:#1a1a1a;
+  --muted:#555;
+  --border:#e5e5e5;
+  --accent:#e63946;
+  --surface:#ffffff;
+}
+body.dark{
+  --bg:#0f172a;
+  --text:#f1f5f9;
+  --muted:rgba(241,245,249,0.75);
+  --border:#334155;
+  --surface:#1e293b;
+}
+
 body {
     font-family: 'DM Sans', sans-serif;
-    background: #fff;
-    color: #1a1a1a;
+    background: var(--bg);
+    color: var(--text);
     min-height: 100vh;
     font-size: 16px;
 }
 
 /* ── NAV ── */
 nav {
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
     padding: 0 40px;
     display: flex; align-items: center; justify-content: space-between;
     height: 60px; position: sticky; top: 0; z-index: 100;
 }
-.logo { font-size: 20px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
-.logo span { color: #dc2626; }
+.logo { font-size: 20px; font-weight: 700; color: var(--text); text-decoration: none; }
+.logo span { color: var(--accent); }
 .back {
-    font-size: 14px; color: #555; text-decoration: none; font-weight: 500;
+    font-size: 14px; color: var(--muted); text-decoration: none; font-weight: 500;
     padding-bottom: 2px; border-bottom: 2px solid transparent;
     transition: color .2s, border-color .2s;
 }
-.back:hover { color: #dc2626; border-bottom-color: #dc2626; }
+.back:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* navbar tools */
+.nav-right{display:flex;align-items:center;gap:12px;}
+.topbar-tools{position:relative;display:inline-flex;align-items:center;gap:10px;}
+.icon-btn{
+  position:relative;width:40px;height:40px;border-radius:999px;
+  border:1px solid var(--border);background:var(--surface);color:var(--text);
+  display:grid;place-items:center;cursor:pointer;
+  transition:transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.icon-btn:hover{transform:translateY(-1px);background:rgba(230,57,70,0.08);border-color:rgba(230,57,70,0.35);}
+.notif-badge{
+  position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 6px;border-radius:999px;
+  background:var(--accent);color:#fff;font-size:11px;font-weight:800;line-height:20px;text-align:center;
+  border:2px solid var(--surface);display:none;
+}
+.notif-dropdown{
+  position:absolute;right:0;top:48px;width:min(380px,82vw);
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  box-shadow:0 28px 60px rgba(15,23,42,0.14);overflow:hidden;display:none;z-index:2000;
+}
+.notif-dropdown.open{display:block;}
+.notif-head{padding:14px 16px;background:rgba(230,57,70,0.12);border-bottom:1px solid rgba(230,57,70,0.18);display:flex;justify-content:space-between;gap:10px;}
+.notif-head strong{font-size:13px;letter-spacing:0.08em;text-transform:uppercase;}
+.notif-list{max-height:360px;overflow:auto;}
+.notif-item{padding:12px 16px;border-bottom:1px solid rgba(15,23,42,0.08);display:grid;gap:4px;}
+.notif-item:last-child{border-bottom:none;}
+.notif-item .title{font-weight:800;font-size:13px;}
+.notif-item .desc{color:var(--muted);font-size:13px;line-height:1.4;}
+.notif-item a{text-decoration:none;color:inherit;}
+.notif-empty{padding:18px 16px;color:var(--muted);font-size:13px;}
 
 /* ── LAYOUT ── */
 .section { padding: 16px 0 24px; }
@@ -105,7 +206,7 @@ h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
 .recap-meta { font-size: 13px; color: #888; display: flex; flex-direction: column; gap: 3px; }
 .price-tag {
     display: inline-block; margin-top: 8px;
-    background: #dc2626; color: #fff;
+    background: var(--accent); color: #fff;
     font-weight: 700; font-size: 13px;
     padding: 4px 12px; border-radius: 999px;
 }
@@ -131,8 +232,8 @@ h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
     outline: none; transition: border-color .2s, box-shadow .2s;
 }
 .form-control:focus, .form-select:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(230,57,70,0.12);
 }
 .form-control::placeholder { color: #aaa; }
 .form-control.err { border-color: #dc2626; }
@@ -197,8 +298,26 @@ h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
 <body>
 
 <nav>
-  <a href="../front/interfaceevent.php" class="logo">Smart Event<span>.</span></a>
-  <a href="../front/detailEvent.php?id=<?= $id_event ?>" class="back">← Retour à l'événement</a>
+  <a href="listEvenements.php" class="logo">Smart Meal Planner<span>.</span></a>
+  <div class="nav-right">
+    <a href="../front/detailEvent.php?id=<?= $id_event ?>" class="back">← Retour à l'événement</a>
+    <div class="topbar-tools">
+      <button class="icon-btn" id="notif-btn" type="button" aria-label="Notifications">
+        <i class="bi bi-bell"></i>
+        <span class="notif-badge" id="notif-badge">0</span>
+      </button>
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-head">
+          <strong>Notifications</strong>
+          <span style="color:var(--muted);font-size:12px">Auto refresh</span>
+        </div>
+        <div class="notif-list" id="notif-list"></div>
+      </div>
+      <button class="icon-btn" id="theme-toggle-btn" type="button" aria-label="Theme toggle">
+        <i class="bi bi-moon-stars-fill"></i>
+      </button>
+    </div>
+  </div>
 </nav>
 
 <section class="section">
@@ -216,6 +335,26 @@ h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
         <span>🗓️ <?= date('d/m/Y', strtotime($evenement->getDateDebut())) ?></span>
       </div>
       <span class="price-tag"><?= $priceLabel ?> / place</span>
+      <?php if ($promoApplied): ?>
+        <?php
+          $disc = (float)$promoApplied['discount'];
+          $basePrice = (float)$evenement->getPrix();
+          $places_used = (int)($_POST['nombre_places_reservees'] ?? 1);
+          $total = $basePrice * $places_used;
+          if ($promoApplied['type'] === 'percent') {
+              $saved = $total * ($disc / 100);
+          } else {
+              $saved = min($disc, $total);
+          }
+          $finalPrice = max(0, $total - $saved);
+        ?>
+        <span class="price-tag" style="background:#166534;margin-left:6px">
+          🎟️ <?= htmlspecialchars($promoApplied['code']) ?> appliqué — économie de <?= number_format($saved, 2) ?> TND
+        </span>
+        <span class="price-tag" style="background:#1d4ed8;margin-left:6px">
+          Total : <?= number_format($finalPrice, 2) ?> TND
+        </span>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -309,6 +448,25 @@ h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
       <?php endif; ?>
     </div>
 
+    <!-- Code Promo -->
+    <?php if (!$isFree): ?>
+    <div class="col-12">
+      <label class="form-label">🎟️ Code promo (optionnel)</label>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="flex:1">
+          <input type="text" name="promo_code" id="promo_code" class="form-control"
+                 placeholder="Ex: SUMMER20"
+                 value="<?= htmlspecialchars($_POST['promo_code'] ?? '') ?>"
+                 style="text-transform:uppercase;letter-spacing:1px">
+          <span class="field-error" id="promo-feedback" style="display:none"></span>
+          <span id="promo-success" style="display:none;font-size:12px;color:#166534;margin-top:4px;display:none"></span>
+        </div>
+        <button type="button" id="check-promo-btn" class="btn btn-outline-secondary"
+                style="white-space:nowrap;margin-top:0">Vérifier</button>
+      </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Submit -->
     <div class="col-12">
       <button type="submit" class="btn btn-danger btn-full">🎟️ Confirmer mon inscription</button>
@@ -325,6 +483,80 @@ h2 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
 </section>
 
 <script>
+// Theme + notifications (back-office)
+(function () {
+  function setTheme(isDark) {
+    document.body.classList.toggle('dark', !!isDark);
+    try { localStorage.setItem('bo_theme', isDark ? 'dark' : 'light'); } catch (e) {}
+    var themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) themeBtn.innerHTML = isDark ? '<i class="bi bi-sun-fill"></i>' : '<i class="bi bi-moon-stars-fill"></i>';
+  }
+  function initTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem('bo_theme'); } catch (e) {}
+    setTheme(saved === 'dark');
+    var themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) themeBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      setTheme(!document.body.classList.contains('dark'));
+    });
+  }
+  function escapeHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function timeAgo(d) {
+    var dt = new Date(d);
+    if (isNaN(dt.getTime())) return '';
+    var diff = Date.now() - dt.getTime();
+    var m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + ' min ago';
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + ' h ago';
+    return Math.floor(h / 24) + ' d ago';
+  }
+  function renderNotifs(list) {
+    var badge = document.getElementById('notif-badge');
+    var wrap  = document.getElementById('notif-list');
+    if (!badge || !wrap) return;
+    var c = Array.isArray(list) ? list.length : 0;
+    badge.textContent = String(c);
+    badge.style.display = c > 0 ? 'inline-grid' : 'none';
+    if (!list || list.length === 0) { wrap.innerHTML = '<div class="notif-empty">No alerts for now.</div>'; return; }
+    wrap.innerHTML = list.map(function (n) {
+      var t = escapeHtml(n.title);
+      var d = escapeHtml(n.description);
+      var href = n.href ? String(n.href) : '#';
+      var when = n.created_at ? timeAgo(n.created_at) : '';
+      return '<div class="notif-item"><a href="'+href+'"><div class="title">'+t+'</div><div class="desc">'+d+'</div>'+(when?'<div class="desc" style="font-size:12px;opacity:.8">'+when+'</div>':'')+'</a></div>';
+    }).join('');
+  }
+  async function fetchNotifs() {
+    try {
+      var res = await fetch('getNotifications.php', { headers: { 'Accept': 'application/json' } });
+      var data = await res.json();
+      if (data && Array.isArray(data.notifications)) renderNotifs(data.notifications);
+    } catch (e) {}
+  }
+  function initNotifs() {
+    var btn = document.getElementById('notif-btn');
+    var dd  = document.getElementById('notif-dropdown');
+    if (!btn || !dd) return;
+    btn.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      dd.classList.toggle('open');
+      if (dd.classList.contains('open')) fetchNotifs();
+    });
+    document.addEventListener('click', function (e) {
+      if (!dd.classList.contains('open')) return;
+      if (!dd.contains(e.target) && !btn.contains(e.target)) dd.classList.remove('open');
+    });
+    fetchNotifs();
+    setInterval(fetchNotifs, 60000);
+  }
+  document.addEventListener('DOMContentLoaded', function () { initTheme(); initNotifs(); });
+})();
+
 document.getElementById('regForm')?.addEventListener('submit', function(e) {
   var ok = true;
   function clear(id) {
@@ -360,6 +592,61 @@ document.getElementById('regForm')?.addEventListener('submit', function(e) {
 
   if (!ok) e.preventDefault();
 });
+
+// ── Promo code live check ──────────────────────────────────────────────
+(function () {
+  var btn      = document.getElementById('check-promo-btn');
+  var input    = document.getElementById('promo_code');
+  var feedback = document.getElementById('promo-feedback');
+  var success  = document.getElementById('promo-success');
+  if (!btn || !input) return;
+
+  var ID_EVENT = <?= (int)$id_event ?>;
+
+  function showFeedback(msg, isOk) {
+    if (feedback) {
+      feedback.textContent = msg;
+      feedback.style.display = msg ? 'block' : 'none';
+      feedback.style.color = isOk ? '#166534' : '#dc2626';
+    }
+  }
+
+  btn.addEventListener('click', async function () {
+    var code = input.value.trim().toUpperCase();
+    if (!code) { showFeedback('Veuillez saisir un code.', false); return; }
+
+    btn.disabled = true;
+    btn.textContent = '…';
+    showFeedback('', false);
+
+    try {
+      var res  = await fetch('checkPromo.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code, id_event: ID_EVENT })
+      });
+      var data = await res.json();
+      if (data.valid) {
+        showFeedback('✅ ' + data.label, true);
+        input.style.borderColor = '#16a34a';
+      } else {
+        showFeedback('❌ ' + (data.error || 'Code invalide'), false);
+        input.style.borderColor = '#dc2626';
+      }
+    } catch (e) {
+      showFeedback('Erreur de connexion.', false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Vérifier';
+    }
+  });
+
+  // Reset border on typing
+  if (input) input.addEventListener('input', function () {
+    input.style.borderColor = '';
+    showFeedback('', false);
+  });
+})();
 </script>
 </body>
 </html>

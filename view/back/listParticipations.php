@@ -52,6 +52,16 @@ foreach ($participations as $p) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/admin.css">
+    <style>
+      .bo-logo{
+        display:inline-flex;align-items:baseline;gap:2px;
+        text-decoration:none;color:#111827;
+        font-weight:900;font-size:18px;letter-spacing:-0.02em;
+        margin-bottom:4px;
+      }
+      .bo-logo span{ color:#e63946; font-weight:900; }
+      body.dark .bo-logo{ color:#f1f5f9; }
+    </style>
 </head>
 <body>
 <div class="admin-shell">
@@ -75,11 +85,28 @@ foreach ($participations as $p) {
     <main class="main-area">
         <div class="topbar">
             <div class="topbar-title">
+                <a class="bo-logo" href="listEvenements.php">Smart Meal Planner<span>.</span></a>
                 <span class="label">Participation Dashboard</span>
                 <h1>Participant Management</h1>
                 <p>Track registrations and manage statuses clearly and quickly.</p>
             </div>
             <div class="topbar-action">
+                <div class="topbar-tools" style="position:relative;">
+                    <button class="icon-btn" id="notif-btn" type="button" aria-label="Notifications">
+                        <i class="bi bi-bell"></i>
+                        <span class="notif-badge" id="notif-badge">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notif-dropdown">
+                        <div class="notif-head">
+                            <strong>Notifications</strong>
+                            <span style="color:var(--muted);font-size:12px">Auto refresh</span>
+                        </div>
+                        <div class="notif-list" id="notif-list"></div>
+                    </div>
+                    <button class="icon-btn" id="theme-toggle-btn" type="button" aria-label="Theme toggle">
+                        <i class="bi bi-moon-stars-fill"></i>
+                    </button>
+                </div>
                 <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-primary">
                     <i class="bi bi-plus-lg"></i> New Participation
                 </a>
@@ -233,6 +260,8 @@ foreach ($participations as $p) {
                             </tbody>
                         </table>
                     </div>
+                    <!-- Pagination participations -->
+                    <div id="pagination-participations" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:16px 0;flex-wrap:wrap"></div>
                 </section>
                 <aside class="side-panel">
                     <div class="section-card">
@@ -249,7 +278,10 @@ foreach ($participations as $p) {
                         <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-action-primary"><i class="bi bi-plus-circle"></i> Add Participation</a>
                         <a href="listEvenements.php" class="btn-action-secondary"><i class="bi bi-calendar-event"></i> View Events</a>
                         <a href="listParticipations.php" class="btn-action-secondary"><i class="bi bi-arrow-clockwise"></i> Reset</a>
-                        <button type="button" class="btn-action-secondary" onclick="exportCSV()"><i class="bi bi-download"></i> Export CSV</button>
+                        <div style="display:grid;gap:10px;">
+                            <button type="button" class="btn-action-secondary" onclick="exportCSV()"><i class="bi bi-download"></i> Export CSV</button>
+                            <button type="button" class="btn-action-secondary" onclick="exportPDFParticipations()"><i class="bi bi-filetype-pdf"></i> Export PDF</button>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -259,16 +291,177 @@ foreach ($participations as $p) {
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script>
+// Theme + notifications (back-office)
+(function () {
+  function setTheme(isDark) {
+    document.body.classList.toggle('dark', !!isDark);
+    try { localStorage.setItem('bo_theme', isDark ? 'dark' : 'light'); } catch (e) {}
+    var themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) themeBtn.innerHTML = isDark ? '<i class="bi bi-sun-fill"></i>' : '<i class="bi bi-moon-stars-fill"></i>';
+  }
+  function initTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem('bo_theme'); } catch (e) {}
+    setTheme(saved === 'dark');
+    var themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) themeBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      setTheme(!document.body.classList.contains('dark'));
+    });
+  }
+  function escapeHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function timeAgo(d) {
+    var dt = new Date(d);
+    if (isNaN(dt.getTime())) return '';
+    var diff = Date.now() - dt.getTime();
+    var m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + ' min ago';
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + ' h ago';
+    return Math.floor(h / 24) + ' d ago';
+  }
+  function renderNotifs(list) {
+    var badge = document.getElementById('notif-badge');
+    var wrap  = document.getElementById('notif-list');
+    if (!badge || !wrap) return;
+    var c = Array.isArray(list) ? list.length : 0;
+    badge.textContent = String(c);
+    badge.style.display = c > 0 ? 'inline-grid' : 'none';
+    if (!list || list.length === 0) { wrap.innerHTML = '<div class="notif-empty">No alerts for now.</div>'; return; }
+    wrap.innerHTML = list.map(function (n) {
+      var t = escapeHtml(n.title);
+      var d = escapeHtml(n.description);
+      var href = n.href ? String(n.href) : '#';
+      var when = n.created_at ? timeAgo(n.created_at) : '';
+      return '<div class="notif-item"><a href="'+href+'"><div class="title">'+t+'</div><div class="desc">'+d+'</div>'+(when?'<div class="desc" style="font-size:12px;opacity:.8">'+when+'</div>':'')+'</a></div>';
+    }).join('');
+  }
+  async function fetchNotifs() {
+    try {
+      var res = await fetch('getNotifications.php', { headers: { 'Accept': 'application/json' } });
+      var data = await res.json();
+      if (data && Array.isArray(data.notifications)) renderNotifs(data.notifications);
+    } catch (e) {}
+  }
+  function initNotifs() {
+    var btn = document.getElementById('notif-btn');
+    var dd  = document.getElementById('notif-dropdown');
+    if (!btn || !dd) return;
+    btn.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      dd.classList.toggle('open');
+      if (dd.classList.contains('open')) fetchNotifs();
+    });
+    document.addEventListener('click', function (e) {
+      if (!dd.classList.contains('open')) return;
+      if (!dd.contains(e.target) && !btn.contains(e.target)) dd.classList.remove('open');
+    });
+    fetchNotifs();
+    setInterval(fetchNotifs, 60000);
+  }
+  document.addEventListener('DOMContentLoaded', function () { initTheme(); initNotifs(); });
+})();
+
 var tbody = document.getElementById('tbody-participations');
 Array.from(tbody.querySelectorAll('tr:not(#no-result)')).forEach(function(r,i){ r.dataset.index=i; });
+
+// ── Pagination participations (8 par page) ───────────────────────────
+var ROWS_PER_PAGE_P = 8;
+var currentPageP    = 1;
+
+function renderPaginationP() {
+  var allRows = Array.from(tbody.querySelectorAll('tr:not(#no-result)'));
+  var visible = allRows.filter(function(r){ return r.dataset.filtered !== '0'; });
+  var totalPages = Math.max(1, Math.ceil(visible.length / ROWS_PER_PAGE_P));
+  if (currentPageP > totalPages) currentPageP = totalPages;
+
+  // Hide all, show only current page
+  allRows.forEach(function(r){ r.style.display = 'none'; });
+  visible.forEach(function(r, i) {
+    if (i >= (currentPageP-1)*ROWS_PER_PAGE_P && i < currentPageP*ROWS_PER_PAGE_P) {
+      r.style.display = '';
+    }
+  });
+
+  var noResult = document.getElementById('no-result');
+  if (noResult) noResult.style.display = visible.length === 0 ? '' : 'none';
+
+  var pag = document.getElementById('pagination-participations');
+  if (!pag) return;
+  if (totalPages <= 1) {
+    pag.innerHTML = '<span style="font-size:12px;color:var(--muted)">'+visible.length+' participation(s)</span>';
+    return;
+  }
+  var html = '<button class="pag-btn" '+(currentPageP<=1?'disabled':'')+' onclick="goPageP('+(currentPageP-1)+')">‹</button>';
+  for (var i = 1; i <= totalPages; i++) {
+    if (i===1||i===totalPages||(i>=currentPageP-1&&i<=currentPageP+1)) {
+      html += '<button class="pag-btn'+(i===currentPageP?' pag-active':'')+'" onclick="goPageP('+i+')">'+i+'</button>';
+    } else if (i===currentPageP-2||i===currentPageP+2) {
+      html += '<span style="color:var(--muted);padding:0 4px">…</span>';
+    }
+  }
+  html += '<button class="pag-btn" '+(currentPageP>=totalPages?'disabled':'')+' onclick="goPageP('+(currentPageP+1)+')">›</button>';
+  html += '<span style="font-size:12px;color:var(--muted);margin-left:6px">Page '+currentPageP+'/'+totalPages+' · '+visible.length+' résultats</span>';
+  pag.innerHTML = html;
+}
+
+function goPageP(p) { currentPageP = p; renderPaginationP(); }
+
+document.addEventListener('DOMContentLoaded', function() {
+  renderPaginationP();
+  ['filter-search','filter-statut','filter-event'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input',  function(){ currentPageP=1; renderPaginationP(); });
+    if (el) el.addEventListener('change', function(){ currentPageP=1; renderPaginationP(); });
+  });
+});
+
+function exportPDFParticipations() {
+    var rows = Array.from(tbody.querySelectorAll('tr:not(#no-result)')).filter(function(r){ return r.style.display !== 'none'; });
+    var headers = ['ID','Participant','Event','Date','Amount','Payment Method','Status'];
+    var body = rows.map(function(row){
+        var cols = [];
+        for (var i = 0; i < row.cells.length - 1; i++) cols.push(row.cells[i].textContent.trim());
+        return cols;
+    });
+
+    var jspdf = window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : null;
+    if (!jspdf) return;
+    var doc = new jspdf({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    var title = 'Participations';
+    var dateStr = new Date().toLocaleString();
+
+    doc.setFillColor(230, 57, 70);
+    doc.rect(0, 0, doc.internal.pageSize.getWidth(), 64, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text(title, 40, 38);
+    doc.setFontSize(11);
+    doc.text('Export date: ' + dateStr, doc.internal.pageSize.getWidth() - 40, 38, { align: 'right' });
+
+    doc.autoTable({
+        head: [headers],
+        body: body,
+        startY: 84,
+        styles: { fontSize: 10, cellPadding: 6, lineColor: [51, 65, 85], lineWidth: 0.2 },
+        headStyles: { fillColor: [230, 57, 70], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
+    });
+
+    doc.save('participations_' + new Date().toISOString().slice(0,10) + '.pdf');
+}
 
 function applyFilters() {
     var q      = document.getElementById('search-input').value.toLowerCase().trim();
     var statut = document.getElementById('filter-statut').value.toLowerCase();
     var evId   = document.getElementById('filter-event').value;
     var rows   = Array.from(tbody.querySelectorAll('tr:not(#no-result)'));
-    var visible = 0;
 
     rows.forEach(function(row) {
         var nom  = row.dataset.nom    || '';
@@ -277,11 +470,11 @@ function applyFilters() {
         var show = (!q      || nom.includes(q))
                 && (!statut || st === statut)
                 && (!evId   || ev === evId);
-        row.style.display = show ? '' : 'none';
-        if (show) visible++;
+        row.dataset.filtered = show ? '1' : '0';
     });
 
-    document.getElementById('no-result').style.display = visible === 0 ? '' : 'none';
+    currentPageP = 1;
+    renderPaginationP();
 }
 
 function annulerFiltres() {
