@@ -3,8 +3,12 @@
 .env.local
 
 # Clés API — ne jamais committer
+config.php
 config.api.php
 config.mail.php
+
+# Dépendances
+/vendor/
 
 # Uploads utilisateurs
 uploads/

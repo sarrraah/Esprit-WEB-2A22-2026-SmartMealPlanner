@@ -13,6 +13,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS promo_code (
     discount    DECIMAL(10,2) NOT NULL DEFAULT 0,
     type        ENUM('percent','fixed') NOT NULL DEFAULT 'percent',
     id_event    INT NULL,
+    milestone_id INT NULL,
     max_uses    INT NULL,
     used_count  INT NOT NULL DEFAULT 0,
     expires_at  DATETIME NULL,
@@ -20,35 +21,46 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS promo_code (
     created_at  DATETIME DEFAULT NOW()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// Add milestone_id column if missing (for existing installs)
+try { $pdo->exec("ALTER TABLE promo_code ADD COLUMN milestone_id INT NULL AFTER id_event"); } catch(Throwable $e) {}
+
 $errors  = [];
 $success = '';
 
-// Handle add
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
-    $code      = strtoupper(trim($_POST['code'] ?? ''));
-    $discount  = (float)($_POST['discount'] ?? 0);
-    $type      = in_array($_POST['type'] ?? '', ['percent','fixed']) ? $_POST['type'] : 'percent';
-    $id_event  = ($_POST['id_event'] ?? '') !== '' ? (int)$_POST['id_event'] : null;
-    $max_uses  = ($_POST['max_uses'] ?? '') !== '' ? (int)$_POST['max_uses'] : null;
-    $expires   = ($_POST['expires_at'] ?? '') !== '' ? $_POST['expires_at'] : null;
+// ── Milestone definitions ─────────────────────────────────────────────
+$milestone_defs = [
+    1 => ['emoji' => '🥄', 'label' => 'First Step',       'discount' => 5,  'count' => 1],
+    2 => ['emoji' => '🌱', 'label' => 'Event Explorer',    'discount' => 10, 'count' => 3],
+    3 => ['emoji' => '🔥', 'label' => 'Event Enthusiast',  'discount' => 15, 'count' => 5],
+    4 => ['emoji' => '🥗', 'label' => 'Regular Attendee',  'discount' => 20, 'count' => 10],
+    5 => ['emoji' => '💪', 'label' => 'Dedicated Member',  'discount' => 25, 'count' => 15],
+    6 => ['emoji' => '⚡', 'label' => 'Event Champion',    'discount' => 30, 'count' => 20],
+    7 => ['emoji' => '🏆', 'label' => 'VIP Attendee',      'discount' => 40, 'count' => 30],
+];
 
-    if (strlen($code) < 2)  $errors[] = 'Le code doit contenir au moins 2 caractères.';
-    if ($discount <= 0)     $errors[] = 'La réduction doit être supérieure à 0.';
-    if ($type === 'percent' && $discount > 100) $errors[] = 'Un pourcentage ne peut pas dépasser 100.';
-
-    if (empty($errors)) {
+// Handle save milestone codes
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_milestones') {
+    foreach ($milestone_defs as $mid => $m) {
+        $code = strtoupper(trim($_POST['milestone_code'][$mid] ?? ''));
+        if (!$code) continue;
+        // Upsert: delete old milestone code for this id, insert new
+        $pdo->prepare("DELETE FROM promo_code WHERE milestone_id = ?")->execute([$mid]);
         try {
-            $stmt = $pdo->prepare(
-                "INSERT INTO promo_code (code, discount, type, id_event, max_uses, expires_at, active)
-                 VALUES (?, ?, ?, ?, ?, ?, 1)"
-            );
-            $stmt->execute([$code, $discount, $type, $id_event, $max_uses, $expires]);
-            $success = "Code promo « $code » créé avec succès.";
+            $pdo->prepare(
+                "INSERT INTO promo_code (code, discount, type, milestone_id, max_uses, expires_at, active)
+                 VALUES (?, ?, 'percent', ?, NULL, NULL, 1)"
+            )->execute([$code, $m['discount'], $mid]);
         } catch (Throwable $e) {
-            $errors[] = 'Erreur : ' . $e->getMessage();
+            $errors[] = "Code « $code » : " . $e->getMessage();
         }
     }
+    if (empty($errors)) $success = '✅ Codes milestone sauvegardés.';
 }
+
+// Fetch existing milestone codes
+$milestoneCodes = [];
+$rows = $pdo->query("SELECT milestone_id, code FROM promo_code WHERE milestone_id IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
+foreach ($rows as $r) $milestoneCodes[(int)$r['milestone_id']] = $r['code'];
 
 // Handle toggle active / delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle') {
@@ -62,8 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     header('Location: listPromoCodes.php'); exit;
 }
 
-// Fetch all promo codes
-$promos = $pdo->query("SELECT * FROM promo_code ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+// Fetch all promo codes (non-milestone only)
+$promos = $pdo->query("SELECT * FROM promo_code WHERE milestone_id IS NULL ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch events for the dropdown
 $events = $pdo->query("SELECT id_event, titre FROM evenement ORDER BY titre")->fetchAll(PDO::FETCH_ASSOC);
@@ -132,58 +144,43 @@ tr:last-child td{border-bottom:none}
     <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
   <?php endif; ?>
 
-  <!-- Add form -->
+  <!-- Milestone Codes -->
   <div class="card">
-    <h2>➕ Nouveau code promo</h2>
-    <form method="POST" action="">
-      <input type="hidden" name="action" value="add">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Code *</label>
-          <input type="text" name="code" placeholder="EX: SUMMER20" required
-                 value="<?= htmlspecialchars($_POST['code'] ?? '') ?>"
-                 style="text-transform:uppercase">
-        </div>
-        <div class="form-group">
-          <label>Réduction *</label>
-          <input type="number" name="discount" placeholder="10" min="0.01" step="0.01" required
-                 value="<?= htmlspecialchars($_POST['discount'] ?? '') ?>">
-        </div>
-        <div class="form-group">
-          <label>Type *</label>
-          <select name="type">
-            <option value="percent" <?= (($_POST['type'] ?? '') === 'percent') ? 'selected' : '' ?>>% Pourcentage</option>
-            <option value="fixed"   <?= (($_POST['type'] ?? '') === 'fixed')   ? 'selected' : '' ?>>TND Montant fixe</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Événement (optionnel)</label>
-          <select name="id_event">
-            <option value="">Tous les événements</option>
-            <?php foreach ($events as $ev): ?>
-              <option value="<?= $ev['id_event'] ?>"
-                <?= (($_POST['id_event'] ?? '') == $ev['id_event']) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($ev['titre']) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Utilisations max (optionnel)</label>
-          <input type="number" name="max_uses" placeholder="Illimité" min="1"
-                 value="<?= htmlspecialchars($_POST['max_uses'] ?? '') ?>">
-        </div>
-        <div class="form-group">
-          <label>Expire le (optionnel)</label>
-          <input type="datetime-local" name="expires_at"
-                 value="<?= htmlspecialchars($_POST['expires_at'] ?? '') ?>">
-        </div>
-      </div>
+    <h2>🎯 Codes Promo par Palier (Goals & Rewards)</h2>
+    <p style="font-size:13px;color:#9a3535;margin-bottom:16px">Définissez le code promo que les utilisateurs recevront à chaque palier d'inscription.</p>
+    <form method="POST">
+      <input type="hidden" name="action" value="save_milestones">
+      <table>
+        <thead>
+          <tr>
+            <th>Palier</th>
+            <th>Inscriptions requises</th>
+            <th>Réduction</th>
+            <th>Code Promo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($milestone_defs as $mid => $m): ?>
+          <tr>
+            <td><strong><?= $m['emoji'] ?> <?= htmlspecialchars($m['label']) ?></strong></td>
+            <td><?= $m['count'] ?> événement(s)</td>
+            <td><span class="badge badge-percent"><?= $m['discount'] ?>%</span></td>
+            <td>
+              <input type="text" name="milestone_code[<?= $mid ?>]"
+                value="<?= htmlspecialchars($milestoneCodes[$mid] ?? '') ?>"
+                placeholder="ex: WELCOME5"
+                style="text-transform:uppercase;width:160px">
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
       <div style="margin-top:16px">
-        <button type="submit" class="btn btn-primary">Créer le code</button>
+        <button type="submit" class="btn btn-primary">💾 Sauvegarder les codes</button>
       </div>
     </form>
   </div>
+
 
   <!-- List -->
   <div class="card">

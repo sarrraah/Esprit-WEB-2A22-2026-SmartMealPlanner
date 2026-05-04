@@ -91,22 +91,6 @@ foreach ($participations as $p) {
                 <p>Track registrations and manage statuses clearly and quickly.</p>
             </div>
             <div class="topbar-action">
-                <div class="topbar-tools" style="position:relative;">
-                    <button class="icon-btn" id="notif-btn" type="button" aria-label="Notifications">
-                        <i class="bi bi-bell"></i>
-                        <span class="notif-badge" id="notif-badge">0</span>
-                    </button>
-                    <div class="notif-dropdown" id="notif-dropdown">
-                        <div class="notif-head">
-                            <strong>Notifications</strong>
-                            <span style="color:var(--muted);font-size:12px">Auto refresh</span>
-                        </div>
-                        <div class="notif-list" id="notif-list"></div>
-                    </div>
-                    <button class="icon-btn" id="theme-toggle-btn" type="button" aria-label="Theme toggle">
-                        <i class="bi bi-moon-stars-fill"></i>
-                    </button>
-                </div>
                 <a href="addParticipation.php<?= $id_event_filter ? '?id_event='.$id_event_filter : '' ?>" class="btn-primary">
                     <i class="bi bi-plus-lg"></i> New Participation
                 </a>

@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../../controller/EvenementController.php';
 require_once __DIR__ . '/../../controller/ParticipationController.php';
-require_once __DIR__ . '/../../model/Database.php';
+require_once __DIR__ . '/../../config.php';
 
 $id_event  = isset($_GET['id_event']) ? (int)$_GET['id_event'] : 0;
 $evCtrl    = new EvenementController();

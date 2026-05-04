@@ -1,0 +1,17 @@
+{
+    "name": "rana/event",
+    "autoload": {
+        "psr-4": {
+            "Rana\\Event\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Rana",
+            "email": "Rana.BenAbid@esprit.tn"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^7.0"
+    }
+}

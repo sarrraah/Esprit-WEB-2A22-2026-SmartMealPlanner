@@ -1,4 +1,24 @@
 <?php
+/**
+ * SQL (run once):
+ * ALTER TABLE evenement ADD COLUMN IF NOT EXISTS likes INT DEFAULT 0;
+ * CREATE TABLE IF NOT EXISTS commentaire (
+ *   id INT AUTO_INCREMENT PRIMARY KEY,
+ *   id_event INT NOT NULL,
+ *   auteur VARCHAR(100) NOT NULL,
+ *   contenu TEXT NOT NULL,
+ *   created_at DATETIME DEFAULT NOW(),
+ *   FOREIGN KEY (id_event) REFERENCES evenement(id_event) ON DELETE CASCADE
+ * );
+ * CREATE TABLE IF NOT EXISTS reaction (
+ *   id INT AUTO_INCREMENT PRIMARY KEY,
+ *   id_event INT NOT NULL,
+ *   type ENUM('❤️','😂','😮','😢','👏','🔥') NOT NULL,
+ *   session_id VARCHAR(100) NOT NULL,
+ *   UNIQUE KEY unique_reaction (id_event, session_id, type),
+ *   FOREIGN KEY (id_event) REFERENCES evenement(id_event) ON DELETE CASCADE
+ * );
+ */
 require_once __DIR__ . '/../../controller/EvenementController.php';
 $ctrl       = new EvenementController();
 $evenements = $ctrl->listEvenements();
@@ -164,6 +184,142 @@ sort($types);
 .btn-register.waiting { background: #b45309; }
 .btn-register.waiting:hover { background: #92400e; }
 
+/* ── LIKE BUTTON ── */
+.like-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.like-btn {
+  border: 1px solid #eee;
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  color: #aaa;
+}
+.like-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(206,18,18,0.35);
+  box-shadow: 0 10px 24px rgba(206,18,18,0.10);
+}
+.like-btn.liked {
+  border-color: rgba(206,18,18,0.6);
+  box-shadow: 0 12px 26px rgba(206,18,18,0.14);
+  color: #e63946;
+}
+.like-heart {
+  display: inline-block;
+  transform-origin: center;
+}
+@keyframes likePulse {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+.like-btn.pulse .like-heart {
+  animation: likePulse .28s ease-in-out;
+}
+
+/* ── COMMENTS + REACTIONS ── */
+.cr-toggle {
+  margin-top: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #333;
+  transition: all 0.2s;
+}
+.cr-toggle:hover { border-color: rgba(230,57,70,0.35); box-shadow: 0 10px 24px rgba(230,57,70,0.10); transform: translateY(-1px); }
+.comment-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e63946;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  padding: 0 6px;
+  margin: 0 2px;
+}
+.cr-wrap {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 420ms ease, opacity 320ms ease, transform 320ms ease;
+}
+.cr-wrap.open {
+  max-height: 1200px;
+  opacity: 1;
+  transform: translateY(0);
+}
+.cr-card {
+  margin-top: 14px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+}
+.reactions-bar { display:flex; gap: 10px; flex-wrap: wrap; }
+.reaction-btn {
+  background: #f8f8f8; border: 2px solid transparent; border-radius: 50px;
+  padding: 8px 16px; font-size: 18px; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.reaction-btn:hover { background: #fff0f0; border-color: #e63946; transform: scale(1.1); }
+.reaction-btn.reacted { background: #ffe5e5; border-color: #e63946; }
+.reaction-count { font-size: 11px; color: #888; font-weight: 600; }
+.comments-list { margin-top: 16px; }
+.comment-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.comment-item:last-child{ border-bottom:none; }
+.comment-author { font-weight: 700; color: #111; font-size: 14px; }
+.comment-date { font-size: 11px; color: #aaa; margin-left: 8px; }
+.comment-text { font-size: 14px; color: #444; margin-top: 4px; }
+.comment-empty { color:#999; font-size: 13px; padding: 10px 0; }
+.comment-form { margin-top: 14px; display:grid; gap: 10px; }
+.comment-form input, .comment-form textarea {
+  width: 100%;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  outline: none;
+}
+.comment-form input:focus, .comment-form textarea:focus { border-color: rgba(230,57,70,0.5); box-shadow: 0 0 0 3px rgba(230,57,70,0.10); }
+.comment-btn {
+  background: #e63946;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+}
+.comment-error { color:#dc2626; font-size: 12px; display:none; }
+.comment-error.show{ display:block; }
+.fade-in { animation: fadeIn 220ms ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0);} }
+
 /* ── MODAL ── */
 .modal-event-img {
   width: 100%;
@@ -282,6 +438,59 @@ sort($types);
     </div>
   </section>
 
+  <!-- GOALS & REWARDS -->
+  <section id="goals-rewards" class="section py-5" style="background:#fffbf5;">
+    <div class="container section-title">
+      <h2>Goals & Rewards</h2>
+      <p><span>Register</span> <span class="description-title">& Unlock Discounts 🎯</span></p>
+    </div>
+    <div class="container">
+      <div style="background:#fff;border:1px solid #fde8e8;border-radius:16px;padding:28px;max-width:700px;margin:0 auto">
+
+        <!-- Email input -->
+        <div style="margin-bottom:20px">
+          <p style="font-size:14px;color:#666;margin-bottom:12px">Register for events and unlock exclusive discount codes. Enter your email to see your progress.</p>
+          <div style="display:flex;gap:10px">
+            <input type="email" id="goals-email" placeholder="your@email.com"
+              style="flex:1;border:1px solid #fde8e8;border-radius:999px;padding:10px 16px;font-size:13px;outline:none;font-family:'Inter',sans-serif">
+            <button onclick="loadGoals()" id="goals-check-btn"
+              style="background:#ce1212;color:#fff;border:none;border-radius:999px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">
+              Check Progress
+            </button>
+          </div>
+        </div>
+
+        <div id="goals-content">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI RECOMMENDATIONS -->
+  <section id="ai-picks" class="section py-5" style="background:#fff;">
+    <div class="container section-title">
+      <h2>AI Selection</h2>
+      <p><span>Personalized</span> <span class="description-title">Picks</span></p>
+    </div>
+    <div class="container">
+      <div style="background:linear-gradient(135deg,#fff5f5,#fff);border:1px solid #fde8e8;border-radius:16px;padding:24px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+          <p style="margin:0;font-size:14px;color:#666;max-width:600px">
+            Our AI analyzes attendee ratings, popularity and event diversity to suggest the 3 best picks for you right now.
+          </p>
+          <button id="ai-refresh-btn" onclick="loadAIRecommendations()"
+            style="background:#fff;border:1px solid #f7c1c1;border-radius:999px;padding:8px 18px;font-size:13px;color:#ce1212;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;transition:all .2s">
+            🔄 Refresh
+          </button>
+        </div>
+        <div id="ai-reco-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:16px">
+          <div style="color:#9a3535;font-size:13px;padding:20px 0">⏳ Loading AI recommendations...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- EVENTS SECTION -->
   <section id="events" class="section light-background py-5">
     <div class="container section-title">
@@ -354,7 +563,9 @@ sort($types);
                data-lieu="<?= htmlspecialchars(strtolower($e->getLieu())) ?>"
                data-date="<?= $e->getDateDebut() ?>"
                data-prix="<?= $e->getPrix() ?>">
-            <div class="event-card" onclick="showEventModal(<?= $e->getIdEvent() ?>)">
+            <div class="event-card" data-event-id="<?= (int)$e->getIdEvent() ?>"
+                 onclick="window.location='detailEvent.php?id=<?= $e->getIdEvent() ?>'"
+                 style="cursor:pointer">
               <div style="position:relative">
                 <?php if ($imgPath): ?>
                   <img src="<?= htmlspecialchars($imgPath) ?>" class="event-img" alt="<?= htmlspecialchars($e->getTitre()) ?>">
@@ -388,6 +599,47 @@ sort($types);
                     <i class="fas fa-lock me-1"></i> Registration Closed
                   </button>
                 <?php endif; ?>
+                <div class="like-row">
+                  <button type="button"
+                          class="like-btn"
+                          data-id="<?= (int)$e->getIdEvent() ?>"
+                          data-liked="false"
+                          onclick="event.stopPropagation();">
+                    <span class="like-heart">❤️</span>
+                    <span class="like-count"><?= (int)$e->getLikes() ?></span>
+                  </button>
+                  <span style="font-size:12px;color:#999;display:flex;align-items:center;gap:4px">
+                    🔥 <span class="reaction-total" id="rtotal-<?= (int)$e->getIdEvent() ?>">0</span> réactions
+                  </span>
+                </div>
+
+                <button type="button" class="cr-toggle" data-toggle-cr="<?= (int)$e->getIdEvent() ?>"
+                        onclick="event.stopPropagation();">
+                  💬 <span class="comment-count-badge" id="ccount-<?= (int)$e->getIdEvent() ?>">0</span> Commentaires & Réactions
+                </button>
+                <div class="cr-wrap" id="cr-wrap-<?= (int)$e->getIdEvent() ?>" onclick="event.stopPropagation();">
+                  <div class="cr-card">
+                    <div class="reactions-bar" id="reactions-<?= (int)$e->getIdEvent() ?>">
+                      <?php foreach (['❤️','😂','😮','😢','👏','🔥'] as $emoji): ?>
+                        <button type="button" class="reaction-btn" data-type="<?= $emoji ?>" data-event="<?= (int)$e->getIdEvent() ?>">
+                          <span><?= $emoji ?></span>
+                          <span class="reaction-count" data-count-for="<?= $emoji ?>">0</span>
+                        </button>
+                      <?php endforeach; ?>
+                    </div>
+
+                    <div class="comments-list" id="comments-<?= (int)$e->getIdEvent() ?>">
+                      <div class="comment-empty">Aucun commentaire pour l'instant.</div>
+                    </div>
+
+                    <div class="comment-form">
+                      <div class="comment-error" id="comment-err-<?= (int)$e->getIdEvent() ?>"></div>
+                      <input placeholder="Votre nom" id="auteur-<?= (int)$e->getIdEvent() ?>">
+                      <textarea placeholder="Votre commentaire..." id="contenu-<?= (int)$e->getIdEvent() ?>" rows="3"></textarea>
+                      <button type="button" class="comment-btn" data-submit-comment="<?= (int)$e->getIdEvent() ?>">Publier</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -462,44 +714,214 @@ sort($types);
 
 </main>
 
-<!-- EVENT MODAL -->
-<div class="modal fade" id="eventModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold" id="modalTitle"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col-md-5">
-            <img id="modalImage" class="modal-event-img d-none" alt="">
-            <div id="modalPlaceholder" class="modal-event-placeholder"></div>
-          </div>
-          <div class="col-md-7">
-            <div class="modal-price mb-2" id="modalPrice"></div>
-            <div id="modalBadge" class="mb-3"></div>
-            <div id="modalInfoRows"></div>
-            <div class="mt-3" id="modalDescription"
-                 style="font-size:14px;color:#555;line-height:1.7"></div>
-            <div class="mt-4 d-flex gap-2">
-              <a id="modalDetailBtn" href="#"
-                 class="btn rounded-pill px-4"
-                 style="background:var(--accent-color,#ce1212);color:white;border-color:var(--accent-color,#ce1212)">
-                <i class="fas fa-info-circle me-1"></i> View Details
-              </a>
-              <a id="modalRegisterBtn" href="#"
-                 class="btn rounded-pill px-4"
-                 style="color:var(--accent-color,#ce1212);border:1px solid var(--accent-color,#ce1212)">
-                <i class="fas fa-ticket-alt me-1"></i> Register
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+<!-- MY ACTIVITY PANEL -->
+<style>
+#activity-bubble {
+  position: fixed; bottom: 96px; right: 28px; z-index: 9998;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, #ce1212, #ff6b6b);
+  color: #fff; border: none; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(206,18,18,0.4);
+  font-size: 22px; display: flex; align-items: center; justify-content: center;
+  transition: transform .2s, box-shadow .2s;
+}
+#activity-bubble:hover { transform: scale(1.1); box-shadow: 0 10px 28px rgba(206,18,18,0.5); }
+#activity-bubble .notif {
+  position: absolute; top: -4px; right: -4px;
+  background: #fbbf24; color: #78350f;
+  font-size: 10px; font-weight: 800;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+#activity-panel {
+  position: fixed; bottom: 160px; right: 28px; z-index: 9997;
+  width: 360px; max-height: 560px;
+  background: #fff; border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  display: none; flex-direction: column;
+  overflow: hidden; font-family: 'Inter', sans-serif;
+}
+#activity-panel.open { display: flex; }
+.ap-header {
+  background: linear-gradient(135deg, #ce1212, #ff6b6b);
+  color: #fff; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ap-header .ap-title { font-weight: 700; font-size: 15px; }
+.ap-header .ap-sub   { font-size: 11px; opacity: .85; }
+#ap-close {
+  background: rgba(255,255,255,0.2); border: none; color: #fff;
+  border-radius: 50%; width: 28px; height: 28px; cursor: pointer;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+}
+.ap-email-form { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; gap: 8px; }
+.ap-email-form input {
+  flex: 1; border: 1px solid #fde8e8; border-radius: 999px;
+  padding: 8px 14px; font-size: 13px; outline: none; font-family: inherit;
+}
+.ap-email-form input:focus { border-color: #ce1212; }
+.ap-email-form button {
+  background: #ce1212; color: #fff; border: none;
+  border-radius: 50%; width: 34px; height: 34px; cursor: pointer;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+}
+.ap-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.ap-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.ap-tab {
+  flex: 1; padding: 7px; border: 1px solid #fde8e8; border-radius: 8px;
+  background: #fff; font-size: 12px; font-weight: 600; color: #9a3535;
+  cursor: pointer; font-family: inherit; text-align: center; transition: all .15s;
+}
+.ap-tab.active { background: #ce1212; color: #fff; border-color: #ce1212; }
+.ap-tab-content { display: none; }
+.ap-tab-content.active { display: block; }
+.ap-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.ap-stat {
+  background: #fff5f5; border: 1px solid #fde8e8; border-radius: 10px;
+  padding: 12px; text-align: center;
+}
+.ap-stat-val { font-size: 22px; font-weight: 800; color: #ce1212; }
+.ap-stat-lbl { font-size: 11px; color: #9a3535; margin-top: 2px; }
+.ap-item {
+  background: #fff; border: 1px solid #fde8e8; border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 8px; font-size: 12px;
+}
+.ap-item-title { font-weight: 700; color: #1a0505; margin-bottom: 3px; font-size: 13px; }
+.ap-item-meta  { color: #9a3535; font-size: 11px; }
+.ap-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; margin-left: 6px;
+}
+.ap-badge-ok  { background: #dcfce7; color: #166534; }
+.ap-badge-wait{ background: #fef9c3; color: #854d0e; }
+.ap-badge-no  { background: #fee2e2; color: #991b1b; }
+.ap-empty { color: #9a3535; font-size: 13px; text-align: center; padding: 20px 0; }
+</style>
+
+<button id="activity-bubble" title="Mon Activité" onclick="toggleActivityPanel()">
+  ❤️
+  <span class="notif" id="activity-notif" style="display:none">!</span>
+</button>
+
+<div id="activity-panel">
+  <div class="ap-header">
+    <div>
+      <div class="ap-title">❤️ Mon Activité</div>
+      <div class="ap-sub">Votre résumé personnel</div>
     </div>
+    <button id="ap-close" onclick="toggleActivityPanel()">✕</button>
+  </div>
+
+  <div class="ap-email-form">
+    <input type="email" id="ap-email" placeholder="votre@email.com">
+    <button onclick="loadActivity()" title="Rechercher">🔍</button>
+  </div>
+
+  <div class="ap-body" id="ap-body">
+    <div class="ap-empty">Entrez votre email pour voir votre activité.</div>
   </div>
 </div>
+
+<script>
+function toggleActivityPanel() {
+  var panel = document.getElementById('activity-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    var saved = localStorage.getItem('smp_user_email');
+    if (saved) {
+      document.getElementById('ap-email').value = saved;
+      loadActivity();
+    }
+    document.getElementById('ap-email').focus();
+  }
+}
+
+function apTab(name) {
+  document.querySelectorAll('.ap-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.ap-tab-content').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelector('.ap-tab[data-tab="' + name + '"]').classList.add('active');
+  document.getElementById('ap-tab-' + name).classList.add('active');
+}
+
+async function loadActivity() {
+  var email = (document.getElementById('ap-email').value || '').trim();
+  var body  = document.getElementById('ap-body');
+  if (!email) { body.innerHTML = '<div class="ap-empty">Entrez votre email.</div>'; return; }
+
+  localStorage.setItem('smp_user_email', email);
+  body.innerHTML = '<div class="ap-empty">⏳ Chargement...</div>';
+
+  try {
+    var res  = await fetch('../back/getMyActivity.php?email=' + encodeURIComponent(email));
+    var data = await res.json();
+
+    if (data.error) { body.innerHTML = '<div class="ap-empty">❌ ' + data.error + '</div>'; return; }
+
+    var s = data.stats;
+
+    // Notif badge
+    var notif = document.getElementById('activity-notif');
+    if (s.total_events > 0) { notif.style.display = 'flex'; notif.textContent = s.total_events; }
+
+    // Stats
+    var statsHtml = '<div class="ap-stat-grid">'
+      + '<div class="ap-stat"><div class="ap-stat-val">' + s.total_events + '</div><div class="ap-stat-lbl">🎟️ Inscriptions</div></div>'
+      + '<div class="ap-stat"><div class="ap-stat-val">' + s.confirmed + '</div><div class="ap-stat-lbl">✅ Confirmées</div></div>'
+      + '<div class="ap-stat"><div class="ap-stat-val">' + s.total_comments + '</div><div class="ap-stat-lbl">💬 Commentaires</div></div>'
+      + '<div class="ap-stat"><div class="ap-stat-val">' + s.total_spent.toFixed(0) + ' TND</div><div class="ap-stat-lbl">💰 Dépensé</div></div>'
+      + '</div>';
+
+    // Participations
+    var partHtml = '';
+    if (data.participations.length === 0) {
+      partHtml = '<div class="ap-empty">Aucune inscription trouvée.</div>';
+    } else {
+      data.participations.forEach(function(p) {
+        var badgeCls = p.statut.includes('confirm') ? 'ap-badge-ok' : p.statut.includes('annul') ? 'ap-badge-no' : 'ap-badge-wait';
+        var badgeLbl = p.statut.includes('confirm') ? '✅ Confirmé' : p.statut.includes('annul') ? '❌ Annulé' : '⏳ En attente';
+        var prix     = p.prix == 0 ? 'Gratuit' : (p.prix * p.places).toFixed(2) + ' TND';
+        partHtml += '<div class="ap-item">'
+          + '<div class="ap-item-title">' + p.titre.replace(/</g,'&lt;') + '<span class="ap-badge ' + badgeCls + '">' + badgeLbl + '</span></div>'
+          + '<div class="ap-item-meta">📅 ' + p.date + ' · 📍 ' + p.lieu.replace(/</g,'&lt;') + '</div>'
+          + '<div class="ap-item-meta">🎟️ ' + p.places + ' place(s) · 💰 ' + prix + '</div>'
+          + '</div>';
+      });
+    }
+
+    // Comments
+    var commHtml = '';
+    if (data.comments.length === 0) {
+      commHtml = '<div class="ap-empty">Aucun commentaire trouvé.</div>';
+    } else {
+      data.comments.forEach(function(c) {
+        commHtml += '<div class="ap-item">'
+          + '<div class="ap-item-title">' + c.event_titre.replace(/</g,'&lt;') + '</div>'
+          + '<div class="ap-item-meta" style="color:#4a1515;margin:4px 0">"' + c.contenu.replace(/</g,'&lt;') + '"</div>'
+          + '<div class="ap-item-meta">🕐 ' + c.created_at + '</div>'
+          + '</div>';
+      });
+    }
+
+    body.innerHTML = statsHtml
+      + '<div class="ap-tabs">'
+      + '<button class="ap-tab active" data-tab="events" onclick="apTab(\'events\')">🎟️ Événements (' + data.participations.length + ')</button>'
+      + '<button class="ap-tab" data-tab="comments" onclick="apTab(\'comments\')">💬 Commentaires (' + data.comments.length + ')</button>'
+      + '</div>'
+      + '<div class="ap-tab-content active" id="ap-tab-events">' + partHtml + '</div>'
+      + '<div class="ap-tab-content" id="ap-tab-comments">' + commHtml + '</div>';
+
+  } catch(e) {
+    body.innerHTML = '<div class="ap-empty">❌ Erreur de connexion.</div>';
+  }
+}
+
+// Enter key on email input
+document.addEventListener('DOMContentLoaded', function() {
+  var inp = document.getElementById('ap-email');
+  if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') loadActivity(); });
+});
+</script>
 
 <!-- FOOTER — same as friend -->
 <footer id="footer" class="footer dark-background">
@@ -511,6 +933,237 @@ sort($types);
 <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
   <i class="bi bi-arrow-up-short"></i>
 </a>
+
+<!-- ══════════════════════════════════════════
+     CHATBOT WIDGET
+══════════════════════════════════════════ -->
+<style>
+#chatbot-bubble {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, #ce1212, #ff6b6b);
+  color: #fff; border: none; cursor: pointer;
+  box-shadow: 0 6px 24px rgba(206,18,18,0.4);
+  font-size: 26px; display: flex; align-items: center; justify-content: center;
+  transition: transform .2s, box-shadow .2s;
+}
+#chatbot-bubble:hover { transform: scale(1.1); box-shadow: 0 10px 32px rgba(206,18,18,0.5); }
+
+#chatbot-window {
+  position: fixed; bottom: 96px; right: 28px; z-index: 9998;
+  width: 360px; max-height: 520px;
+  background: #fff; border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  display: flex; flex-direction: column;
+  overflow: hidden; display: none;
+  font-family: 'Inter', sans-serif;
+}
+#chatbot-header {
+  background: linear-gradient(135deg, #ce1212, #ff6b6b);
+  color: #fff; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+#chatbot-header .cb-title { font-weight: 700; font-size: 15px; }
+#chatbot-header .cb-sub   { font-size: 11px; opacity: .85; }
+#chatbot-close {
+  background: rgba(255,255,255,0.2); border: none; color: #fff;
+  border-radius: 50%; width: 28px; height: 28px; cursor: pointer;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+}
+#chatbot-messages {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: 340px;
+}
+.cb-msg {
+  max-width: 82%; padding: 10px 14px; border-radius: 14px;
+  font-size: 13px; line-height: 1.5; word-break: break-word;
+}
+.cb-msg.bot  { background: #f5f5f5; color: #222; align-self: flex-start; border-bottom-left-radius: 4px; }
+.cb-msg.user { background: #ce1212; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.cb-msg a    { color: #ce1212; font-weight: 600; }
+.cb-msg.bot a{ color: #ce1212; }
+.cb-msg.user a{ color: #ffe0e0; }
+.cb-typing   { display: flex; gap: 4px; align-items: center; padding: 10px 14px; }
+.cb-typing span {
+  width: 7px; height: 7px; background: #ccc; border-radius: 50%;
+  animation: cbBounce .9s infinite;
+}
+.cb-typing span:nth-child(2) { animation-delay: .15s; }
+.cb-typing span:nth-child(3) { animation-delay: .30s; }
+@keyframes cbBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+#chatbot-input-row {
+  padding: 12px 14px; border-top: 1px solid #f0f0f0;
+  display: flex; gap: 8px;
+}
+#chatbot-input {
+  flex: 1; border: 1px solid #e5e5e5; border-radius: 999px;
+  padding: 9px 14px; font-size: 13px; outline: none; font-family: inherit;
+}
+#chatbot-input:focus { border-color: #ce1212; box-shadow: 0 0 0 3px rgba(206,18,18,.1); }
+#chatbot-send {
+  background: #ce1212; color: #fff; border: none;
+  border-radius: 50%; width: 36px; height: 36px; cursor: pointer;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+#chatbot-send:hover { background: #b00e0e; }
+
+.cb-suggestions {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 10px;
+}
+.cb-suggestion {
+  background: #fff0f0; color: #ce1212; border: 1px solid #fecaca;
+  border-radius: 999px; padding: 5px 12px; font-size: 12px;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.cb-suggestion:hover { background: #ce1212; color: #fff; }
+
+@media(max-width:420px) {
+  #chatbot-window { width: calc(100vw - 32px); right: 16px; }
+  #chatbot-bubble { right: 16px; bottom: 16px; }
+}
+</style>
+
+<!-- Bubble button -->
+<button id="chatbot-bubble" title="Assistant événements">🤖</button>
+
+<!-- Chat window -->
+<div id="chatbot-window">
+  <div id="chatbot-header">
+    <div>
+      <div class="cb-title">🤖 Assistant Événements</div>
+      <div class="cb-sub">Je vous aide à choisir votre événement</div>
+    </div>
+    <button id="chatbot-close">✕</button>
+  </div>
+
+  <div id="chatbot-messages"></div>
+
+  <div class="cb-suggestions" id="cb-suggestions">
+    <button class="cb-suggestion">Événements gratuits</button>
+    <button class="cb-suggestion">Conférences disponibles</button>
+    <button class="cb-suggestion">Événements ce mois</button>
+    <button class="cb-suggestion">Ateliers pratiques</button>
+  </div>
+
+  <div id="chatbot-input-row">
+    <input id="chatbot-input" type="text" placeholder="Posez votre question...">
+    <button id="chatbot-send">➤</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CHATBOT_URL = '/projet_nutriplanner/view/back/chatbot.php';
+  var history     = [];
+  var isOpen      = false;
+  var isTyping    = false;
+
+  var bubble   = document.getElementById('chatbot-bubble');
+  var win      = document.getElementById('chatbot-window');
+  var closeBtn = document.getElementById('chatbot-close');
+  var messages = document.getElementById('chatbot-messages');
+  var input    = document.getElementById('chatbot-input');
+  var sendBtn  = document.getElementById('chatbot-send');
+  var suggs    = document.getElementById('cb-suggestions');
+
+  function toggleChat() {
+    isOpen = !isOpen;
+    win.style.display = isOpen ? 'flex' : 'none';
+    bubble.textContent = isOpen ? '✕' : '🤖';
+    if (isOpen && messages.children.length === 0) {
+      addMessage('bot', 'Bonjour ! 👋 Je suis votre assistant événements. Dites-moi ce qui vous intéresse et je vous recommande les meilleurs événements !');
+    }
+    if (isOpen) setTimeout(function () { input.focus(); }, 100);
+  }
+
+  function addMessage(role, text) {
+    // Hide suggestions after first user message
+    if (role === 'user' && suggs) suggs.style.display = 'none';
+
+    var div = document.createElement('div');
+    div.className = 'cb-msg ' + role;
+    // Convert detailEvent.php?id=X links to clickable anchors
+    var html = text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/(detailEvent\.php\?id=\d+)/g, '<a href="$1">Voir l\'événement →</a>')
+      .replace(/\n/g, '<br>');
+    div.innerHTML = html;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    var div = document.createElement('div');
+    div.className = 'cb-msg bot cb-typing';
+    div.id = 'cb-typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function hideTyping() {
+    var el = document.getElementById('cb-typing-indicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage(text) {
+    if (!text || isTyping) return;
+    text = text.trim();
+    if (!text) return;
+
+    addMessage('user', text);
+    input.value = '';
+    isTyping = true;
+    sendBtn.disabled = true;
+    showTyping();
+
+    try {
+      var res  = await fetch(CHATBOT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history })
+      });
+      var data = await res.json();
+      hideTyping();
+
+      if (data.reply) {
+        addMessage('bot', data.reply);
+        history.push({ role: 'user',      content: text       });
+        history.push({ role: 'assistant', content: data.reply });
+        if (history.length > 20) history = history.slice(-20);
+      } else {
+        addMessage('bot', '❌ ' + (data.error || 'Une erreur est survenue.'));
+      }
+    } catch (e) {
+      hideTyping();
+      addMessage('bot', '❌ Impossible de contacter l\'assistant. Vérifiez votre connexion.');
+    } finally {
+      isTyping = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  // Events
+  bubble.addEventListener('click', toggleChat);
+  closeBtn.addEventListener('click', toggleChat);
+  sendBtn.addEventListener('click', function () { sendMessage(input.value); });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input.value); }
+  });
+
+  // Suggestion chips
+  if (suggs) {
+    suggs.querySelectorAll('.cb-suggestion').forEach(function (btn) {
+      btn.addEventListener('click', function () { sendMessage(btn.textContent); });
+    });
+  }
+})();
+</script>
 
 <script src="<?php echo $assetPrefix; ?>vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -572,55 +1225,214 @@ function filterAndRender() {
   document.getElementById('noResults').style.display = visible.length === 0 ? 'block' : 'none';
 }
 
-function showEventModal(id) {
-  const e = events.find(ev => ev.id === id);
-  if (!e) return;
+function formatLikes(n) {
+  n = parseInt(n || 0, 10);
+  return n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+}
 
-  const dateDebut = new Date(e.dateDebut).toLocaleDateString('en-GB');
-  const dateFin   = new Date(e.dateFin).toLocaleDateString('en-GB');
-  const dateLabel = dateDebut === dateFin ? dateDebut : dateDebut + ' → ' + dateFin;
-  const isFree    = e.prix === 0;
-  const statut    = e.statut.toLowerCase();
+function initLikes() {
+  document.querySelectorAll('.like-btn').forEach(function(btn){
+    var countEl = btn.querySelector('.like-count');
+    var id = parseInt(btn.dataset.id, 10);
+    var key = 'liked_event_' + id;
+    var liked = false;
+    try { liked = localStorage.getItem(key) === 'true'; } catch (e) {}
+    btn.dataset.liked = liked ? 'true' : 'false';
+    btn.classList.toggle('liked', liked);
+    if (countEl) countEl.textContent = formatLikes(countEl.textContent);
 
-  document.getElementById('modalTitle').textContent = e.titre;
-  document.getElementById('modalPrice').innerHTML   = isFree
-    ? '<span style="color:#28a745">Free</span>'
-    : e.prix.toFixed(2) + ' <small style="font-size:1rem">TND</small>';
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
 
-  const badgeColor = statut.includes('actif') ? '#28a745' : statut.includes('annul') ? '#dc3545' : '#6c757d';
-  const badgeLabel = statut.includes('actif') ? 'Active' : statut.includes('annul') ? 'Cancelled' : 'Ended';
-  document.getElementById('modalBadge').innerHTML =
-    `<span style="background:${badgeColor};color:white;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">${badgeLabel}</span>
-     <span style="background:#f0f0f0;color:#333;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-left:6px">${e.type}</span>`;
+      var liked = btn.dataset.liked === 'true';
+      var action = liked ? 'unlike' : 'like';
 
-  const img = document.getElementById('modalImage');
-  const ph  = document.getElementById('modalPlaceholder');
-  if (e.image) {
-    img.src = e.image;
-    img.classList.remove('d-none');
-    ph.style.display = 'none';
-  } else {
-    img.classList.add('d-none');
-    ph.style.display = 'flex';
-    ph.style.background = 'linear-gradient(135deg,#ce121222,#ce121244)';
-    ph.innerHTML = typeEmojis[e.type] || '📅';
+      fetch('/projet_nutriplanner/view/back/likeEvenement.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_event: id, action: action })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          btn.dataset.liked = liked ? 'false' : 'true';
+          try { localStorage.setItem(key, btn.dataset.liked); } catch (e2) {}
+          countEl.textContent = formatLikes(data.likes);
+          btn.classList.toggle('liked');
+          // pulse animation
+          btn.style.transform = 'scale(1.3)';
+          setTimeout(() => btn.style.transform = 'scale(1)', 200);
+        }
+      });
+    });
+  });
+}
+
+function ensureSessionId() {
+  try {
+    var id = localStorage.getItem('smp_session_id');
+    if (id) return id;
+    var uuid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(16) + '-' + Math.random().toString(16).slice(2));
+    localStorage.setItem('smp_session_id', uuid);
+    return uuid;
+  } catch (e) {
+    return 'anon-' + Date.now();
   }
+}
 
-  document.getElementById('modalInfoRows').innerHTML = `
-    <div class="info-row"><i class="fas fa-calendar"></i><strong>Date</strong>${dateLabel}</div>
-    <div class="info-row"><i class="fas fa-map-marker-alt"></i><strong>Location</strong>${e.lieu}</div>
-    <div class="info-row"><i class="fas fa-users"></i><strong>Capacity</strong>${e.capacite} seats</div>
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderCommentItem(c) {
+  var dt = c.created_at ? new Date(c.created_at) : null;
+  var dateLabel = (dt && !isNaN(dt.getTime())) ? dt.toLocaleString() : '';
+  return `
+    <div class="comment-item fade-in">
+      <div>
+        <span class="comment-author">${escapeHtml(c.auteur)}</span>
+        <span class="comment-date">${escapeHtml(dateLabel)}</span>
+      </div>
+      <div class="comment-text">${escapeHtml(c.contenu)}</div>
+    </div>
   `;
+}
 
-  document.getElementById('modalDescription').textContent =
-    e.description ? e.description.substring(0, 200) + (e.description.length > 200 ? '...' : '') : '';
+function setReactionCounts(id, counts) {
+  var wrap = document.getElementById('reactions-' + id);
+  if (!wrap) return;
+  wrap.querySelectorAll('.reaction-btn').forEach(function (btn) {
+    var type = btn.dataset.type;
+    var el = btn.querySelector('[data-count-for]');
+    var v = counts && typeof counts[type] !== 'undefined' ? counts[type] : 0;
+    if (el) el.textContent = String(v);
+  });
+  // Update the total reaction counter in the card
+  var totalSpan = document.getElementById('rtotal-' + id);
+  if (totalSpan && counts) {
+    var total = Object.values(counts).reduce(function(a, b) { return a + b; }, 0);
+    totalSpan.textContent = total;
+  }
+}
 
-  document.getElementById('modalDetailBtn').href   = `detailEvent.php?id=${e.id}`;
-  document.getElementById('modalRegisterBtn').href = statut.includes('actif')
-    ? `../back/addParticipation.php?id_event=${e.id}`
-    : `detailEvent.php?id=${e.id}`;
+async function loadCommentaires(id) {
+  var list = document.getElementById('comments-' + id);
+  if (!list) return;
+  var res = await fetch('/projet_nutriplanner/view/back/getCommentaires.php?id_event=' + encodeURIComponent(id) + '&page=1&limit=6', { headers: { 'Accept':'application/json' }});
+  var data = await res.json();
 
-  new bootstrap.Modal(document.getElementById('eventModal')).show();
+  // Update comment count badge
+  var badge = document.getElementById('ccount-' + id);
+  if (badge && data.total !== undefined) badge.textContent = data.total;
+
+  if (!data.comments || data.comments.length === 0) {
+    list.innerHTML = '<div class="comment-empty">Aucun commentaire pour linstant.</div>';
+    return;
+  }
+  list.innerHTML = data.comments.map(renderCommentItem).join('');
+}
+
+async function loadReactions(id) {
+  var res = await fetch('/projet_nutriplanner/view/back/getReactions.php?id_event=' + encodeURIComponent(id), { headers: { 'Accept':'application/json' }});
+  var data = await res.json();
+  if (data && data.counts) setReactionCounts(id, data.counts);
+}
+
+function restoreReactedState(id) {
+  var wrap = document.getElementById('reactions-' + id);
+  if (!wrap) return;
+  wrap.querySelectorAll('.reaction-btn').forEach(function (btn) {
+    var type = btn.dataset.type;
+    var key = 'reacted_' + id + '_' + type;
+    var reacted = false;
+    try { reacted = localStorage.getItem(key) === 'true'; } catch (e) {}
+    btn.classList.toggle('reacted', reacted);
+  });
+}
+
+function initCommentsReactions() {
+  var sessionId = ensureSessionId();
+
+  document.querySelectorAll('[data-toggle-cr]').forEach(function (btn) {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var id = parseInt(btn.dataset.toggleCr, 10);
+      var wrap = document.getElementById('cr-wrap-' + id);
+      if (!wrap) return;
+      var open = wrap.classList.contains('open');
+      wrap.classList.toggle('open', !open);
+      if (!open && !wrap.dataset.loaded) {
+        wrap.dataset.loaded = '1';
+        restoreReactedState(id);
+        await Promise.allSettled([loadCommentaires(id), loadReactions(id)]);
+      }
+    });
+  });
+
+  document.querySelectorAll('.reaction-btn').forEach(function (btn) {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var id = parseInt(btn.dataset.event, 10);
+      var type = btn.dataset.type;
+      var key = 'reacted_' + id + '_' + type;
+      var reacted = btn.classList.contains('reacted');
+      try { localStorage.setItem(key, reacted ? 'false' : 'true'); } catch (e2) {}
+
+      var res = await fetch('/projet_nutriplanner/view/back/addReaction.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_event: id, type: type, session_id: sessionId })
+      });
+      var data = await res.json();
+      if (data && data.success && data.counts) {
+        btn.classList.toggle('reacted', !reacted);
+        setReactionCounts(id, data.counts);
+      } else {
+        try { localStorage.setItem(key, reacted ? 'true' : 'false'); } catch (e3) {}
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-submit-comment]').forEach(function (btn) {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var id = parseInt(btn.dataset.submitComment, 10);
+      var auteurEl = document.getElementById('auteur-' + id);
+      var contenuEl = document.getElementById('contenu-' + id);
+      var errEl = document.getElementById('comment-err-' + id);
+      var list = document.getElementById('comments-' + id);
+      if (!auteurEl || !contenuEl || !errEl || !list) return;
+
+      var auteur = (auteurEl.value || '').trim();
+      var contenu = (contenuEl.value || '').trim();
+      errEl.classList.remove('show');
+      errEl.textContent = '';
+
+      if (!auteur) { errEl.textContent = 'Veuillez saisir votre nom.'; errEl.classList.add('show'); return; }
+      if (contenu.length < 3) { errEl.textContent = 'Le commentaire doit contenir au moins 3 caractères.'; errEl.classList.add('show'); return; }
+      if (contenu.length > 500) { errEl.textContent = 'Le commentaire ne doit pas dépasser 500 caractères.'; errEl.classList.add('show'); return; }
+
+      var res = await fetch('/projet_nutriplanner/view/back/addCommentaire.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_event: id, auteur: auteur, contenu: contenu })
+      });
+      var data = await res.json();
+      if (data && data.success && data.comment) {
+        contenuEl.value = '';
+        var empty = list.querySelector('.comment-empty');
+        if (empty) empty.remove();
+        list.insertAdjacentHTML('afterbegin', renderCommentItem(data.comment));
+        // Increment count badge
+        var badge = document.getElementById('ccount-' + id);
+        if (badge) badge.textContent = parseInt(badge.textContent || '0') + 1;
+      } else {
+        errEl.textContent = (data && data.error) ? data.error : 'Erreur lors de la publication.';
+        errEl.classList.add('show');
+      }
+    });
+  });
 }
 
 // Scroll-top button
@@ -634,6 +1446,245 @@ if (scrollTop) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
+
+// Load comment counts for all events on page load
+async function loadAllCommentCounts() {
+  var badges = document.querySelectorAll('[id^="ccount-"]');
+  badges.forEach(async function(badge) {
+    var id = badge.id.replace('ccount-', '');
+    try {
+      var res  = await fetch('/projet_nutriplanner/view/back/getCommentaires.php?id_event=' + encodeURIComponent(id) + '&page=1&limit=1', { headers: { 'Accept': 'application/json' } });
+      var data = await res.json();
+      if (data && typeof data.total !== 'undefined') {
+        badge.textContent = data.total;
+      }
+    } catch (e) {}
+  });
+}
+
+// Load reaction totals for all events on page load
+async function loadAllReactionTotals() {
+  var spans = document.querySelectorAll('[id^="rtotal-"]');
+  spans.forEach(async function(span) {
+    var id = span.id.replace('rtotal-', '');
+    try {
+      var res  = await fetch('/projet_nutriplanner/view/back/getReactions.php?id_event=' + encodeURIComponent(id), { headers: { 'Accept': 'application/json' } });
+      var data = await res.json();
+      if (data && data.counts) {
+        var total = Object.values(data.counts).reduce(function(a, b) { return a + b; }, 0);
+        span.textContent = total;
+      }
+    } catch (e) {}
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  initLikes();
+  initCommentsReactions();
+  loadAllCommentCounts();
+  loadAllReactionTotals();
+});
+</script>
+<script>
+// ── Goals & Rewards ───────────────────────────────────────────────────
+async function loadGoals() {
+  var email   = (document.getElementById('goals-email').value || '').trim();
+  var content = document.getElementById('goals-content');
+  var btn     = document.getElementById('goals-check-btn');
+  if (!content) return;
+
+  if (!email) {
+    content.innerHTML = '<p style="color:#dc2626;font-size:13px">Please enter your email.</p>';
+    return;
+  }
+
+  btn.textContent = '⏳ Loading...'; btn.disabled = true;
+
+  try {
+    var res  = await fetch('../back/getEventProgress.php?email=' + encodeURIComponent(email));
+    var data = await res.json();
+
+    var total      = data.total || 0;
+    var milestones = data.milestones || [];
+    var next       = data.next;
+
+    // Progress bar to next milestone
+    var progressHtml = '';
+    if (next) {
+      var pct = Math.round((total / next.count) * 100);
+      progressHtml = `
+        <div style="margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+            <span style="color:#666">Progress to <strong>${next.emoji} ${next.label}</strong></span>
+            <span style="color:#ce1212;font-weight:700">${total} / ${next.count}</span>
+          </div>
+          <div style="background:#fce8e8;border-radius:999px;height:10px;overflow:hidden">
+            <div style="background:linear-gradient(90deg,#ce1212,#ff6b6b);height:100%;width:${pct}%;border-radius:999px;transition:width .6s ease"></div>
+          </div>
+          <p style="font-size:12px;color:#9a3535;margin-top:8px">
+            Only <strong>${next.need}</strong> more event${next.need > 1 ? 's' : ''} to unlock <strong>${next.discount}% off</strong> — ${next.emoji} ${next.label}!
+          </p>
+        </div>`;
+    } else {
+      progressHtml = '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#166534;font-weight:600">🏆 You\'ve unlocked all rewards! You\'re a VIP Attendee!</div>';
+    }
+
+    // Milestones list
+    var shown    = 4;
+    var listHtml = milestones.map(function(m, i) {
+      var unlocked = m.unlocked;
+      var hidden   = i >= shown ? 'class="goal-extra" style="display:none"' : '';
+      var rightCol = '';
+      if (unlocked && m.promo_code) {
+        rightCol = `<div style="text-align:right">
+          <div style="font-size:10px;color:#166534;font-weight:600;margin-bottom:4px">✅ Unlocked</div>
+          <div onclick="copyCode('${m.promo_code}', this)"
+            style="font-size:11px;font-weight:800;color:#b91c1c;letter-spacing:1px;background:#fff5f5;border:1.5px dashed #f7c1c1;border-radius:6px;padding:3px 8px;cursor:pointer;user-select:all"
+            title="Click to copy">
+            ${m.promo_code}
+          </div>
+        </div>`;
+      } else if (unlocked) {
+        rightCol = `<div style="text-align:right">
+          <div style="font-size:10px;color:#166534;font-weight:600">✅ Unlocked</div>
+          <div style="font-size:11px;color:#9a3535">${m.discount}% off</div>
+        </div>`;
+      } else {
+        rightCol = `<div style="text-align:right">
+          <span style="font-size:18px;font-weight:800;color:#ccc">${m.discount}%</span>
+          <div style="font-size:10px;color:#9a3535">${total}/${m.count} events</div>
+        </div>`;
+      }
+      return `<div ${hidden} style="display:${i < shown ? 'flex' : 'none'};align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fce8e8">
+        <span style="font-size:22px">${m.emoji}</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:${unlocked ? '#166534' : '#1a0505'}">${m.label}</div>
+          <div style="font-size:11px;color:#9a3535">${m.count} event${m.count > 1 ? 's' : ''}</div>
+        </div>
+        ${rightCol}
+      </div>`;
+    }).join('');
+
+    var toggleBtn = milestones.length > shown
+      ? `<button onclick="toggleGoals(this)" style="background:none;border:none;color:#ce1212;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;font-family:'Inter',sans-serif">
+           Show More ▼
+         </button>`
+      : '';
+
+    content.innerHTML = `
+      <div style="background:#fff5f5;border:1px solid #fde8e8;border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:28px">🎯</span>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#1a0505">${total} Event${total !== 1 ? 's' : ''} Attended</div>
+          <div style="font-size:12px;color:#9a3535">Keep registering to unlock more rewards!</div>
+        </div>
+      </div>
+      ${progressHtml}
+      <div id="goals-list">${listHtml}</div>
+      ${toggleBtn}`;
+
+  } catch(e) {
+    content.innerHTML = '<p style="color:#dc2626;font-size:13px">❌ Could not load progress.</p>';
+  } finally {
+    btn.textContent = 'Check Progress'; btn.disabled = false;
+  }
+}
+
+function toggleGoals(btn) {
+  var extras = document.querySelectorAll('.goal-extra');
+  var showing = btn.textContent.includes('More');
+  extras.forEach(function(el) { el.style.display = showing ? 'flex' : 'none'; });
+  btn.textContent = showing ? 'Show Less ▲' : 'Show More ▼';
+}
+
+function copyCode(code, el) {
+  navigator.clipboard.writeText(code).then(function() {
+    var orig = el.innerHTML;
+    el.innerHTML = '✅ Copied!';
+    el.style.color = '#166534';
+    setTimeout(function() { el.innerHTML = orig; el.style.color = '#b91c1c'; }, 1500);
+  }).catch(function() {
+    // fallback
+    var ta = document.createElement('textarea');
+    ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    var orig = el.innerHTML;
+    el.innerHTML = '✅ Copied!';
+    setTimeout(function() { el.innerHTML = orig; }, 1500);
+  });
+}
+
+// Auto-load if email in localStorage
+document.addEventListener('DOMContentLoaded', function() {
+  var saved = localStorage.getItem('smp_user_email');
+  if (saved) {
+    var inp = document.getElementById('goals-email');
+    if (inp) { inp.value = saved; loadGoals(); }
+  }
+});
+</script>
+
+<script>
+// ── AI Event Recommendations ──────────────────────────────────────────
+async function loadAIRecommendations() {
+  var grid = document.getElementById('ai-reco-grid');
+  var btn  = document.getElementById('ai-refresh-btn');
+  if (!grid) return;
+
+  grid.innerHTML = '<div style="color:#9a3535;font-size:13px;padding:20px 0">⏳ Loading AI recommendations...</div>';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Loading...'; }
+
+  try {
+    var res  = await fetch('../back/getAIEventRecommendations.php');
+    var data = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      grid.innerHTML = '<div style="color:#9a3535;font-size:13px;padding:20px 0">No recommendations available.</div>';
+      return;
+    }
+
+    var typeColors = {
+      'Conférence':'#ce1212','Atelier':'#f7971e','Compétition':'#e24b4a',
+      'Forum':'#11998e','Séminaire':'#8e44ad','Autre':'#636e72'
+    };
+
+    grid.innerHTML = data.map(function(ev) {
+      var prix   = ev.prix == 0 ? '<span style="color:#16a34a;font-weight:700">Free</span>' : '<span style="color:#ce1212;font-weight:700">' + parseFloat(ev.prix).toFixed(2) + ' TND</span>';
+      var color  = typeColors[ev.type] || '#636e72';
+      var stars  = ev.note > 0 ? '⭐ ' + ev.note.toFixed(1) + '/5' : '';
+      var banner = ev.image
+        ? '<img src="' + ev.image + '" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">'
+        : '<span style="font-size:36px;opacity:.25">' + (ev.type === 'Conférence' ? '🎤' : ev.type === 'Atelier' ? '🛠️' : ev.type === 'Compétition' ? '🏆' : '📅') + '</span>';
+
+      return '<a href="detailEvent.php?id=' + ev.id + '" style="text-decoration:none;color:inherit">'
+        + '<div style="background:#fff;border:1px solid #fde8e8;border-radius:14px;overflow:hidden;transition:all .2s;cursor:pointer" '
+        + 'onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 24px rgba(206,18,18,.12)\'" '
+        + 'onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+        + '<div style="height:100px;background:linear-gradient(135deg,' + color + '22,' + color + '44);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">'
+        + banner
+        + '<span style="position:absolute;top:8px;left:10px;font-size:22px;z-index:1">' + ev.medal + '</span>'
+        + '</div>'
+        + '<div style="padding:12px 14px">'
+        + '<div style="font-size:13px;font-weight:700;color:#1a0505;margin-bottom:4px;line-height:1.3">' + ev.titre.replace(/</g,'&lt;') + '</div>'
+        + '<div style="font-size:11px;color:#9a3535;margin-bottom:6px">📅 ' + ev.date + ' · 📍 ' + ev.lieu.replace(/</g,'&lt;') + '</div>'
+        + '<div style="font-size:11px;color:#666;font-style:italic;margin-bottom:8px;line-height:1.4">"' + ev.reason.replace(/</g,'&lt;') + '"</div>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + prix
+        + (stars ? '<span style="font-size:11px;color:#f59e0b">' + stars + '</span>' : '')
+        + '</div>'
+        + '</div>'
+        + '</div></a>';
+    }).join('');
+
+  } catch(e) {
+    grid.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:20px 0">❌ Could not load recommendations.</div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Refresh'; }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadAIRecommendations);
 </script>
 </body>
 </html>

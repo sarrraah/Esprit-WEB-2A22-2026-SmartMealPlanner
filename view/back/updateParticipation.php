@@ -50,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Participation date is required.";
 
     if (empty($errors)) {
+        $oldStatut = $participation->getStatut();
+
         $updated = new Participation(
             $id,
             (int)$id_event,
@@ -62,6 +64,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $date_participation
         );
         $ctrl->updateParticipation($updated, $id);
+
+        // ── Send email if status changed to confirmé or annulé ────────
+        $newStatut = $statut;
+        if ($oldStatut !== $newStatut && in_array($newStatut, ['confirmé', 'annulé'])) {
+            require_once __DIR__ . '/sendMail.php';
+            $evObj     = $eventMap[(int)$id_event] ?? null;
+            $eventDate = $evObj ? date('d/m/Y', strtotime($evObj->getDateDebut())) : '';
+            $eventLieu = $evObj ? $evObj->getLieu() : '';
+            $eventPrix = $evObj ? (float)$evObj->getPrix() : 0;
+            sendStatusEmail(
+                $email,
+                $prenom . ' ' . $nom,
+                $evObj ? $evObj->getTitre() : '',
+                $eventDate,
+                $eventLieu,
+                $eventPrix,
+                $places,
+                $newStatut
+            );
+        }
+
         header('Location: listParticipations.php?msg=updated');
         exit;
     }
