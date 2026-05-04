@@ -1,0 +1,17 @@
+# Fichiers d'environnement
+.env
+.env.local
+
+# Clés API — ne jamais committer
+config.api.php
+config.mail.php
+
+# Uploads utilisateurs
+uploads/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,4 +1,17 @@
 <?php
+// Charger les variables d'environnement
+if (file_exists(__DIR__ . '/.env')) {
+    $env = parse_ini_file(__DIR__ . '/.env');
+    foreach ($env as $key => $value) {
+        putenv("$key=$value");
+    }
+}
+
+// API Keys
+if (!defined('GROQ_API_KEY')) {
+    define('GROQ_API_KEY', getenv('GROQ_API_KEY'));
+}
+
 class config
 {
     private static $pdo = null;
@@ -6,10 +19,10 @@ class config
     public static function getConnexion()
     {
         if (self::$pdo === null) {
-            $servername = "localhost";
-            $username   = "root";
-            $password   = "";
-            $dbname     = "smart_meal_planner";
+            $servername = getenv('DB_HOST');
+            $username   = getenv('DB_USER');
+            $password   = getenv('DB_PASSWORD');
+            $dbname     = getenv('DB_NAME');
             try {
                 self::$pdo = new PDO(
                     "mysql:host=$servername;dbname=$dbname;charset=utf8",
