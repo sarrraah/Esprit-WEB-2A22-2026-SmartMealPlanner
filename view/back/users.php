@@ -3,6 +3,28 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../controller/UserController.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
+    $rememberController = new UserController();
+    $rememberUser = $rememberController->getUserByRememberToken($_COOKIE['remember_token']);
+
+    if ($rememberUser) {
+        $_SESSION['user_id'] = $rememberUser['id'];
+        $_SESSION['nom'] = $rememberUser['nom'];
+        $_SESSION['prenom'] = $rememberUser['prenom'];
+        $_SESSION['email'] = $rememberUser['email'];
+        $_SESSION['user_role'] = $rememberUser['role'];
+        $_SESSION['role'] = $rememberUser['role'];
+        $_SESSION['statut'] = $rememberUser['statut'];
+    } else {
+        setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+    }
+}
+
 require_once 'admin_auth.php';
 
 $controller = new UserController();
@@ -549,34 +571,17 @@ foreach ($allUsers as $u) {
         }
 
         .table-wrap {
-            overflow-x: auto;
+            width: 100%;
+            overflow: visible;
             border-radius: 22px;
-            scroll-behavior: smooth;
             border: 1px solid var(--border-strong);
-        }
-
-        .table-wrap::-webkit-scrollbar {
-            height: 8px;
-        }
-
-        .table-wrap::-webkit-scrollbar-track {
-            background: var(--scroll-track);
-            border-radius: 999px;
-        }
-
-        .table-wrap::-webkit-scrollbar-thumb {
-            background: var(--scroll-thumb);
-            border-radius: 999px;
-        }
-
-        .table-wrap::-webkit-scrollbar-thumb:hover {
-            background: #dc2626;
         }
 
         table {
             width: 100%;
+            min-width: 0;
             border-collapse: collapse;
-            min-width: 1080px;
+            table-layout: auto;
             background: var(--card-solid);
             overflow: hidden;
             border-radius: 22px;
@@ -783,6 +788,13 @@ foreach ($allUsers as $u) {
             transform: translateY(0);
         }
 
+        .table-arrow-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .scroll-hint {
             font-size: 12px;
             color: var(--muted);
@@ -943,6 +955,10 @@ foreach ($allUsers as $u) {
                 min-width: 100%;
             }
 
+            .table-scroll-area {
+                max-width: 100%;
+            }
+
             .modal-actions {
                 flex-direction: column;
             }
@@ -951,6 +967,10 @@ foreach ($allUsers as $u) {
             .modal-btn-danger {
                 width: 100%;
             }
+        }
+
+        .user-row.hidden-row {
+            display: none;
         }
     </style>
 </head>
@@ -1094,7 +1114,7 @@ foreach ($allUsers as $u) {
 
                         <tbody>
                             <?php if (!empty($users)): ?>
-                                <?php foreach ($users as $user): ?>
+                                <?php foreach ($users as $index => $user): ?>
                                     <?php
                                     $role = strtolower(trim((string)($user['role'] ?? '')));
                                     $status = strtolower(trim((string)($user['statut'] ?? '')));
@@ -1137,6 +1157,7 @@ foreach ($allUsers as $u) {
 
                                     <tr
                                         class="user-row"
+                                        data-index="<?= $index ?>"
                                         data-id="<?= htmlspecialchars((string)$user['id']) ?>"
                                         data-name="<?= htmlspecialchars(strtolower(trim(($user['nom'] ?? '') . ' ' . ($user['prenom'] ?? '')))) ?>"
                                         data-email="<?= htmlspecialchars(strtolower((string)($user['email'] ?? ''))) ?>"
@@ -1209,13 +1230,13 @@ foreach ($allUsers as $u) {
                 </div>
 
                 <div class="table-arrows">
-                    <button type="button" class="table-arrow-btn" id="scrollLeftBtn" title="Scroll left">
+                    <button type="button" class="table-arrow-btn" id="scrollLeftBtn" title="Previous users">
                         <i class="bi bi-arrow-left"></i>
                     </button>
 
 
 
-                    <button type="button" class="table-arrow-btn" id="scrollRightBtn" title="Scroll right">
+                    <button type="button" class="table-arrow-btn" id="scrollRightBtn" title="Next users">
                         <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
@@ -1250,6 +1271,9 @@ foreach ($allUsers as $u) {
 
         const tbody = document.querySelector('tbody');
         const rows = Array.from(document.querySelectorAll('.user-row'));
+        const rowsPerPage = 5;
+        let currentPage = 0;
+        let currentRows = rows;
 
         const deleteModal = document.getElementById('deleteModal');
         const modalDeleteUserId = document.getElementById('modalDeleteUserId');
@@ -1431,6 +1455,7 @@ foreach ($allUsers as $u) {
 
         function renderRows(rowsToShow) {
             tbody.innerHTML = '';
+            currentRows = rowsToShow;
 
             if (rowsToShow.length === 0) {
                 tbody.innerHTML = `
@@ -1441,15 +1466,34 @@ foreach ($allUsers as $u) {
                 return;
             }
 
-            rowsToShow.forEach(row => {
+            const maxPage = Math.max(Math.ceil(rowsToShow.length / rowsPerPage) - 1, 0);
+
+            if (currentPage > maxPage) {
+                currentPage = maxPage;
+            }
+
+            const start = currentPage * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageRows = rowsToShow.slice(start, end);
+
+            pageRows.forEach(row => {
                 row.style.display = '';
                 tbody.appendChild(row);
             });
+
+            if (scrollLeftBtn) {
+                scrollLeftBtn.disabled = currentPage === 0;
+            }
+
+            if (scrollRightBtn) {
+                scrollRightBtn.disabled = currentPage >= maxPage;
+            }
 
             translateDynamicBadges();
         }
 
         function applyFilters() {
+            currentPage = 0;
             renderRows(getFilteredRows());
         }
 
@@ -1513,11 +1557,6 @@ foreach ($allUsers as $u) {
         searchInput.addEventListener('input', applyFilters);
         sortSelect.addEventListener('change', applyFilters);
 
-
-
-
-
-
         cancelDeleteBtn.addEventListener('click', function() {
             closeDeleteModal();
         });
@@ -1543,21 +1582,21 @@ foreach ($allUsers as $u) {
             openDeleteModal(userId, userName);
         });
 
-        if (usersTableWrap && scrollLeftBtn && scrollRightBtn) {
-            scrollLeftBtn.addEventListener('click', function() {
-                usersTableWrap.scrollBy({
-                    left: -420,
-                    behavior: 'smooth'
-                });
-            });
+        scrollRightBtn.addEventListener('click', function() {
+            const maxPage = Math.ceil(currentRows.length / rowsPerPage) - 1;
 
-            scrollRightBtn.addEventListener('click', function() {
-                usersTableWrap.scrollBy({
-                    left: 420,
-                    behavior: 'smooth'
-                });
-            });
-        }
+            if (currentPage < maxPage) {
+                currentPage++;
+                renderRows(currentRows);
+            }
+        });
+
+        scrollLeftBtn.addEventListener('click', function() {
+            if (currentPage > 0) {
+                currentPage--;
+                renderRows(currentRows);
+            }
+        });
 
         themeToggle.addEventListener('click', function() {
             const newTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
@@ -1781,9 +1820,8 @@ foreach ($allUsers as $u) {
         renderRows(rows);
         applyLanguage(currentLang);
         applyTheme(localStorage.getItem('usersTheme') || 'light');
-        const userRows = document.querySelectorAll('.user-row');
 
-        userRows.forEach(row => {
+        rows.forEach(row => {
             row.addEventListener('dblclick', function(e) {
                 if (e.target.closest('.status-link')) {
                     return;

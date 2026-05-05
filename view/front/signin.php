@@ -18,26 +18,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$user || !password_verify($password, $user['mot_de_passe'])) {
             $error = "Invalid email or password.";
-        } else {
-            if ($user['statut'] === 'banned') {
-                $error = "Your account has been banned.";
-            } elseif ($user['statut'] === 'pending') {
-                $error = "Your request is still under review by the admin team.";
-            } elseif ($user['statut'] === 'deactivated') {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_role'] = $user['role'];
+        } elseif (isset($user['email_verified']) && $user['email_verified'] == 0) {
+            $error = "Please confirm your email before signing in.";
+        } elseif ($user['statut'] === 'banned') {
+            $error = "Your account has been banned.";
+        } elseif ($user['statut'] === 'pending') {
+            $error = "Your request is still under review by the admin team.";
+        } elseif ($user['statut'] === 'deactivated') {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_role'] = $user['role'];
 
-                header("Location: reactivate_account.php");
-                exit();
-            } elseif ($user['statut'] === 'active') {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_role'] = $user['role'];
+            header("Location: reactivate_account.php");
+            exit();
+        } elseif ($user['statut'] === 'active') {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_role'] = $user['role'];
 
-                header("Location: index.php?login=success");
-                exit();
-            } else {
-                $error = "Your account is not available right now.";
+            if (isset($_POST['remember_me'])) {
+                $token = bin2hex(random_bytes(32));
+                $hashedToken = hash('sha256', $token);
+                $expires = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60));
+
+                $updateSql = "UPDATE user
+                              SET remember_token = :remember_token,
+                                  remember_expires = :remember_expires
+                              WHERE id = :id";
+
+                $updateStmt = $pdo->prepare($updateSql);
+                $updateStmt->execute([
+                    'remember_token' => $hashedToken,
+                    'remember_expires' => $expires,
+                    'id' => $user['id']
+                ]);
+
+                setcookie(
+                    'remember_token',
+                    $token,
+                    time() + (30 * 24 * 60 * 60),
+                    '/',
+                    '',
+                    false,
+                    true
+                );
             }
+
+            header("Location: index.php?login=success");
+            exit();
+        } else {
+            $error = "Your account is not available right now.";
         }
     } catch (Exception $e) {
         $error = "An error occurred. Please try again.";
@@ -200,10 +228,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.10);
         }
 
-        .forgot-wrap {
+        .remember-row {
             display: flex;
-            justify-content: flex-end;
-            margin: 4px 0 22px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin: -4px 0 22px;
+        }
+
+        .remember-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #5f4242;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .remember-label input {
+            display: none;
+        }
+
+        .remember-box {
+            width: 38px;
+            height: 22px;
+            border-radius: 999px;
+            background: #f1dddd;
+            border: 1px solid #e6c8c8;
+            position: relative;
+            transition: 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .remember-box::before {
+            content: "";
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fff;
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+            transition: 0.25s ease;
+        }
+
+        .remember-label input:checked+.remember-box {
+            background: linear-gradient(135deg, #dc3545, #b02a37);
+            border-color: #b02a37;
+        }
+
+        .remember-label input:checked+.remember-box::before {
+            transform: translateX(15px);
         }
 
         .forgot-password {
@@ -212,6 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 13px;
             font-weight: 600;
             transition: 0.25s ease;
+            white-space: nowrap;
         }
 
         .forgot-password:hover {
@@ -333,6 +412,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .signin-btn {
                 height: 50px;
             }
+
+            .remember-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
         }
     </style>
 </head>
@@ -355,11 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-box">
                 <span class="brand">Smart Meal Planner</span>
-                <h2>Welcome back
-
-
-
-                </h2>
+                <h2>Welcome back</h2>
 
                 <?php if ($error !== ''): ?>
                     <div class="error-box"><?= htmlspecialchars($error) ?></div>
@@ -376,7 +457,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="password" id="password" name="password" placeholder="Enter your password">
                     </div>
 
-                    <div class="forgot-wrap">
+                    <div class="remember-row">
+                        <label class="remember-label" for="remember_me">
+                            <input type="checkbox" name="remember_me" id="remember_me">
+                            <span class="remember-box"></span>
+                            Remember me
+                        </label>
+
                         <a href="forgot_password.php" class="forgot-password">Forgot your password?</a>
                     </div>
 

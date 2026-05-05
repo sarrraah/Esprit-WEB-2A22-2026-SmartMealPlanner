@@ -58,4 +58,53 @@ class UserController
 
         return false;
     }
+    public function saveRememberToken($userId, $hashedToken, $expires)
+    {
+        $sql = "UPDATE user 
+            SET remember_token = :remember_token,
+                remember_expires = :remember_expires
+            WHERE id = :id";
+
+        $db = config::getConnexion();
+
+        $query = $db->prepare($sql);
+        $query->execute([
+            'remember_token' => $hashedToken,
+            'remember_expires' => $expires,
+            'id' => $userId
+        ]);
+    }
+    public function getUserByRememberToken($token)
+    {
+        $hashedToken = hash('sha256', $token);
+
+        $sql = "SELECT * FROM user 
+            WHERE remember_token = :remember_token
+            AND remember_expires > NOW()
+            AND statut = 'active'
+            LIMIT 1";
+
+        $db = config::getConnexion();
+
+        $query = $db->prepare($sql);
+        $query->execute([
+            'remember_token' => $hashedToken
+        ]);
+
+        return $query->fetch();
+    }
+    public function clearRememberToken($userId)
+    {
+        $sql = "UPDATE user 
+            SET remember_token = NULL,
+                remember_expires = NULL
+            WHERE id = :id";
+
+        $db = config::getConnexion();
+
+        $query = $db->prepare($sql);
+        $query->execute([
+            'id' => $userId
+        ]);
+    }
 }

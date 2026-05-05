@@ -73,50 +73,53 @@ class UserModel
 
     public function addUser($data)
     {
-        if ($this->emailExists($data['email'])) {
-            throw new Exception("This email already exists.");
-        }
+        $sql = "INSERT INTO user (
+        nom,
+        prenom,
+        date_naissance,
+        email,
+        mot_de_passe,
+        role,
+        statut,
+        sexe,
+        experience,
+        speciality,
+        motivation,
+        email_verified,
+        email_token
+    ) VALUES (
+        :nom,
+        :prenom,
+        :date_naissance,
+        :email,
+        :mot_de_passe,
+        :role,
+        :statut,
+        :sexe,
+        :experience,
+        :speciality,
+        :motivation,
+        :email_verified,
+        :email_token
+    )";
 
-        $sql = "INSERT INTO `user` (
-            nom,
-            prenom,
-            date_naissance,
-            email,
-            mot_de_passe,
-            role,
-            statut,
-            sexe,
-            experience,
-            speciality,
-            motivation
-        ) VALUES (
-            :nom,
-            :prenom,
-            :date_naissance,
-            :email,
-            :mot_de_passe,
-            :role,
-            :statut,
-            :sexe,
-            :experience,
-            :speciality,
-            :motivation
-        )";
+        $db = config::getConnexion();
+        $query = $db->prepare($sql);
 
-        $stmt = $this->pdo->prepare($sql);
-
-        return $stmt->execute([
-            ':nom' => $data['nom'],
-            ':prenom' => $data['prenom'],
-            ':date_naissance' => $data['date_naissance'],
-            ':email' => $data['email'],
-            ':mot_de_passe' => $data['mot_de_passe'],
-            ':role' => $data['role'],
-            ':statut' => $data['statut'],
-            ':sexe' => $data['sexe'],
-            ':experience' => $data['experience'] ?? null,
-            ':speciality' => $data['speciality'] ?? null,
-            ':motivation' => $data['motivation'] ?? null
+        return $query->execute([
+            'nom' => $data['nom'],
+            'prenom' => $data['prenom'],
+            'date_naissance' => $data['date_naissance'],
+            'email' => $data['email'],
+            'mot_de_passe' => $data['mot_de_passe'],
+            'role' => $data['role'],
+            'statut' => $data['statut'],
+            'sexe' => $data['sexe'],
+            'experience' => $data['experience'],
+            'speciality' => $data['speciality'],
+            'motivation' => $data['motivation'],
+            'email_verified' => $data['email_verified'],
+            'email_token' => $data['email_token']
         ]);
     }
 
@@ -187,6 +190,36 @@ class UserModel
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':email' => $email]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    public function getUserByEmailToken($token)
+    {
+        $sql = "SELECT * FROM user WHERE email_token = :token LIMIT 1";
+
+        $db = config::getConnexion();
+
+        $query = $db->prepare($sql);
+
+        $query->execute([
+            'token' => $token
+        ]);
+
+        return $query->fetch();
+    }
+
+    public function verifyUserEmail($token)
+    {
+        $sql = "UPDATE user
+            SET email_verified = 1,
+                email_token = NULL
+            WHERE email_token = :token";
+
+        $db = config::getConnexion();
+
+        $query = $db->prepare($sql);
+
+        return $query->execute([
+            'token' => $token
+        ]);
     }
 
 }

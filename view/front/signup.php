@@ -1,11 +1,23 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+
+require_once __DIR__ . '/../../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as MailException;
 
 require_once __DIR__ . '/../../controller/UserController.php';
 
 $controller = new UserController();
 $error = '';
+
+$recaptchaSiteKey = '6LeZItYsAAAAAAD7fAjscW4CMSOc1WRy8a1OkJZF';
+$recaptchaSecretKey = '6LeZItYsAAAAADrl2okEpBdjWubnmlZarUurdKMS';
 
 function isValidDateFormat($date)
 {
@@ -15,6 +27,27 @@ function isValidDateFormat($date)
 
     $parts = explode('-', $date);
     return checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0]);
+}
+
+function isStrongPassword($password)
+{
+    if (strlen($password) < 8) {
+        return false;
+    }
+
+    if (preg_match_all('/[a-zA-Z]/', $password) < 4) {
+        return false;
+    }
+
+    if (!preg_match('/[0-9]/', $password)) {
+        return false;
+    }
+
+    if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
+        return false;
+    }
+
+    return true;
 }
 
 function isValidAllowedEmail($email)
@@ -28,6 +61,67 @@ $selectedRole = $_POST['role'] ?? ($_GET['role'] ?? 'client');
 if (!in_array($selectedRole, $roles, true)) {
     $selectedRole = 'client';
 }
+function sendConfirmationEmail($email, $prenom, $token)
+{
+    $mail = new PHPMailer(true);
+
+    try {
+
+        $verifyLink = "http://localhost:8080/smart-meal-planner/view/front/verify_email.php?token=" . urlencode($token);
+
+        $mail->isSMTP();
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
+
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+
+        $mail->Username = 'smartmealplanner22@gmail.com';
+        $mail->Password = 'zxbr gssd nroz uqtl';
+
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+
+        $mail->setFrom('smartmealplanner22@gmail.com', 'Smart Meal Planner');
+
+        $mail->addAddress($email, $prenom);
+
+        $mail->isHTML(true);
+
+        $mail->Subject = 'Confirm your email';
+
+        $mail->Body = "
+            <h2>Hello $prenom</h2>
+
+            <p>Thank you for joining Smart Meal Planner.</p>
+
+            <p>Please click below to confirm your email:</p>
+
+            <a href='$verifyLink'
+            style='
+                background:#ce1212;
+                color:white;
+                padding:12px 20px;
+                text-decoration:none;
+                border-radius:8px;
+                display:inline-block;
+            '>
+                Confirm Email
+            </a>
+        ";
+
+        $mail->send();
+
+        return true;
+    } catch (MailException $e) {
+        die("Mailer Error: " . $mail->ErrorInfo);
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $prenom = trim($_POST['prenom'] ?? '');
@@ -35,68 +129,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $date_naissance = trim($_POST['date_naissance'] ?? '');
     $sexe = trim($_POST['sexe'] ?? '');
     $email = trim($_POST['email'] ?? '');
+    $allowedDomains = ['gmail.com', 'esprit.tn'];
+
+    $emailDomain = strtolower(substr(strrchr($email, "@"), 1));
+
+    if (!in_array($emailDomain, $allowedDomains)) {
+        $error = "Please use a Gmail or Esprit email address.";
+    }
     $mot_de_passe = trim($_POST['mot_de_passe'] ?? '');
     $role = trim($_POST['role'] ?? 'client');
 
     $experience = trim($_POST['experience'] ?? '');
     $speciality = trim($_POST['speciality'] ?? '');
     $motivation = trim($_POST['motivation'] ?? '');
+    $captchaResponse = $_POST['g-recaptcha-response'] ?? '';
 
     if (!in_array($role, $roles, true)) {
         $role = 'client';
     }
 
-    if (
-        $prenom === '' ||
-        $nom === '' ||
-        $date_naissance === '' ||
-        $sexe === '' ||
-        $email === '' ||
-        $mot_de_passe === ''
-    ) {
-        $error = 'Please fill in all fields.';
-    } elseif (!isValidDateFormat($date_naissance)) {
-        $error = 'Date of birth must be valid.';
-    } elseif (!in_array($sexe, ['Female', 'Male'], true)) {
-        $error = 'Please select a valid gender.';
-    } elseif (!isValidAllowedEmail($email)) {
-        $error = 'Email must end with @gmail.com or @esprit.tn.';
-    } elseif (($role === 'coach' || $role === 'nutritionist') && ($experience === '' || $speciality === '' || $motivation === '')) {
-        $error = 'Please complete the required form.';
+    if ($captchaResponse === '') {
+        $error = 'Please confirm that you are not a robot.';
     } else {
-        $cleanData = [
-            'nom' => $nom,
-            'prenom' => $prenom,
-            'date_naissance' => $date_naissance,
-            'email' => $email,
-            'mot_de_passe' => $mot_de_passe,
-            'role' => $role,
-            'statut' => ($role === 'coach' || $role === 'nutritionist') ? 'pending' : 'active',
-            'sexe' => $sexe,
-            'experience' => ($role === 'client') ? null : $experience,
-            'speciality' => ($role === 'client') ? null : $speciality,
-            'motivation' => ($role === 'client') ? null : $motivation
-        ];
+        $recaptcha = new \ReCaptcha\ReCaptcha($recaptchaSecretKey);
+        $captchaResult = $recaptcha->verify($captchaResponse, $_SERVER['REMOTE_ADDR']);
 
-        try {
-            $controller->store($cleanData);
+        if (!$captchaResult->isSuccess()) {
+            $error = 'Captcha verification failed. Please try again.';
+        }
+    }
 
-            if ($role === 'client') {
-                $newUser = $controller->findByEmail($email);
+    if ($error === '') {
+        if (
+            $prenom === '' ||
+            $nom === '' ||
+            $date_naissance === '' ||
+            $sexe === '' ||
+            $email === '' ||
+            $mot_de_passe === ''
+        ) {
+            $error = 'Please fill in all fields.';
+        } elseif (!isValidDateFormat($date_naissance)) {
+            $error = 'Date of birth must be valid.';
+        } elseif (!in_array($sexe, ['Female', 'Male'], true)) {
+            $error = 'Please select a valid gender.';
+        } elseif (!isValidAllowedEmail($email)) {
+            $error = 'Email must end with @gmail.com or @esprit.tn.';
+        } elseif (!isStrongPassword($mot_de_passe)) {
+            $error = 'Password must be at least 8 characters long and include at least 4 letters, 1 number, and 1 special character.';
+        } elseif (($role === 'coach' || $role === 'nutritionist') && ($experience === '' || $speciality === '' || $motivation === '')) {
+            $error = 'Please complete the required form.';
+        } else {
+            $emailToken = bin2hex(random_bytes(32));
+            $cleanData = [
+                'nom' => $nom,
+                'prenom' => $prenom,
+                'date_naissance' => $date_naissance,
+                'email' => $email,
+                'mot_de_passe' => $mot_de_passe,
+                'role' => $role,
+                'statut' => ($role === 'coach' || $role === 'nutritionist') ? 'pending' : 'active',
+                'sexe' => $sexe,
+                'experience' => ($role === 'client') ? null : $experience,
+                'speciality' => ($role === 'client') ? null : $speciality,
+                'motivation' => ($role === 'client') ? null : $motivation,
+                'email_verified' => 0,
+                'email_token' => $emailToken
+            ];
 
-                if ($newUser) {
-                    header('Location: index.php?signup=success&id=' . urlencode((string)$newUser['id']));
+            try {
+                $controller->store($cleanData);
+
+                $emailSent = sendConfirmationEmail($email, $prenom, $emailToken);
+
+                if ($emailSent) {
+                    header('Location: signup.php?email_confirmation=sent');
                     exit;
+                } else {
+                    $error = "Account created but confirmation email could not be sent.";
                 }
-
-                header('Location: ../index.php?signup=success');
-                exit;
-            } else {
-                header('Location: signup.php?request=pending&role=' . urlencode($role));
-                exit;
+            } catch (Exception $e) {
+                $error = $e->getMessage();
             }
-        } catch (Exception $e) {
-            $error = $e->getMessage();
         }
     }
 
@@ -146,14 +260,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .signup-wrapper {
             background: #fff;
             border-radius: 24px;
-            overflow: hidden;
+            overflow: visible;
             box-shadow: 0 18px 55px rgba(0, 0, 0, 0.08);
         }
 
         .signup-form {
             min-height: 560px;
         }
-
 
         .signup-image {
             background:
@@ -163,6 +276,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-repeat: no-repeat;
             position: relative;
             transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+            border-radius: 24px 0 0 24px;
+            overflow: hidden;
         }
 
         .signup-image.animating-out-left {
@@ -229,7 +344,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             align-items: center;
             position: relative;
-            overflow: hidden;
         }
 
         .form-inner {
@@ -341,7 +455,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: translateX(-14px);
         }
 
-
         .role-kicker {
             color: #ce1212;
             font-size: 0.8rem;
@@ -374,6 +487,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-select:focus {
             border-color: #ce1212;
             box-shadow: 0 0 0 0.2rem rgba(206, 18, 18, 0.08);
+        }
+
+        .password-field {
+            position: relative;
+        }
+
+        .password-rules {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            display: none;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(206, 18, 18, 0.14);
+            box-shadow: 0 18px 40px rgba(31, 41, 55, 0.14);
+            backdrop-filter: blur(8px);
+            animation: passwordRulesIn 0.2s ease;
+        }
+
+        .password-rules.show {
+            display: block;
+        }
+
+        @keyframes passwordRulesIn {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .password-rules-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #4b2a2a;
+            margin-bottom: 8px;
+        }
+
+        .password-rules-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 8px;
+        }
+
+        .password-rule {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11.5px;
+            color: #8a6f6f;
+            line-height: 1.3;
+            transition: 0.25s ease;
+        }
+
+        .password-rule i {
+            font-size: 13px;
+            color: #c7a2a2;
+            flex-shrink: 0;
+        }
+
+        .password-rule.valid {
+            color: #157347;
+            font-weight: 700;
+        }
+
+        .password-rule.valid i {
+            color: #157347;
+        }
+
+        .password-rule.invalid {
+            color: #8a6f6f;
         }
 
         .action-row {
@@ -439,6 +630,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 16px;
             font-size: 13px;
             font-weight: 600;
+        }
+
+        .captcha-box {
+            margin: 0 0 14px;
+            padding: 12px;
+            border: 1px solid rgba(206, 18, 18, 0.14);
+            background: #fffafa;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 8px 18px rgba(206, 18, 18, 0.04);
+        }
+
+        .captcha-message {
+            display: none;
+            margin: 10px auto 0;
+            max-width: 330px;
+            padding: 11px 14px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #fff5f5, #fffafa);
+            border: 1px solid rgba(206, 18, 18, 0.18);
+            color: #8f1d1d;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.45;
+            box-shadow: 0 8px 20px rgba(206, 18, 18, 0.07);
+            animation: captchaShake 0.35s ease;
+        }
+
+        .captcha-message.show {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .captcha-message i {
+            font-size: 17px;
+            color: #ce1212;
+            flex-shrink: 0;
+        }
+
+        @keyframes captchaShake {
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-4px);
+            }
+
+            50% {
+                transform: translateX(4px);
+            }
+
+            75% {
+                transform: translateX(-3px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
         }
 
         .modal-backdrop-custom {
@@ -546,6 +799,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 min-height: 300px;
             }
 
+            .signup-image {
+                border-radius: 24px 24px 0 0;
+            }
+
             .signup-form {
                 min-height: auto;
                 padding: 24px 20px;
@@ -580,10 +837,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flex-direction: column;
             }
         }
+
+        @media (max-width: 576px) {
+            .captcha-box {
+                align-items: flex-start;
+                overflow-x: auto;
+            }
+
+            .password-rules-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .site-popup {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            background: white;
+            border-left: 5px solid #ce1212;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 9999;
+            max-width: 360px;
+        }
+
+        .site-popup-icon {
+            font-size: 24px;
+        }
+
+        .site-popup-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #333;
+        }
+
+        .site-popup-content strong {
+            font-size: 15px;
+        }
+
+        .site-popup-content span {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .site-popup-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #777;
+        }
+
+        .email-popup {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            background: #ffffff;
+            border-left: 5px solid #ce1212;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 999999;
+            max-width: 380px;
+        }
+
+        .email-popup-icon {
+            font-size: 24px;
+        }
+
+        .email-popup-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .email-popup-content strong {
+            font-size: 15px;
+            color: #1f2937;
+        }
+
+        .email-popup-content span {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .email-popup-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #777;
+        }
     </style>
 </head>
 
 <body>
+    <?php if (isset($_GET['email_confirmation']) && $_GET['email_confirmation'] === 'sent'): ?>
+        <div class="email-popup" id="emailPopup">
+            <div class="email-popup-icon">✉️</div>
+
+            <div class="email-popup-content">
+                <strong>Check your email</strong>
+                <span>We sent you a confirmation link. Please confirm your account before signing in.</span>
+            </div>
+
+            <button type="button" class="email-popup-close" onclick="document.getElementById('emailPopup').remove()">×</button>
+        </div>
+    <?php endif; ?>
 
     <main class="signup-section">
         <div class="container signup-shell">
@@ -661,9 +1029,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <input type="text" name="email" class="form-control" placeholder="Enter your email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                                     </div>
 
-                                    <div class="col-md-6 mb-4">
+                                    <div class="col-md-6 mb-4 password-field">
                                         <label class="form-label-custom">Password</label>
-                                        <input type="password" name="mot_de_passe" class="form-control" placeholder="Create a secure password">
+                                        <input type="password" name="mot_de_passe" id="mot_de_passe" class="form-control" placeholder="Create a secure password">
+
+                                        <div class="password-rules" id="passwordRules">
+                                            <div class="password-rules-title">Password must contain:</div>
+
+                                            <div class="password-rules-grid">
+                                                <div class="password-rule invalid" id="ruleLength">
+                                                    <i class="bi bi-circle"></i>
+                                                    <span>8 characters</span>
+                                                </div>
+
+                                                <div class="password-rule invalid" id="ruleLetters">
+                                                    <i class="bi bi-circle"></i>
+                                                    <span>4 letters</span>
+                                                </div>
+
+                                                <div class="password-rule invalid" id="ruleNumber">
+                                                    <i class="bi bi-circle"></i>
+                                                    <span>1 number</span>
+                                                </div>
+
+                                                <div class="password-rule invalid" id="ruleSymbol">
+                                                    <i class="bi bi-circle"></i>
+                                                    <span>1 symbol</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="captcha-box">
+                                    <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars($recaptchaSiteKey) ?>"></div>
+
+                                    <div class="captcha-message" id="captchaMessage">
+                                        <i class="bi bi-shield-exclamation"></i>
+                                        <span>Please confirm that you are not a robot.</span>
                                     </div>
                                 </div>
 
@@ -745,6 +1148,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
     <script>
         const roleData = [{
@@ -911,6 +1316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }, 450);
             }, 180);
         }
+
         document.getElementById('nextRole').addEventListener('click', function() {
             animateChange('next');
         });
@@ -918,6 +1324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('prevRole').addEventListener('click', function() {
             animateChange('prev');
         });
+
         requiredFormBtn.addEventListener('click', openModal);
         closeModal.addEventListener('click', closeRequestModal);
         cancelModalBtn.addEventListener('click', closeRequestModal);
@@ -962,7 +1369,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('signupForm').addEventListener('submit', function(e) {
             const currentRole = roleData[currentIndex];
 
-            // force the hidden input to match the visible selected role
             roleInput.value = currentRole.key;
 
             if ((currentRole.key === 'coach' || currentRole.key === 'nutritionist') && requestFormCompleted.value !== '1') {
@@ -970,12 +1376,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 openModal();
             }
         });
+
         <?php if (isset($_GET['request']) && $_GET['request'] === 'pending'): ?>
             openPendingSuccessModal();
         <?php endif; ?>
 
         applyRole();
     </script>
+
+    <script>
+        const signupForm = document.getElementById('signupForm');
+        const captchaMessage = document.getElementById('captchaMessage');
+
+        if (signupForm) {
+            signupForm.addEventListener('submit', function(e) {
+                const captchaResponse = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
+
+                if (captchaResponse.length === 0) {
+                    e.preventDefault();
+
+                    captchaMessage.classList.remove('show');
+                    void captchaMessage.offsetWidth;
+                    captchaMessage.classList.add('show');
+                }
+            });
+        }
+    </script>
+
+    <script>
+        const passwordInput = document.getElementById('mot_de_passe');
+        const passwordRules = document.getElementById('passwordRules');
+
+        const ruleLength = document.getElementById('ruleLength');
+        const ruleLetters = document.getElementById('ruleLetters');
+        const ruleNumber = document.getElementById('ruleNumber');
+        const ruleSymbol = document.getElementById('ruleSymbol');
+
+        function updateRule(ruleElement, isValid) {
+            const icon = ruleElement.querySelector('i');
+
+            if (isValid) {
+                ruleElement.classList.add('valid');
+                ruleElement.classList.remove('invalid');
+                icon.className = 'bi bi-check-circle-fill';
+            } else {
+                ruleElement.classList.remove('valid');
+                ruleElement.classList.add('invalid');
+                icon.className = 'bi bi-circle';
+            }
+        }
+
+        function updatePasswordRules() {
+            const password = passwordInput.value;
+
+            const lettersCount = (password.match(/[a-zA-Z]/g) || []).length;
+            const hasNumber = /[0-9]/.test(password);
+            const hasSymbol = /[^a-zA-Z0-9]/.test(password);
+
+            updateRule(ruleLength, password.length >= 8);
+            updateRule(ruleLetters, lettersCount >= 4);
+            updateRule(ruleNumber, hasNumber);
+            updateRule(ruleSymbol, hasSymbol);
+        }
+
+        if (passwordInput && passwordRules) {
+            passwordInput.addEventListener('focus', function() {
+                passwordRules.classList.add('show');
+                updatePasswordRules();
+            });
+
+            passwordInput.addEventListener('input', updatePasswordRules);
+
+            passwordInput.addEventListener('blur', function() {
+                setTimeout(function() {
+                    passwordRules.classList.remove('show');
+                }, 120);
+            });
+        }
+    </script>
+    <?php if (isset($_GET['email_confirmation']) && $_GET['email_confirmation'] === 'sent'): ?>
+        <div class="site-popup" id="emailPopup">
+            <div class="site-popup-icon">
+                ✉️
+            </div>
+
+            <div class="site-popup-content">
+                <strong>Check your email</strong>
+                <span>We sent you a confirmation link. Please open your email and confirm your account.</span>
+            </div>
+
+            <button type="button" class="site-popup-close" onclick="document.getElementById('emailPopup').style.display='none'">×</button>
+        </div>
+    <?php endif; ?>
 
 </body>
 

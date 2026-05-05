@@ -1,6 +1,32 @@
 <?php
-require_once 'auth.php';
 require_once '../../config.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
+    require_once __DIR__ . '/../../controller/UserController.php';
+
+    $controller = new UserController();
+    $user = $controller->getUserByRememberToken($_COOKIE['remember_token']);
+
+    if ($user) {
+        $_SESSION['user_role'] = $user['role'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['nom'] = $user['nom'];
+        $_SESSION['prenom'] = $user['prenom'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['user_role'] = $user['role'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['statut'] = $user['statut'];
+    } else {
+        setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+    }
+}
+
+require_once 'auth.php';
 
 $userId = $_SESSION['user_id'];
 $editMode = isset($_GET['edit']) && $_GET['edit'] == '1';
@@ -1034,7 +1060,7 @@ $requestText = 'Your professional account request is currently being reviewed by
                                 <?php endif; ?>
                             </div>
 
-                            
+
 
                             <?php if ($uploadError !== ''): ?>
                                 <div class="upload-error"><?= htmlspecialchars($uploadError) ?></div>
@@ -1218,7 +1244,7 @@ $requestText = 'Your professional account request is currently being reviewed by
                                     Log Out
                                 </a>
 
-                                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                                <?php if ($normalizedRole === 'admin'): ?>
                                     <a href="../back/users.php" class="profile-btn btn-home-profile">
                                         <i class="bi bi-speedometer2"></i>
                                         Admin Dashboard
