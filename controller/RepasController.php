@@ -190,6 +190,15 @@ if ($method === 'POST' && $action === '') {
     // Traiter l'upload de l'image du repas
     $image = uploadRepasImage('image_repas');
 
+    // Si aucune image uploadée manuellement, utiliser la photo générée automatiquement
+    if (!$image && !empty($_POST['generated_image_path'])) {
+        $genPath = trim($_POST['generated_image_path']);
+        // Valider que le chemin appartient bien au dossier uploads/repas/ (sécurité)
+        if (strpos($genPath, 'uploads/repas/repas_auto_') === 0 && is_file(__DIR__ . '/../' . $genPath)) {
+            $image = $genPath;
+        }
+    }
+
     // Insérer le nouveau repas en base de données
     $stmt = $pdo->prepare("
         INSERT INTO repas
@@ -283,6 +292,15 @@ if ($method === 'POST' && $action === 'update') {
     // Gérer l'image : utiliser la nouvelle si uploadée, sinon conserver l'ancienne
     $current = $_POST['current_image'] ?? null; // Image actuelle en base
     $new     = uploadRepasImage('image_repas'); // Nouvelle image uploadée (ou null)
+
+    // Si aucun upload manuel, vérifier si une photo générée automatiquement est disponible
+    if (!$new && !empty($_POST['generated_image_path'])) {
+        $genPath = trim($_POST['generated_image_path']);
+        if (strpos($genPath, 'uploads/repas/repas_auto_') === 0 && is_file(__DIR__ . '/../' . $genPath)) {
+            $new = $genPath;
+        }
+    }
+
     $image   = $new ?: $current;               // Priorité à la nouvelle image
 
     if ($image !== null && $image !== '') {

@@ -132,6 +132,39 @@ require_once __DIR__ . '/partials/sidebar.php';
                                     </div>
                                 </div>
                                 <div class="col-12">
+                                    <!-- Bouton génération automatique de photo -->
+                                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                                        <button type="button" id="btnGenPhoto"
+                                                onclick="genererPhoto()"
+                                                class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+                                                title="Génère une photo automatiquement selon le nom du repas">
+                                            <span id="photoIcon">🖼</span>
+                                            <span id="photoLabel">Générer une photo automatiquement</span>
+                                        </button>
+                                        <button type="button" id="btnClearGenPhoto"
+                                                onclick="clearGenPhoto()"
+                                                class="btn btn-sm btn-outline-secondary d-none">
+                                            <i class="bi bi-x-circle me-1"></i>Retirer la photo générée
+                                        </button>
+                                        <small id="photoStatus" class="text-muted fst-italic"></small>
+                                    </div>
+
+                                    <!-- Prévisualisation de la photo générée -->
+                                    <div id="genPhotoPreview" class="d-none mb-3">
+                                        <div class="position-relative d-inline-block">
+                                            <img id="genPhotoImg"
+                                                 src="" alt="Photo générée"
+                                                 style="max-height:180px;border-radius:12px;object-fit:cover;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+                                            <span class="badge bg-success position-absolute top-0 end-0 m-1" style="font-size:.65rem;">
+                                                <i class="bi bi-magic me-1"></i>Auto
+                                            </span>
+                                        </div>
+                                        <p class="text-muted small mt-1 mb-0" id="genPhotoSource"></p>
+                                    </div>
+
+                                    <!-- Champ caché pour transmettre le chemin de la photo générée -->
+                                    <input type="hidden" name="generated_image_path" id="generated_image_path" value="">
+
                                     <div class="drop-zone" id="dropZone" onclick="document.getElementById('image_repas').click()"
                                          ondragover="event.preventDefault();this.style.background='#fde8e8'"
                                          ondragleave="this.style.background='#fff8f8'"
@@ -168,8 +201,81 @@ require_once __DIR__ . '/partials/sidebar.php';
     </div>
 </div>
 <?php
+$baseUrlJs = json_encode($baseUrl);
 $extraJs = <<<JS
 <script>
+const BASE_URL = $baseUrlJs;
+
+// ── Génération automatique de photo ──────────────────────────────────────────
+function genererPhoto() {
+    const nom = document.querySelector('[name="nom"]')?.value.trim() ?? '';
+
+    if (!nom) {
+        document.querySelector('[name="nom"]').focus();
+        document.getElementById('photoStatus').textContent = '⚠ Saisissez d\'abord le nom du repas.';
+        document.getElementById('photoStatus').className = 'text-warning fst-italic small';
+        return;
+    }
+
+    const btn    = document.getElementById('btnGenPhoto');
+    const icon   = document.getElementById('photoIcon');
+    const label  = document.getElementById('photoLabel');
+    const status = document.getElementById('photoStatus');
+
+    btn.disabled = true;
+    icon.textContent  = '⏳';
+    label.textContent = 'Recherche d\'une photo…';
+    status.textContent = '';
+
+    fetch(BASE_URL + '/controller/GenerateRepasImageController.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            status.textContent = '❌ ' + data.error;
+            status.className = 'text-danger fst-italic small';
+            return;
+        }
+
+        // Stocker le chemin dans le champ caché
+        document.getElementById('generated_image_path').value = data.path;
+
+        // Afficher la prévisualisation
+        document.getElementById('genPhotoImg').src = data.url;
+        document.getElementById('genPhotoSource').textContent =
+            '📷 Source : ' + data.source + ' — Mots-clés : ' + data.keywords.join(', ');
+        document.getElementById('genPhotoPreview').classList.remove('d-none');
+        document.getElementById('btnClearGenPhoto').classList.remove('d-none');
+
+        status.textContent = '✅ Photo trouvée et prête à être enregistrée.';
+        status.className = 'text-success fst-italic small';
+    })
+    .catch(() => {
+        status.textContent = '❌ Erreur de connexion au serveur.';
+        status.className = 'text-danger fst-italic small';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        icon.textContent  = '🖼';
+        label.textContent = 'Générer une autre photo';
+    });
+}
+
+// Effacer la photo générée
+function clearGenPhoto() {
+    document.getElementById('generated_image_path').value = '';
+    document.getElementById('genPhotoImg').src = '';
+    document.getElementById('genPhotoPreview').classList.add('d-none');
+    document.getElementById('btnClearGenPhoto').classList.add('d-none');
+    document.getElementById('photoStatus').textContent = '';
+    document.getElementById('photoLabel').textContent = 'Générer une photo automatiquement';
+    document.getElementById('photoIcon').textContent = '🖼';
+}
+
+// ── Remplir automatiquement le nom du repas avec le nom de la recette ─────────
 smAttachRealtime('formRepas', ['nom'], ['calories','proteines','glucides','lipides']);
 smAttachSubmit('formRepas', [
     { name: 'nom',        type: 'nom',    label: 'Le nom du repas' },
@@ -180,7 +286,6 @@ smAttachSubmit('formRepas', [
     { name: 'lipides',    type: 'number', label: 'Les lipides',   min: 0 },
 ]);
 
-// ── Remplir automatiquement le nom du repas avec le nom de la recette ─────────
 document.addEventListener('DOMContentLoaded', function () {
     const selectRecette = document.querySelector('[name="id_recette"]');
     const inputNom      = document.querySelector('[name="nom"]');
@@ -191,7 +296,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedOption = this.options[this.selectedIndex];
         const nomRecette     = selectedOption.text.trim();
 
-        // Remplir seulement si le champ nom est vide ou correspond à l'ancienne recette
         if (nomRecette && this.value !== '') {
             inputNom.value = nomRecette;
             smMarkValid(inputNom);
