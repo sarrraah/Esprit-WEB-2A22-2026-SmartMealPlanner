@@ -81,6 +81,18 @@ class Repas
 
     public function getRepasWithDetails(int $id): array
     {
+        // Vérifier dynamiquement si la colonne video_youtube existe dans recette_repas
+        // pour éviter une erreur fatale si la migration n'a pas encore été exécutée
+        $hasVideo = false;
+        try {
+            $check = $this->pdo->query("SHOW COLUMNS FROM recette_repas LIKE 'video_youtube'");
+            $hasVideo = $check->rowCount() > 0;
+        } catch (\Exception $e) {
+            $hasVideo = false;
+        }
+
+        $videoCol = $hasVideo ? ', rr.video_youtube' : '';
+
         $stmt = $this->pdo->prepare("
             SELECT
                 r.*,
@@ -90,8 +102,8 @@ class Repas
                 rr.temps_cuisson,
                 rr.nb_personnes,
                 rr.etapes,
-                rr.image_recette,
-                rr.video_youtube
+                rr.image_recette
+                $videoCol
             FROM repas r
             LEFT JOIN recette_repas rr ON r.id_recette = rr.id_recette
             WHERE r.id_repas = ?
@@ -100,6 +112,11 @@ class Repas
         $repas = $stmt->fetch();
 
         if (!$repas) return [];
+
+        // Si la colonne n'existe pas encore, mettre video_youtube à null
+        if (!$hasVideo) {
+            $repas['video_youtube'] = null;
+        }
 
         $stmt2 = $this->pdo->prepare("
             SELECT * FROM ingredient

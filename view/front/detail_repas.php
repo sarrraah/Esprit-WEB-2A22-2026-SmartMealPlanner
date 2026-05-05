@@ -265,6 +265,36 @@ require_once __DIR__ . '/partials/header.php';
                     </div>
                 </div>
                 <?php endif; ?>
+
+                <!-- ── QR Code de partage ── -->
+                <?php
+                $currentUrl = ($scheme ?? 'http') . '://' . $_SERVER['HTTP_HOST']
+                    . str_replace(str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])), '',
+                        str_replace('\\', '/', dirname(__DIR__, 2)))
+                    . '/view/front/detail_repas.php?id=' . $id;
+                ?>
+                <div class="card border-0 shadow-sm mt-4" style="border-radius:16px;">
+                    <div class="card-body p-4 text-center">
+                        <h5 style="font-family:'Amatic SC',sans-serif;font-size:1.5rem;color:#37373f;">
+                            <i class="bi bi-qr-code me-2" style="color:#ce1212;"></i>Partager cette recette
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            Scannez ce QR code pour partager cette recette sur mobile.
+                        </p>
+                        <!-- QR code généré par QRCode.js -->
+                        <div id="qrcode-front"
+                             class="d-inline-block p-3 bg-white border rounded-3 shadow-sm mb-3"
+                             data-url="<?= htmlspecialchars($currentUrl) ?>">
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            <button id="btnCopyFront"
+                                    onclick="copyFrontUrl('<?= htmlspecialchars($currentUrl) ?>')"
+                                    class="btn btn-sm btn-danger">
+                                <i class="bi bi-share me-1"></i>Partager
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -278,4 +308,30 @@ require_once __DIR__ . '/partials/header.php';
     </div>
 </section>
 
+<!-- QRCode.js — génération côté client -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function() {
+    var el = document.getElementById('qrcode-front');
+    if (!el) return;
+    new QRCode(el, {
+        text:         el.dataset.url,
+        width:        120,
+        height:       120,
+        colorDark:    '#ce1212',
+        colorLight:   '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+    });
+})();
+
+function copyFrontUrl(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        var btn = document.getElementById('btnCopyFront');
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Copié !';
+        setTimeout(function() {
+            btn.innerHTML = '<i class="bi bi-share me-1"></i>Partager';
+        }, 2000);
+    });
+}
+</script>
 <?php require_once __DIR__ . '/partials/footer.php'; ?>

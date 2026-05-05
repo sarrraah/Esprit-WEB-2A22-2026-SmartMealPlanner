@@ -42,6 +42,9 @@ class config
                 // Retourner les résultats sous forme de tableaux associatifs par défaut
                 self::$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
+                // Migration automatique : ajouter video_youtube si elle n'existe pas
+                self::runMigrations(self::$pdo);
+
             } catch (Exception $e) {
                 // Arrêt de l'application en cas d'échec de connexion
                 die('Erreur : ' . $e->getMessage());
@@ -49,6 +52,26 @@ class config
         }
 
         return self::$pdo;
+    }
+
+    /**
+     * Migrations automatiques — exécutées une seule fois au démarrage.
+     * Ajoute les colonnes manquantes sans toucher aux données existantes.
+     */
+    private static function runMigrations(PDO $pdo): void
+    {
+        try {
+            // Ajouter video_youtube si elle n'existe pas encore
+            $col = $pdo->query("SHOW COLUMNS FROM recette_repas LIKE 'video_youtube'");
+            if ($col->rowCount() === 0) {
+                $pdo->exec("ALTER TABLE recette_repas
+                    ADD COLUMN video_youtube VARCHAR(20) NULL
+                    COMMENT 'ID vidéo YouTube (ex: dQw4w9WgXcQ)'
+                    AFTER image_recette");
+            }
+        } catch (\Exception $e) {
+            // Silencieux : la migration sera retentée à la prochaine requête
+        }
     }
 }
 ?>

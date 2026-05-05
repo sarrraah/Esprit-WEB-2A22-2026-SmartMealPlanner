@@ -131,6 +131,40 @@ require_once __DIR__ . '/partials/sidebar.php';
                         <?php if (!empty($rec['etapes'])): ?>
                             <p class="text-muted small mb-0"><?= htmlspecialchars(mb_substr($rec['etapes'],0,80)).(mb_strlen($rec['etapes'])>80?'…':'') ?></p>
                         <?php endif; ?>
+
+                        <!-- QR Code — encode les infos de la recette en texte brut, sans URL -->
+                        <div class="mt-3 pt-2 border-top d-flex align-items-center gap-3">
+                            <?php
+                            // QR code 64px — encode uniquement le nom + difficulté + temps
+                            // (très peu de capacité à cette taille)
+                            $qrLines = [];
+                            $qrLines[] = $rec['nom_recette'];
+                            $meta = [];
+                            if (!empty($rec['difficulte']))    $meta[] = $rec['difficulte'];
+                            if (!empty($rec['temps_prep']))    $meta[] = 'P:'.$rec['temps_prep'].'m';
+                            if (!empty($rec['temps_cuisson'])) $meta[] = 'C:'.$rec['temps_cuisson'].'m';
+                            $meta[] = $rec['nb_personnes'].'pers';
+                            $qrLines[] = implode(' ', $meta);
+                            if (($rec['total_calories'] ?? 0) > 0) $qrLines[] = round($rec['total_calories']).' kcal';
+                            $qrLines[] = 'SmartMeal';
+                            $qrText = implode("\n", $qrLines);
+                            // Strict 120 chars max pour un QR 64px niveau M
+                            if (mb_strlen($qrText) > 120) $qrText = mb_substr($qrText, 0, 117) . '...';
+                            ?>
+                            <div id="qr-card-<?= $rec['id_recette'] ?>"
+                                 class="qr-card-container"
+                                 data-text="<?= htmlspecialchars($qrText) ?>"
+                                 style="width:64px;height:64px;flex-shrink:0;">
+                            </div>
+                            <div>
+                                <div class="fw-semibold" style="font-size:.78rem;color:#555;">QR Code</div>
+                                <div class="text-muted" style="font-size:.72rem;">Scanner pour accéder à la recette</div>
+                                <a href="view_recette.php?id=<?= $rec['id_recette'] ?>"
+                                   class="text-primary" style="font-size:.72rem;">
+                                    Voir la recette →
+                                </a>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-footer bg-white border-0 d-flex gap-2 pb-3 px-3">
                         <a href="view_recette.php?id=<?= $rec['id_recette'] ?>" class="btn btn-sm btn-outline-primary flex-fill"><i class="bi bi-eye me-1"></i>Voir</a>
@@ -145,4 +179,20 @@ require_once __DIR__ . '/partials/sidebar.php';
         <?php endif; ?>
     </div>
 </div>
+<!-- QRCode.js — génération côté client, aucune dépendance serveur -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// Générer tous les QR codes des cartes recette
+// Le QR encode le texte de la recette directement — aucune URL, fonctionne sans connexion
+document.querySelectorAll('.qr-card-container').forEach(function(el) {
+    new QRCode(el, {
+        text:           el.dataset.text,
+        width:          64,
+        height:         64,
+        colorDark:      '#1a1a1a',
+        colorLight:     '#ffffff',
+        correctLevel:   QRCode.CorrectLevel.M
+    });
+});
+</script>
 <?php require_once __DIR__ . '/partials/foot.php'; ?>

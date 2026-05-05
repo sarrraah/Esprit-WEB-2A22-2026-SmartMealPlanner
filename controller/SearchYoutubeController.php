@@ -25,7 +25,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 // ── Clé API YouTube Data v3 ───────────────────────────────────────────────────
 // Remplacez cette valeur par votre propre clé API
-define('YOUTUBE_API_KEY', 'AIzaSyDemoKeyReplaceWithYours');
+define('YOUTUBE_API_KEY', 'AIzaSyDj6CMZFEdJIWpQqMA5oFYJbivrn7Dt1Fo');
 
 // Lire le corps JSON de la requête
 $input = json_decode(file_get_contents('php://input'), true);
