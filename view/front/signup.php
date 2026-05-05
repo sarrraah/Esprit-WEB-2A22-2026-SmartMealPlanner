@@ -8,6 +8,9 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
+$dotenv->load();
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as MailException;
 
@@ -16,10 +19,10 @@ require_once __DIR__ . '/../../controller/UserController.php';
 $controller = new UserController();
 $error = '';
 
-$recaptchaSiteKey = '6LeZItYsAAAAAAD7fAjscW4CMSOc1WRy8a1OkJZF';
-$recaptchaSecretKey = '6LeZItYsAAAAADrl2okEpBdjWubnmlZarUurdKMS';
+$recaptchaSiteKey = $_ENV['RECAPTCHA_SITE'];      // optional
+$recaptchaSecretKey = $_ENV['RECAPTCHA_SECRET'];  // required
 
-function isValidDateFormat($date)
+    function isValidDateFormat($date)
 {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
         return false;
@@ -81,8 +84,8 @@ function sendConfirmationEmail($email, $prenom, $token)
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
 
-        $mail->Username = 'smartmealplanner22@gmail.com';
-        $mail->Password = 'zxbr gssd nroz uqtl';
+        $mail->Username = $_ENV['SMTP_USER'];
+        $mail->Password = $_ENV['SMTP_PASS'];
 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
@@ -1454,20 +1457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
     </script>
-    <?php if (isset($_GET['email_confirmation']) && $_GET['email_confirmation'] === 'sent'): ?>
-        <div class="site-popup" id="emailPopup">
-            <div class="site-popup-icon">
-                ✉️
-            </div>
 
-            <div class="site-popup-content">
-                <strong>Check your email</strong>
-                <span>We sent you a confirmation link. Please open your email and confirm your account.</span>
-            </div>
-
-            <button type="button" class="site-popup-close" onclick="document.getElementById('emailPopup').style.display='none'">×</button>
-        </div>
-    <?php endif; ?>
 
 </body>
 
