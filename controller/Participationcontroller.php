@@ -7,10 +7,15 @@ class ParticipationController
     function listParticipations()
     {
         $db    = config::getConnexion();
-        $query = $db->query("SELECT * FROM participation ORDER BY date_participation DESC");
+        $query = $db->query("
+            SELECT p.*, u.profile_picture, u.role AS user_role
+            FROM participation p
+            LEFT JOIN user u ON u.email = p.email
+            ORDER BY p.date_participation DESC
+        ");
         $list  = [];
         foreach ($query->fetchAll() as $row) {
-            $list[] = new Participation(
+            $p = new Participation(
                 $row['id_participation'],
                 $row['id_event'],
                 $row['nom'],
@@ -21,6 +26,9 @@ class ParticipationController
                 $row['statut'],
                 $row['date_participation']
             );
+            $p->profilePicture = $row['profile_picture'] ?? 'default.png';
+            $p->userRole       = $row['user_role'] ?? '';
+            $list[] = $p;
         }
         return $list;
     }
@@ -28,12 +36,18 @@ class ParticipationController
     function listParticipationsByEvent($id_event)
     {
         $db  = config::getConnexion();
-        $req = $db->prepare("SELECT * FROM participation WHERE id_event = :id ORDER BY date_participation DESC");
+        $req = $db->prepare("
+            SELECT p.*, u.profile_picture, u.role AS user_role
+            FROM participation p
+            LEFT JOIN user u ON u.email = p.email
+            WHERE p.id_event = :id
+            ORDER BY p.date_participation DESC
+        ");
         $req->bindValue(':id', $id_event);
         $req->execute();
         $list = [];
         foreach ($req->fetchAll() as $row) {
-            $list[] = new Participation(
+            $p = new Participation(
                 $row['id_participation'],
                 $row['id_event'],
                 $row['nom'],
@@ -44,6 +58,9 @@ class ParticipationController
                 $row['statut'],
                 $row['date_participation']
             );
+            $p->profilePicture = $row['profile_picture'] ?? 'default.png';
+            $p->userRole       = $row['user_role'] ?? '';
+            $list[] = $p;
         }
         return $list;
     }

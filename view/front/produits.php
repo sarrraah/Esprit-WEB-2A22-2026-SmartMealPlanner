@@ -159,7 +159,7 @@ require_once __DIR__ . '/header.php';
   box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 2;
   color: #ccc;
 }
-.btn-wishlist:hover { transform: scale(1.15); }
+.btn-wishlist:hover { transform: scale(1.15); color: #ce1212; }
 .btn-wishlist.active { color: #ce1212; }
 
 /* ── SECTION TITLE ── */
@@ -684,7 +684,7 @@ require_once __DIR__ . '/header.php';
                 data-prix="<?= (float)$produit['prix'] ?>"
                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                 title="Add to Wishlist">
-                <i class="bi bi-heart<?= '' ?>-fill" id="heart-<?= (int)$produit['id'] ?>"></i>
+                <i class="bi bi-heart" id="heart-<?= (int)$produit['id'] ?>"></i>
               </button>
               <!-- Like counter badge -->
               <span class="like-count-badge" id="like-badge-<?= (int)$produit['id'] ?>"
@@ -1521,20 +1521,35 @@ function updateWishlistBadge() {
   if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-block' : 'none'; }
 }
 
+// Restore wishlist heart states on page load
+function restoreWishlistHearts() {
+  var w = getWishlist();
+  w.forEach(function(item) {
+    var btn = document.querySelector('.btn-wishlist[data-id="' + String(item.id) + '"]');
+    if (btn) {
+      btn.classList.add('active');
+      var icon = btn.querySelector('i');
+      if (icon) icon.className = 'bi bi-heart-fill';
+    }
+  });
+}
+
 function toggleWishlist(btn) {
-  var id    = btn.dataset.id;
+  var id    = String(btn.dataset.id);
   var nom   = btn.dataset.nom;
   var prix  = parseFloat(btn.dataset.prix);
   var image = btn.dataset.image;
   var w = getWishlist();
-  var idx = w.findIndex(function(x){ return x.id === id; });
+  var idx = w.findIndex(function(x){ return String(x.id) === id; });
+  var icon = btn.querySelector('i');
   if (idx >= 0) {
     w.splice(idx, 1);
     btn.classList.remove('active');
+    if (icon) { icon.className = 'bi bi-heart'; }
   } else {
-    w.push({id, nom, prix, image});
+    w.push({id: id, nom: nom, prix: prix, image: image});
     btn.classList.add('active');
-    // Mini pulse animation
+    if (icon) { icon.className = 'bi bi-heart-fill'; }
     btn.style.transform = 'scale(1.4)';
     setTimeout(function(){ btn.style.transform = ''; }, 200);
   }
@@ -1657,10 +1672,15 @@ function wishlistOpenDetail(id) {
 }
 
 function removeFromWishlist(id) {
-  var w = getWishlist().filter(function(x){ return x.id !== id; });
+  var sid = String(id);
+  var w = getWishlist().filter(function(x){ return String(x.id) !== sid; });
   saveWishlist(w);
-  var btn = document.querySelector('.btn-wishlist[data-id="'+id+'"]');
-  if (btn) btn.classList.remove('active');
+  var btn = document.querySelector('.btn-wishlist[data-id="'+sid+'"]');
+  if (btn) {
+    btn.classList.remove('active');
+    var icon = btn.querySelector('i');
+    if (icon) icon.className = 'bi bi-heart';
+  }
   ouvrirWishlist();
 }
 
@@ -1684,8 +1704,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Init hearts on page load
   var w = getWishlist();
   w.forEach(function(item) {
-    var btn = document.querySelector('.btn-wishlist[data-id="'+item.id+'"]');
-    if (btn) btn.classList.add('active');
+    var btn = document.querySelector('.btn-wishlist[data-id="'+String(item.id)+'"]');
+    if (btn) {
+      btn.classList.add('active');
+      var icon = btn.querySelector('i');
+      if (icon) icon.className = 'bi bi-heart-fill';
+    }
   });
   updateWishlistBadge();
 });
@@ -2430,7 +2454,7 @@ function confirmerCommande(e) {
     trackMealsPurchased(invoiceItems);
 
     // Send invoice email
-    fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/send_invoice.php', {
+    fetch('send_invoice.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({

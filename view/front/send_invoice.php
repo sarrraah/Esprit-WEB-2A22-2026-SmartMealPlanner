@@ -5,7 +5,7 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 //verifier php mail bien insatller
-$autoload = __DIR__ . '/../../vendor/autoload.php';
+$autoload = __DIR__ . '/../../_project_files/vendor/autoload.php';
 if (!file_exists($autoload)) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'error' => 'autoload not found at: ' . $autoload]);

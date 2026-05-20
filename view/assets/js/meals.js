@@ -105,11 +105,81 @@
     if (recipeBtn) {
       recipeBtn.href = recipe;
       recipeBtn.setAttribute('aria-label', `Open recipe for ${name}`);
+      // store whether recipe is set
+      recipeBtn.setAttribute('data-has-recipe', recipe && recipe !== '#' ? '1' : '0');
     }
     if (addBtn) {
       addBtn.setAttribute('data-meal-id', card.getAttribute('data-meal-id') || '');
       addBtn.setAttribute('data-meal-type', mealType);
     }
+  }
+
+  // Recipe button — show popup if no recipe is set, otherwise navigate
+  if (recipeBtn) {
+    recipeBtn.addEventListener('click', function (e) {
+      if (recipeBtn.getAttribute('data-has-recipe') !== '1') {
+        e.preventDefault();
+        showNoRecipePopup();
+      }
+      // else: normal navigation proceeds (target="_blank")
+    });
+  }
+
+  function showNoRecipePopup() {
+    // Remove any existing popup
+    const existing = document.getElementById('noRecipePopup');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'noRecipePopup';
+    overlay.style.cssText = [
+      'position:fixed', 'inset:0', 'z-index:99999',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'background:rgba(0,0,0,0.45)', 'backdrop-filter:blur(3px)'
+    ].join(';');
+
+    overlay.innerHTML = `
+      <div style="
+        background:#fff; border-radius:20px; padding:36px 32px; max-width:420px;
+        width:90%; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.18);
+        animation:popIn .25s ease;
+      ">
+        <div style="
+          width:64px; height:64px; border-radius:50%;
+          background:rgba(206,18,18,0.1); color:#ce1212;
+          display:flex; align-items:center; justify-content:center;
+          font-size:28px; margin:0 auto 18px;
+        ">🍽️</div>
+        <h3 style="font-size:20px; font-weight:700; color:#212529; margin-bottom:10px;">
+          Recipe Not Available Yet
+        </h3>
+        <p style="font-size:14px; color:#6c757d; line-height:1.7; margin-bottom:24px;">
+          We're sorry for the inconvenience — a recipe has not been set for this meal yet.<br>
+          Check back soon!
+        </p>
+        <button id="noRecipeClose" style="
+          background:#ce1212; color:#fff; border:none; border-radius:999px;
+          padding:11px 28px; font-size:15px; font-weight:600; cursor:pointer;
+          transition:.2s ease; box-shadow:0 8px 20px rgba(206,18,18,0.22);
+        ">Got it</button>
+      </div>
+      <style>
+        @keyframes popIn {
+          from { opacity:0; transform:scale(.92); }
+          to   { opacity:1; transform:scale(1); }
+        }
+      </style>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Close on button click or backdrop click
+    document.getElementById('noRecipeClose').addEventListener('click', function () {
+      overlay.remove();
+    });
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) overlay.remove();
+    });
   }
 
   document.querySelectorAll('.meal-card[data-meal-id]').forEach(function (card) {

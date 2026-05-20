@@ -146,7 +146,7 @@ class EvenementController
     // ── Utilitaire upload image ──────────────────────────────────────────
     function uploadImage($file, $oldImage = null)
     {
-        $uploadDir = __DIR__ . '/../uploads/evenements/';
+        $uploadDir = __DIR__ . '/../view/assets/img/events/';
 
         $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         $maxSize      = 5 * 1024 * 1024;

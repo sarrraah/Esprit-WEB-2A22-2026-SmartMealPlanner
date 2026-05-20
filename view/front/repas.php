@@ -16,18 +16,6 @@ $activePage = 'repas';
 require_once __DIR__ . '/header.php';
 ?>
 
-<div class="page-title dark-background" data-aos="fade">
-    <div class="container position-relative">
-        <h1>Nos Repas</h1>
-        <p>Découvrez tous les repas enregistrés dans notre planificateur.</p>
-        <nav class="breadcrumbs">
-            <ol>
-                <li><a href="home.php">Accueil</a></li>
-                <li class="current">Repas</li>
-            </ol>
-        </nav>
-    </div>
-</div>
 
 <section class="section">
     <div class="container" data-aos="fade-up">

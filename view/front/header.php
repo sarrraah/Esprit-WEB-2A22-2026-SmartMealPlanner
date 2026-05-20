@@ -53,12 +53,12 @@ if ($_hUserId !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Amatic+SC:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="../assets/template/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="../assets/template/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="../assets/template/vendor/aos/aos.css" rel="stylesheet">
-  <link href="../assets/template/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
-  <link href="../assets/template/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
-  <link href="../assets/template/css/main.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet">
+  <link href="../assets/css/main.css" rel="stylesheet">
   <style>
     /* ── LOCKED NAVBAR — zero layout shift ── */
     #smp-nav {
@@ -264,7 +264,7 @@ if ($_hUserId !== '') {
             $userRole = $_SESSION['user_role'] ?? $_SESSION['role'] ?? '';
             ?>
             <?php if ($userRole === 'admin'): ?>
-              <a href="../../view/back/index.php" style="padding:5px 14px;border:1.5px solid #28a745;border-radius:20px;color:#28a745;font-weight:600;font-size:.78rem;text-decoration:none;transition:.2s;white-space:nowrap;"
+              <a href="../back/users.php" style="padding:5px 14px;border:1.5px solid #28a745;border-radius:20px;color:#28a745;font-weight:600;font-size:.78rem;text-decoration:none;transition:.2s;white-space:nowrap;"
                  onmouseover="this.style.background='#28a745'; this.style.color='white';"
                  onmouseout="this.style.background='transparent'; this.style.color='#28a745';">
                 Admin Panel

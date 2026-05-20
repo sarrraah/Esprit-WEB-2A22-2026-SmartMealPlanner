@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../../controller/PlanController.php';
 
 $plan        = Plan::first();
-$assetPrefix = '../assets/template/';
+$assetPrefix = '../assets/';
 
 require_once __DIR__ . '/header.php';
 ?>
@@ -110,5 +110,5 @@ require_once __DIR__ . '/header.php';
   </section>
 </main>
 
-<script src="meal_notifications.js"></script>
+<script src="../assets/js/meal_notifications.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/meal_notifications.js'); ?>"></script>
 <?php require_once __DIR__ . '/footer.php'; ?>

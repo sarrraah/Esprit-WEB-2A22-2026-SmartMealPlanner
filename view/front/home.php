@@ -28,7 +28,7 @@ function homeResolveProduitImage(string $img): string {
     return UPLOAD_URL . $img;
 }
 
-$tpl = '../assets/template/img/';   // template images base
+$tpl = '../assets/img/';   // template images base
 $own = '../assets/img/';            // our own images base
 ?>
 
@@ -701,7 +701,7 @@ $featuredEvts = array_slice($_evCtrl->listEvenements(), 0, 3);
     <div class="row gy-4">
       <?php if (!empty($featuredEvts)):
         foreach ($featuredEvts as $evt):
-          $evImg   = $evt->getImage() ? '/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/uploads/evenements/' . htmlspecialchars($evt->getImage()) : null;
+          $evImg   = ($evt->getImage() && trim($evt->getImage()) !== '') ? '../assets/img/events/' . htmlspecialchars($evt->getImage()) : null;
           $evTitle = htmlspecialchars($evt->getTitre() ?? 'Event');
           $evDesc  = htmlspecialchars(mb_substr($evt->getDescription() ?? '', 0, 90));
           $evDate  = $evt->getDateDebut() ? date('M j, Y', strtotime($evt->getDateDebut())) : '';
@@ -717,7 +717,7 @@ $featuredEvts = array_slice($_evCtrl->listEvenements(), 0, 3);
                  style="height:200px;object-fit:cover;"
                  onerror="this.style.display='none'">
           <?php else: ?>
-            <div style="height:200px;background:linear-gradient(135deg,#fff0f0,#ffe8e8);display:flex;align-items:center;justify-content:center;font-size:3rem;">??</div>
+            <div style="height:200px;background:linear-gradient(135deg,#fff0f0,#ffe8e8);display:flex;align-items:center;justify-content:center;font-size:3rem;">📅</div>
           <?php endif; ?>
           <div class="card-body d-flex flex-column">
             <div class="d-flex gap-2 mb-2 flex-wrap">

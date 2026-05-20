@@ -10,22 +10,20 @@ $nom = '';
 $prenom = '';
 $email = '';
 $role = '';
+$profilePicture = 'default.png';
 
 try {
     $pdo = config::getConnexion();
 
-    // FIRST: if form submitted, deactivate and redirect immediately
+    // FIRST: if form submitted, DELETE user and redirect to signin
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $sqlUpdate = "UPDATE user SET statut = :statut WHERE id = :id";
-        $stmtUpdate = $pdo->prepare($sqlUpdate);
-        $stmtUpdate->execute([
-            'statut' => 'deactivated',
-            'id' => $userId
-        ]);
+        $sqlDelete = "DELETE FROM user WHERE id = :id";
+        $stmtDelete = $pdo->prepare($sqlDelete);
+        $stmtDelete->execute(['id' => $userId]);
 
         session_unset();
         session_destroy();
-        header("Location: ../index.php");
+        header("Location: signin.php");
         exit();
     }
 
@@ -36,10 +34,11 @@ try {
     $user = $stmt->fetch();
 
     if ($user) {
-        $nom = $user['nom'];
-        $prenom = $user['prenom'];
-        $email = $user['email'];
-        $role = $user['role'];
+        $nom            = $user['nom'];
+        $prenom         = $user['prenom'];
+        $email          = $user['email'];
+        $role           = $user['role'];
+        $profilePicture = $user['profile_picture'] ?? 'default.png';
     } else {
         header("Location: ../../index.php");
         exit();
@@ -50,19 +49,28 @@ try {
 ?>
 
 <?php require_once __DIR__ . '/header.php'; ?>
-<link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-<link href="../assets/vendor/aos/aos.css" rel="stylesheet">
 <link href="../assets/css/main.css" rel="stylesheet">
 <style>
         body {
             background: #f8f8f8;
         }
 
+        /* Override main.css global section rules */
+        section.profile-hero,
+        section.profile-wrapper {
+            overflow: visible !important;
+        }
+        section.profile-hero {
+            padding: 55px 0 25px !important;
+        }
+        section.profile-wrapper {
+            padding: 0 0 60px !important;
+        }
+
         .profile-hero {
-            padding: 55px 0 25px;
             background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
             position: relative;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .profile-hero::before {
@@ -113,6 +121,7 @@ try {
             margin-bottom: 60px;
             position: relative;
             z-index: 2;
+            overflow: visible;
         }
 
         .profile-card {
@@ -220,24 +229,6 @@ try {
             word-break: break-word;
         }
 
-        .reason-box {
-            background: #fafafa;
-            border-radius: 18px;
-            padding: 18px 20px;
-            border: 1px solid #f0f0f0;
-            transition: all 0.3s ease;
-        }
-
-        .reason-box textarea {
-            border-radius: 14px;
-            border: 1px solid #ddd;
-            padding: 12px 14px;
-            font-size: 15px;
-            box-shadow: none;
-            resize: none;
-            min-height: 130px;
-        }
-
         .profile-actions {
             margin-top: 30px;
             display: flex;
@@ -285,34 +276,19 @@ try {
         }
 
         @media (max-width: 768px) {
-            .profile-title {
-                font-size: 32px;
-            }
-
-            .profile-card {
-                padding: 28px 20px;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .profile-actions {
-                flex-direction: column;
-            }
-
-            .profile-btn {
-                justify-content: center;
-                width: 100%;
-            }
+            .profile-title { font-size: 32px; }
+            .profile-card { padding: 28px 20px; }
+            .info-grid { grid-template-columns: 1fr; }
+            .profile-actions { flex-direction: column; }
+            .profile-btn { justify-content: center; width: 100%; }
         }
     </style>
 
     <section class="profile-hero text-center">
-        <div class="container" data-aos="fade-up">
-            <h1 class="profile-title">Deactivate Account</h1>
+        <div class="container">
+            <h1 class="profile-title">Delete Account</h1>
             <p class="profile-subtitle">
-                You can temporarily deactivate your account and return to the public homepage.
+                Permanently delete your account and all associated data.
             </p>
             <div class="profile-title-line"></div>
         </div>
@@ -321,13 +297,14 @@ try {
     <section class="profile-wrapper">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-8" data-aos="zoom-in" data-aos-delay="100">
+                <div class="col-lg-8">
                     <div class="profile-card">
 
                         <div class="profile-top">
-                            <div class="profile-avatar">
-                                <?= htmlspecialchars(strtoupper(substr($prenom, 0, 1))) ?>
-                            </div>
+                            <img
+                                src="../assets/img/profiles/<?= htmlspecialchars($profilePicture) ?>"
+                                alt="Profile Picture"
+                                style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 10px 25px rgba(206,18,18,0.25);margin-bottom:18px;">
                             <h2 class="profile-name"><?= htmlspecialchars($prenom . ' ' . $nom) ?></h2>
                             <span class="profile-role"><?= htmlspecialchars($role) ?></span>
                         </div>
@@ -338,7 +315,7 @@ try {
                                 Before you continue
                             </div>
                             <div>
-                                Deactivating your account will temporarily disable your access. You can reactivate your account at any time by logging back in.
+                                This action will <strong>permanently delete</strong> your account and all associated data. This cannot be undone. You will be redirected to the sign in page.
                             </div>
                         </div>
 
@@ -358,8 +335,8 @@ try {
 
                             <div class="profile-actions">
                                 <button type="submit" class="profile-btn btn-confirm-deactivate">
-                                    <i class="bi bi-person-x-fill"></i>
-                                    Confirm Deactivation
+                                    <i class="bi bi-trash3-fill"></i>
+                                    Delete My Account
                                 </button>
                             </div>
 
@@ -374,17 +351,7 @@ try {
                 </div>
             </div>
         </div>
-        </div>
     </section>
-
-    <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/vendor/aos/aos.js"></script>
-    <script>
-        AOS.init({
-            duration: 900,
-            once: true
-        });
-    </script>
 
 </body>
 

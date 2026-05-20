@@ -21,19 +21,6 @@ $activePage = 'repas';
 require_once __DIR__ . '/header.php';
 ?>
 
-<!-- Page Title -->
-<div class="page-title dark-background" data-aos="fade">
-    <div class="container position-relative">
-        <h1><?= htmlspecialchars($repas['nom']) ?></h1>
-        <nav class="breadcrumbs">
-            <ol>
-                <li><a href="home.php">Accueil</a></li>
-                <li><a href="repas.php">Repas</a></li>
-                <li class="current"><?= htmlspecialchars($repas['nom']) ?></li>
-            </ol>
-        </nav>
-    </div>
-</div>
 
 <section class="section">
     <div class="container" data-aos="fade-up">

@@ -210,7 +210,20 @@ foreach ($participations as $p) {
                                     data-statut="<?= htmlspecialchars(strtolower($p->getStatut()), ENT_QUOTES) ?>"
                                     data-event="<?= $p->getIdEvent() ?>">
                                     <td><?= $p->getIdParticipation() ?></td>
-                                    <td><?= htmlspecialchars($p->getNom().' '.$p->getPrenom()) ?></td>
+                                    <td>
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <img src="../../view/assets/img/profiles/<?= htmlspecialchars($p->profilePicture ?? 'default.png') ?>"
+                                                 style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #fde8e8;flex-shrink:0;"
+                                                 onerror="this.src='../../view/assets/img/profiles/default.png'">
+                                            <div>
+                                                <div style="font-weight:600;font-size:13px;"><?= htmlspecialchars($p->getNom().' '.$p->getPrenom()) ?></div>
+                                                <div style="font-size:11px;color:#9a3535;"><?= htmlspecialchars($p->getEmail()) ?></div>
+                                                <?php if (!empty($p->userRole)): ?>
+                                                <span style="font-size:10px;background:#fce8e8;color:#7f1d1d;padding:1px 7px;border-radius:20px;font-weight:600;"><?= htmlspecialchars(ucfirst($p->userRole)) ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td><?= htmlspecialchars($evName) ?></td>
                                     <td><?= htmlspecialchars($p->getDateParticipation()) ?></td>
                                     <td><?= $mLabel ?></td>

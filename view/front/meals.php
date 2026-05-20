@@ -182,7 +182,7 @@ require_once __DIR__ . '/header.php';
             <p class="meal-detail__description" data-meal-detail="description"></p>
           </div>
           <div class="meal-detail__actions">
-            <a class="btn btn-meal-recipe" data-meal-detail="recipe" href="#" target="_blank" rel="noopener noreferrer">Recipe</a>
+            <a class="btn btn-meal-recipe" data-meal-detail="recipe" href="#" rel="noopener noreferrer">Recipe</a>
             <button type="button" class="btn btn-meal-add" data-meal-detail="add" title="Add to plan"><i class="bi bi-plus-lg"></i></button>
           </div>
         </div>
@@ -254,7 +254,7 @@ require_once __DIR__ . '/header.php';
   });
 </script>
 <script src="../assets/js/meals.js?v=<?php echo time(); ?>"></script>
-<script src="meal_notifications.js"></script>
+<script src="../assets/js/meal_notifications.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/meal_notifications.js'); ?>"></script>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
 

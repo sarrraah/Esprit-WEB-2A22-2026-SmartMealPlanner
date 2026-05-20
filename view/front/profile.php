@@ -241,7 +241,7 @@ $requestText = 'Your professional account request is currently being reviewed by
             padding: 55px 0 25px;
             background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
             position: relative;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .profile-hero::before {
@@ -294,6 +294,19 @@ $requestText = 'Your professional account request is currently being reviewed by
             margin-bottom: 60px;
             position: relative;
             z-index: 2;
+            overflow: visible;
+        }
+
+        /* Override main.css global section rules that clip/hide content */
+        section.profile-hero,
+        section.profile-wrapper {
+            overflow: visible !important;
+        }
+        section.profile-hero {
+            padding: 55px 0 25px !important;
+        }
+        section.profile-wrapper {
+            padding: 0 0 60px !important;
         }
 
         .profile-card {
@@ -953,20 +966,20 @@ $requestText = 'Your professional account request is currently being reviewed by
         }
     </style>
 
-    <section class="profile-hero text-center" style="display:block !important; visibility:visible !important; opacity:1 !important;">
-        <div class="container" data-aos="fade-up" style="display:block !important; visibility:visible !important;">
-            <h1 class="profile-title" style="display:block !important; visibility:visible !important;">My Profile</h1>
-            <p class="profile-subtitle" style="display:block !important; visibility:visible !important;">
+    <section class="profile-hero text-center">
+        <div class="container">
+            <h1 class="profile-title">My Profile</h1>
+            <p class="profile-subtitle">
                 View your personal information, manage your account, and keep your profile up to date with ease.
             </p>
-            <div class="profile-title-line" style="display:block !important; visibility:visible !important;"></div>
+            <div class="profile-title-line"></div>
         </div>
     </section>
 
-    <section class="profile-wrapper" style="display:block !important; visibility:visible !important; opacity:1 !important;">
-        <div class="container" style="display:block !important; visibility:visible !important;">
-            <div class="row justify-content-center" style="display:block !important; visibility:visible !important;">
-                <div class="col-lg-8" data-aos="zoom-in" data-aos-delay="100" style="display:block !important; visibility:visible !important;">
+    <section class="profile-wrapper">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
 
                     
                     <?php
@@ -1002,13 +1015,13 @@ $requestText = 'Your professional account request is currently being reviewed by
                         </div>
                     <?php endif; ?>
 
-                    <div class="profile-card" style="display:block !important; visibility:visible !important; opacity:1 !important; background:white !important; padding:20px !important;">
+                    <div class="profile-card">
 
                         
-                        <div class="profile-top" style="display:block !important; visibility:visible !important;">
+                        <div class="profile-top">
                             <div class="profile-photo-wrapper <?= $editMode ? 'drag-drop-zone' : '' ?>" id="profileDropZone">
                                 <img
-                                    src="/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/assets/img/profiles/<?= htmlspecialchars($user['profile_picture'] ?? 'default.png') ?>"
+                                    src="../assets/img/profiles/<?= htmlspecialchars($user['profile_picture'] ?? 'default.png') ?>"
                                     alt="Profile Picture"
                                     class="profile-photo"
                                     id="profilePreview">
@@ -1224,8 +1237,6 @@ $requestText = 'Your professional account request is currently being reviewed by
         </div>
     </section>
 
-    <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/vendor/aos/aos.js"></script>
     <script>
         const profileInput = document.getElementById('profilePictureInput');
         const profilePreview = document.getElementById('profilePreview');
@@ -1302,9 +1313,10 @@ $requestText = 'Your professional account request is currently being reviewed by
         }
     </script>
     <script>
-        AOS.init({
-            duration: 900,
-            once: true
+        // AOS is initialized by main.js (loaded via CDN in footer.php)
+        // Refresh after DOM ready so profile elements animate correctly
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.AOS) { AOS.refresh(); }
         });
 
         const toggleBtn = document.getElementById('toggleReapplyBtn');

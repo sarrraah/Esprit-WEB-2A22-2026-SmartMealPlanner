@@ -115,20 +115,20 @@ require_once __DIR__ . '/header.php';
 .stat-card {
   background: #fff;
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 12px 16px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.06);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 .stat-icon {
-  width: 46px; height: 46px;
-  border-radius: 10px;
+  width: 36px; height: 36px;
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem; flex-shrink: 0;
+  font-size: 1rem; flex-shrink: 0;
 }
-.stat-label { font-size: 0.72rem; color: #999; letter-spacing: 1px; text-transform: uppercase; font-weight: 300; font-family: 'Raleway', sans-serif !important; }
-.stat-value { font-size: 1.9rem; font-weight: 700; color: #2d2d2d; line-height: 1; font-family: 'Raleway', sans-serif !important; }
+.stat-label { font-size: 0.68rem; color: #999; letter-spacing: 1px; text-transform: uppercase; font-weight: 300; font-family: 'Raleway', sans-serif !important; }
+.stat-value { font-size: 1.25rem; font-weight: 700; color: #2d2d2d; line-height: 1; font-family: 'Raleway', sans-serif !important; }
 
 .section-card {
   background: #fff;
@@ -190,8 +190,8 @@ require_once __DIR__ . '/header.php';
 .badge-rupture { background: #fdecea; color: #c62828; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
 .badge-epuise  { background: #f5f5f5; color: #757575; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
 
-.btn-edit   { background: #fff8e1; color: #f57f17; border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; }
-.btn-delete { background: #fdecea; color: #c62828; border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; }
+.btn-edit   { background: #fff8e1; color: #f57f17; border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.btn-delete { background: #fdecea; color: #c62828; border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 .btn-edit:hover   { background: #fff3cd; }
 .btn-delete:hover { background: #ffcdd2; }
 </style>
@@ -305,7 +305,9 @@ require_once __DIR__ . '/header.php';
           <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
             <i class="bi bi-bar-chart-fill" style="color:#1a73e8;"></i> By Category
           </div>
-          <canvas id="chartCategories" height="220"></canvas>
+          <div style="position:relative;height:200px;">
+            <canvas id="chartCategories"></canvas>
+          </div>
         </div>
       </div>
 
@@ -315,7 +317,9 @@ require_once __DIR__ . '/header.php';
           <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
             <i class="bi bi-layers-fill" style="color:#2e7d32;"></i> Stock Level
           </div>
-          <canvas id="chartStock" height="220"></canvas>
+          <div style="position:relative;height:200px;">
+            <canvas id="chartStock"></canvas>
+          </div>
         </div>
       </div>
 
@@ -325,7 +329,9 @@ require_once __DIR__ . '/header.php';
           <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;">
             <i class="bi bi-pie-chart-fill" style="color:#e74c3c;"></i> Status
           </div>
-          <canvas id="chartStatus" height="220" style="max-height:220px;"></canvas>
+          <div style="position:relative;height:200px;">
+            <canvas id="chartStatus"></canvas>
+          </div>
           <div style="margin-top:10px;font-size:0.72rem;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
             <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#28a745;margin-right:4px;"></span>Available (<?= $totalDispo ?>)</span>
             <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e74c3c;margin-right:4px;"></span>Out of stock (<?= $totalRupture ?>)</span>
@@ -357,22 +363,27 @@ require_once __DIR__ . '/header.php';
     type: 'bar',
     data: {
       labels: <?= json_encode(array_keys($catData)) ?>,
-      datasets: [{ data: <?= json_encode(array_values($catData)) ?>, backgroundColor: ['#e74c3c','#1a73e8','#f57f17','#2e7d32','#8e44ad'], borderRadius: 5, borderSkipped: false }]
+      datasets: [{ data: <?= json_encode(array_values($catData)) ?>, backgroundColor: ['#e74c3c','#1a73e8','#f57f17','#2e7d32','#8e44ad'], borderRadius: 5, borderSkipped: false, maxBarThickness: 32 }]
     },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#eee' }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#eee' }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
   });
 
   new Chart(document.getElementById('chartStock'), {
     type: 'bar',
     data: {
       labels: <?= json_encode(array_keys($catStock)) ?>,
-      datasets: [{ data: <?= json_encode(array_values($catStock)) ?>, backgroundColor: ['rgba(231,76,60,0.7)','rgba(26,115,232,0.7)','rgba(245,127,23,0.7)','rgba(46,125,50,0.7)'], borderRadius: 5, borderSkipped: false }]
+      datasets: [{ data: <?= json_encode(array_values($catStock)) ?>, backgroundColor: ['rgba(231,76,60,0.7)','rgba(26,115,232,0.7)','rgba(245,127,23,0.7)','rgba(46,125,50,0.7)'], borderRadius: 5, borderSkipped: false, maxBarThickness: 28 }]
     },
-    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#eee' } }, y: { grid: { display: false } } } }
+    options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#eee' } }, y: { grid: { display: false } } } }
   });
   </script>
 
   <!-- MAIN ROW -->
+  <?php if (isset($_GET['msg'])): ?>
+    <div style="background:<?= $_GET['msg']==='deleted' ? '#fdecea' : '#e8f5e9' ?>;color:<?= $_GET['msg']==='deleted' ? '#c62828' : '#2e7d32' ?>;padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:600;">
+      <?= $_GET['msg']==='deleted' ? '🗑 Product deleted successfully.' : '✅ Operation completed successfully.' ?>
+    </div>
+  <?php endif; ?>
   <div class="row g-3">
 
     <!-- LEFT: Products Table -->
@@ -452,8 +463,9 @@ require_once __DIR__ . '/header.php';
                 <td><?= (int)$p['quantiteStock'] ?></td>
                 <td><span class="<?= $badgeCls ?>"><?= $badgeTxt ?></span></td>
                 <td>
-                  <a href="modifierProduit.php?id=<?= (int)$p['id'] ?>" class="btn-edit"><i class="bi bi-pencil"></i></a>
-                  <a href="supprimerProduit.php?id=<?= (int)$p['id'] ?>" class="btn-delete ms-1"><i class="bi bi-trash"></i></a>
+                  <a href="modifierProduit.php?id=<?= (int)$p['id'] ?>" class="btn-edit">✏️ Edit</a>
+                  <a href="supprimerProduit.php?id=<?= (int)$p['id'] ?>" class="btn-delete ms-1"
+                     onclick="return confirm('Delete this product?')">🗑 Delete</a>
                 </td>
               </tr>
             <?php endforeach; ?>

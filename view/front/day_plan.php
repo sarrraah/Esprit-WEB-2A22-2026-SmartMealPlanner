@@ -635,6 +635,8 @@ require_once __DIR__ . '/header.php';
           btn.style.background = '#2e7d32';
           btn.style.color = '#fff';
           if (!consumedState.includes(mealType)) consumedState.push(mealType);
+          // Show congratulatory toast
+          showConsumedToast(mealType);
         } else {
           btn.textContent = '✔ Mark Consumed';
           btn.style.background = '#e8f5e9';
@@ -644,8 +646,62 @@ require_once __DIR__ . '/header.php';
         updateCharts();
       });
   }
+
+  function showConsumedToast(mealType) {
+    var icons = { breakfast: '☀️', lunch: '🥗', snack: '🍎', dinner: '🍽️' };
+    var labels = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack', dinner: 'Dinner' };
+    var msgs = {
+      breakfast: 'Great start to your day!',
+      lunch:     'Keep up the healthy habits!',
+      snack:     'Smart snacking — well done!',
+      dinner:    'Day complete! Excellent eating today.'
+    };
+    var icon  = icons[mealType]  || '✅';
+    var label = labels[mealType] || mealType;
+    var msg   = msgs[mealType]   || 'Meal logged successfully!';
+
+    var container = document.getElementById('meal-notif-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'meal-notif-container';
+      container.style.cssText = 'position:fixed;top:80px;right:1.5rem;z-index:99999;display:flex;flex-direction:column;gap:.75rem;max-width:320px;';
+      document.body.appendChild(container);
+    }
+
+    var toast = document.createElement('div');
+    toast.style.cssText = [
+      'background:#fff', 'border-radius:14px',
+      'box-shadow:0 8px 32px rgba(0,0,0,.15)',
+      'padding:1rem 1.25rem', 'display:flex',
+      'align-items:flex-start', 'gap:.75rem',
+      'border-left:4px solid #2e7d32',
+      'opacity:0', 'transform:translateX(40px)',
+      'transition:all .35s ease'
+    ].join(';');
+
+    toast.innerHTML =
+      '<span style="font-size:1.8rem;flex-shrink:0;">' + icon + '</span>' +
+      '<div style="flex:1;">' +
+        '<p style="font-weight:700;margin:0 0 .2rem;font-size:.95rem;color:#212529;">' + label + ' logged! ✅</p>' +
+        '<p style="margin:0;font-size:.85rem;color:#666;">' + msg + '</p>' +
+      '</div>' +
+      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:1.1rem;cursor:pointer;padding:0;line-height:1;flex-shrink:0;">✕</button>';
+
+    container.appendChild(toast);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+      });
+    });
+    setTimeout(function () {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(40px)';
+      setTimeout(function () { toast.remove(); }, 350);
+    }, 5000);
+  }
   </script>
-  <script src="meal_notifications.js"></script>
+  <script src="../assets/js/meal_notifications.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/meal_notifications.js'); ?>"></script>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
 

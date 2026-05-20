@@ -75,10 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Redirect based on role
-            if (in_array($user['role'], ['nutritionist', 'coach'], true)) {
-                header("Location: ../../view/back/index.php");
+            if ($user['role'] === 'admin') {
+                header("Location: ../back/users.php");
             } else {
-                // Admin and client roles can access front office
                 header("Location: ../front/home.php");
             }
             exit();

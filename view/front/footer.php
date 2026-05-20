@@ -51,11 +51,10 @@
   </div>
 </footer>
 <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
-<script src="../assets/template/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/template/vendor/aos/aos.js"></script>
-<script src="../assets/template/vendor/glightbox/js/glightbox.min.js"></script>
-<script src="../assets/template/vendor/swiper/swiper-bundle.min.js"></script>
-<script src="../assets/template/vendor/purecounter/purecounter_vanilla.js"></script>
-<script src="../assets/template/js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="../assets/js/main.js"></script>
 </body>
 </html>

@@ -22,7 +22,7 @@ $error = '';
 $recaptchaSiteKey = $_ENV['RECAPTCHA_SITE'];      // optional
 $recaptchaSecretKey = $_ENV['RECAPTCHA_SECRET'];  // required
 
-    function isValidDateFormat($date)
+function isValidDateFormat($date)
 {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
         return false;
@@ -70,7 +70,7 @@ function sendConfirmationEmail($email, $prenom, $token)
 
     try {
 
-        $verifyLink = "http://localhost/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/verify_email.php?token=" . urlencode($token);
+        $verifyLink = "http://localhost:8080/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/front/verify_email.php?token=" . urlencode($token);
 
         $mail->isSMTP();
         $mail->SMTPOptions = [
@@ -238,11 +238,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800&family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
 
-    <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-    <link href="../assets/vendor/aos/aos.css" rel="stylesheet">
-    <link href="../assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
-    <link href="../assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet">
     <link href="../assets/css/main.css" rel="stylesheet">
 
     <style>

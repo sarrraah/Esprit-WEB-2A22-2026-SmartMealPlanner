@@ -516,15 +516,15 @@ require_once __DIR__ . '/header.php';
             $dateLabel = ($dateDebut === $dateFin) ? $dateDebut : "$dateDebut → $dateFin";
             $isFree    = ($e->getPrix() == 0);
             $priceLabel= $isFree ? 'Free' : number_format($e->getPrix(), 2) . ' TND';
-            $imgPath   = $e->getImage() ? '../../uploads/evenements/' . $e->getImage() : null;
+            $imgPath   = ($e->getImage() && trim($e->getImage()) !== '') ? '../assets/img/events/' . $e->getImage() : null;
             $statut    = strtolower($e->getStatut());
             $badgeCls  = match(true) {
-              str_contains($statut, 'actif')  => 'badge-actif',
+              str_contains($statut, 'actif') || str_contains($statut, 'ouvert')  => 'badge-actif',
               str_contains($statut, 'annul')  => 'badge-annule',
               default                         => 'badge-termine',
             };
             $statusLabel = match(true) {
-              str_contains($statut, 'actif')  => 'Active',
+              str_contains($statut, 'actif') || str_contains($statut, 'ouvert')  => 'Active',
               str_contains($statut, 'annul')  => 'Cancelled',
               default                         => 'Ended',
             };
@@ -556,7 +556,7 @@ require_once __DIR__ . '/header.php';
                 <div class="event-meta"><i class="fas fa-map-marker-alt"></i><?= htmlspecialchars($e->getLieu()) ?></div>
                 <div class="event-meta"><i class="fas fa-users"></i><?= $e->getCapaciteMax() ?> max seats</div>
                 <div class="event-price"><?= $priceLabel ?></div>
-                <?php if (str_contains($statut, 'actif')): ?>
+                <?php if (str_contains($statut, 'actif') || str_contains($statut, 'ouvert')): ?>
                   <button class="btn-register"
                           onclick="event.stopPropagation(); window.location='detailEvent.php?id=<?= $e->getIdEvent() ?>'">
                     <i class="fas fa-ticket-alt me-1"></i> Register Now
@@ -1052,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 (function () {
-  var CHATBOT_URL = '/projet_nutriplanner/view/back/chatbot.php';
+  var CHATBOT_URL = '../back/chatbot.php';
   var history     = [];
   var isOpen      = false;
   var isTyping    = false;
@@ -1175,7 +1175,7 @@ const events = <?= json_encode(array_map(function($e) {
     'prix'        => (float)$e->getPrix(),
     'statut'      => $e->getStatut(),
     'type'        => $e->getType(),
-    'image'       => $e->getImage() ? '../../uploads/evenements/' . $e->getImage() : null,
+    'image'       => ($e->getImage() && trim($e->getImage()) !== '') ? '../assets/img/events/' . $e->getImage() : null,
   ];
 }, $evenements), JSON_UNESCAPED_UNICODE) ?>;
 
@@ -1244,7 +1244,7 @@ function initLikes() {
       var liked = btn.dataset.liked === 'true';
       var action = liked ? 'unlike' : 'like';
 
-      fetch('/projet_nutriplanner/view/back/likeEvenement.php', {
+      fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/back/likeEvenement.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_event: id, action: action })
@@ -1315,7 +1315,7 @@ function setReactionCounts(id, counts) {
 async function loadCommentaires(id) {
   var list = document.getElementById('comments-' + id);
   if (!list) return;
-  var res = await fetch('/projet_nutriplanner/view/back/getCommentaires.php?id_event=' + encodeURIComponent(id) + '&page=1&limit=6', { headers: { 'Accept':'application/json' }});
+  var res = await fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/back/getCommentaires.php?id_event=' + encodeURIComponent(id) + '&page=1&limit=6', { headers: { 'Accept':'application/json' }});
   var data = await res.json();
 
   // Update comment count badge
@@ -1330,7 +1330,7 @@ async function loadCommentaires(id) {
 }
 
 async function loadReactions(id) {
-  var res = await fetch('/projet_nutriplanner/view/back/getReactions.php?id_event=' + encodeURIComponent(id), { headers: { 'Accept':'application/json' }});
+  var res = await fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/back/getReactions.php?id_event=' + encodeURIComponent(id), { headers: { 'Accept':'application/json' }});
   var data = await res.json();
   if (data && data.counts) setReactionCounts(id, data.counts);
 }
@@ -1375,7 +1375,7 @@ function initCommentsReactions() {
       var reacted = btn.classList.contains('reacted');
       try { localStorage.setItem(key, reacted ? 'false' : 'true'); } catch (e2) {}
 
-      var res = await fetch('/projet_nutriplanner/view/back/addReaction.php', {
+      var res = await fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/back/addReaction.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_event: id, type: type, session_id: sessionId })
@@ -1409,7 +1409,7 @@ function initCommentsReactions() {
       if (contenu.length < 3) { errEl.textContent = 'Le commentaire doit contenir au moins 3 caractères.'; errEl.classList.add('show'); return; }
       if (contenu.length > 500) { errEl.textContent = 'Le commentaire ne doit pas dépasser 500 caractères.'; errEl.classList.add('show'); return; }
 
-      var res = await fetch('/projet_nutriplanner/view/back/addCommentaire.php', {
+      var res = await fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/back/addCommentaire.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_event: id, auteur: auteur, contenu: contenu })
@@ -1449,7 +1449,7 @@ async function loadAllCommentCounts() {
   badges.forEach(async function(badge) {
     var id = badge.id.replace('ccount-', '');
     try {
-      var res  = await fetch('/projet_nutriplanner/view/back/getCommentaires.php?id_event=' + encodeURIComponent(id) + '&page=1&limit=1', { headers: { 'Accept': 'application/json' } });
+      var res  = await fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/back/getCommentaires.php?id_event=' + encodeURIComponent(id) + '&page=1&limit=1', { headers: { 'Accept': 'application/json' } });
       var data = await res.json();
       if (data && typeof data.total !== 'undefined') {
         badge.textContent = data.total;
@@ -1464,7 +1464,7 @@ async function loadAllReactionTotals() {
   spans.forEach(async function(span) {
     var id = span.id.replace('rtotal-', '');
     try {
-      var res  = await fetch('/projet_nutriplanner/view/back/getReactions.php?id_event=' + encodeURIComponent(id), { headers: { 'Accept': 'application/json' } });
+      var res  = await fetch('/integration/Esprit-WEB-2A22-2025-2026-SmartMealPlanner/view/back/getReactions.php?id_event=' + encodeURIComponent(id), { headers: { 'Accept': 'application/json' } });
       var data = await res.json();
       if (data && data.counts) {
         var total = Object.values(data.counts).reduce(function(a, b) { return a + b; }, 0);

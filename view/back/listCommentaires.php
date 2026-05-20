@@ -6,7 +6,7 @@ $pdo = Database::getConnection();
 // Handle delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     $id = (int)$_POST['delete_id'];
-    $pdo->prepare("DELETE FROM commentaire_event WHERE id = ?")->execute([$id]);
+    $pdo->prepare("DELETE FROM commentaire WHERE id_commentaire = ?")->execute([$id]);
     header('Location: listCommentaires.php?deleted=1');
     exit;
 }
@@ -15,17 +15,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 $id_event_filter = (int)($_GET['id_event'] ?? 0);
 if ($id_event_filter) {
     $stmt = $pdo->prepare(
-        "SELECT c.*, e.titre FROM commentaire_event c
+        "SELECT c.id_commentaire AS id, c.auteur, c.contenu, c.date_commentaire AS created_at, e.titre
+         FROM commentaire c
          JOIN evenement e ON e.id_event = c.id_event
          WHERE c.id_event = ?
-         ORDER BY c.created_at DESC"
+         ORDER BY c.date_commentaire DESC"
     );
     $stmt->execute([$id_event_filter]);
 } else {
     $stmt = $pdo->query(
-        "SELECT c.*, e.titre FROM commentaire_event c
+        "SELECT c.id_commentaire AS id, c.auteur, c.contenu, c.date_commentaire AS created_at, e.titre
+         FROM commentaire c
          JOIN evenement e ON e.id_event = c.id_event
-         ORDER BY c.created_at DESC"
+         ORDER BY c.date_commentaire DESC"
     );
 }
 $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);

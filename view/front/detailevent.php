@@ -13,17 +13,19 @@ $_hUserId = $_SESSION['user_id'] ?? '';
 $_hEmail  = '';
 $_hNom    = '';
 $_hPrenom = '';
+$_hPicture = 'default.png';
 if ($_hUserId !== '') {
   try {
     require_once __DIR__ . '/../../config.php';
     $pdo  = config::getConnexion();
-    $stmt = $pdo->prepare("SELECT email, nom, prenom FROM user WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT email, nom, prenom, profile_picture FROM user WHERE id = :id");
     $stmt->execute(['id' => $_hUserId]);
     $u = $stmt->fetch();
     if ($u) {
-      $_hEmail  = $u['email']  ?? '';
-      $_hNom    = $u['nom']    ?? '';
-      $_hPrenom = $u['prenom'] ?? '';
+      $_hEmail   = $u['email']           ?? '';
+      $_hNom     = $u['nom']             ?? '';
+      $_hPrenom  = $u['prenom']          ?? '';
+      $_hPicture = $u['profile_picture'] ?? 'default.png';
     }
   } catch (Exception $ex) {}
 }
@@ -42,20 +44,20 @@ $statusLabels = ['actif' => 'Active', 'annulé' => 'Cancelled', 'terminé' => 'E
 $tc            = $typeConfig[$e->getType()] ?? $typeConfig['Autre'];
 $isFree        = ($e->getPrix() == 0);
 $statut        = strtolower($e->getStatut());
-$isActif       = str_contains($statut, 'actif');
-$isComplet     = str_contains($statut, 'complet');
-$statusDisplay = $statusLabels[$statut] ?? ucfirst($statut);
+$isActif       = str_contains($statut, 'actif') || str_contains($statut, 'ouvert') || str_contains($statut, 'open');
+$isComplet     = str_contains($statut, 'complet') || str_contains($statut, 'full');
+$statusDisplay = $statusLabels[$statut] ?? ucfirst($e->getStatut());
 $dateDebut     = date('m/d/Y', strtotime($e->getDateDebut()));
 $dateFin       = date('m/d/Y', strtotime($e->getDateFin()));
 $dateLabel     = ($dateDebut === $dateFin) ? $dateDebut : "$dateDebut → $dateFin";
 $heureDebut    = date('H:i', strtotime($e->getDateDebut()));
 $heureFin      = date('H:i', strtotime($e->getDateFin()));
 $badgeClass    = match(true) {
-    str_contains($statut, 'actif')  => 's-actif',
+    $isActif                        => 's-actif',
     str_contains($statut, 'termin') => 's-termine',
     default                         => 's-complet',
 };
-$imgPath  = $e->getImage() ? '../../uploads/evenements/' . $e->getImage() : null;
+$imgPath  = ($e->getImage() && trim($e->getImage()) !== '') ? '../assets/img/events/' . $e->getImage() : null;
 
 $tous     = $ctrl->listEvenements();
 $suggests = array_filter($tous, fn($ev) => $ev->getType() === $e->getType() && $ev->getIdEvent() !== $e->getIdEvent());
@@ -73,11 +75,19 @@ $suggests = array_slice($suggests, 0, 3);
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#fff5f5;color:#1a0505;min-height:100vh}
 
-nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:600;color:#1a0505;text-decoration:none}.logo span{color:#b91c1c}
-.nav-links{display:flex;gap:28px}
-.nav-links a{font-size:14px;color:#9a3535;text-decoration:none;font-weight:500;transition:color .2s}
-.nav-links a:hover{color:#b91c1c}
+nav{background:#fff;border-bottom:1px solid #f0f0f0;padding:0 1.5rem;display:flex;align-items:center;height:64px;position:sticky;top:0;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.06);gap:0}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;width:220px}
+.logo img{height:40px;width:auto}
+.logo-text{font-size:1.15rem;font-weight:700;color:#2d2d2d;white-space:nowrap}
+.logo-text span{color:#ce1212}
+.nav-links{display:flex;align-items:center;list-style:none;margin:0;padding:0;flex:1;justify-content:center;gap:0}
+.nav-links a{display:block;font-size:15px;font-weight:600;color:#7f7f90;text-decoration:none;white-space:nowrap;padding:4px 14px 6px;position:relative;transition:color .2s}
+.nav-links a::after{content:'';position:absolute;bottom:0;left:14px;right:14px;height:2px;background:#ce1212;transform:scaleX(0);transition:transform .25s ease}
+.nav-links a:hover{color:#ce1212}
+.nav-links a:hover::after,.nav-links a.active{color:#ce1212}
+.nav-links a.active::after,.nav-links a:hover::after{transform:scaleX(1)}
+.back-link{display:flex;align-items:center;gap:6px;font-size:.78rem;color:#ce1212;text-decoration:none;font-weight:600;white-space:nowrap;padding:5px 14px;border:1.5px solid #ce1212;border-radius:20px;transition:.2s}
+.back-link:hover{background:#ce1212;color:#fff}
 .back-link{display:flex;align-items:center;gap:6px;font-size:13px;color:#9a3535;text-decoration:none;font-weight:500}
 .back-link:hover{color:#b91c1c}
 
@@ -302,13 +312,32 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 <body>
 
 <nav>
-  <a href="interfaceevent.php" class="logo">Event <span>Management</span></a>
+  <a href="home.php" class="logo">
+    <img src="../assets/img/logo-smp.jpg" alt="SmartMealPlanner">
+    <span class="logo-text">Smart<span>Meal</span>Planner</span>
+  </a>
   <div class="nav-links">
-    <a href="interfaceevent.php">Events</a>
-    <a href="#about">About</a>
-    <a href="#contact">Contact</a>
+    <a href="home.php">Home</a>
+    <a href="interfaceevent.php" class="active">Events</a>
+    <a href="produits.php">Shop</a>
+    <a href="Meals.php">Meals</a>
+    <a href="Plans.php">My Plan</a>
+    <a href="repas.php">Recipes</a>
+    <a href="#footer">Contact</a>
   </div>
-  <a href="interfaceevent.php" class="back-link">← Back to events</a>
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;width:220px;justify-content:flex-end;">
+    <?php if ($_hUserId !== ''): ?>
+      <a href="profile.php" style="display:flex;align-items:center;gap:7px;text-decoration:none;">
+        <img src="../assets/img/profiles/<?= htmlspecialchars($_hPicture ?? 'default.png') ?>"
+             style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #fde8e8;" alt="">
+        <span style="font-size:.8rem;font-weight:600;color:#2d2d2d;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= htmlspecialchars(trim($_hPrenom . ' ' . $_hNom) ?: 'User') ?></span>
+      </a>
+      <a href="logout.php" style="padding:5px 14px;border:1.5px solid #ce1212;border-radius:20px;color:#ce1212;font-weight:600;font-size:.78rem;text-decoration:none;transition:.2s;" onmouseover="this.style.background='#ce1212';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#ce1212'">Logout</a>
+    <?php else: ?>
+      <a href="signin.php" style="padding:6px 16px;border:2px solid #ce1212;border-radius:20px;color:#ce1212;font-weight:600;font-size:.85rem;text-decoration:none;">Sign In</a>
+    <?php endif; ?>
+    <a href="interfaceevent.php" class="back-link">← Back</a>
+  </div>
 </nav>
 
 <div class="hero">
@@ -503,7 +532,9 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 (function () {
   var ID_EVENT = <?= (int)$e->getIdEvent() ?>;
   var REACTION_TYPES = ['❤️','😂','😮','😢','👏','🔥'];
-  var BASE = '<?= (isset($_SERVER["HTTPS"])?"https":"http")."://".$_SERVER["HTTP_HOST"]."/projet_nutriplanner/view/back/"; ?>';
+  var CURRENT_USER_ID = <?= (int)($_SESSION['user_id'] ?? 0) ?>;
+  var IS_ADMIN = <?= (strtolower($_SESSION['role'] ?? $_SESSION['user_role'] ?? '') === 'admin') ? 'true' : 'false' ?>;
+  var BASE = '<?= (isset($_SERVER["HTTPS"])?"https":"http")."://".$_SERVER["HTTP_HOST"].rtrim(str_replace("\\","/",str_replace(str_replace("\\","/",realpath($_SERVER["DOCUMENT_ROOT"])),"",str_replace("\\","/",realpath(__DIR__."/../../")))),"/")."/view/back/"; ?>';
 
   function ensureSessionId() {
     try {
@@ -527,7 +558,10 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
 
     var myComments = [];
     try { myComments = JSON.parse(localStorage.getItem('my_comments_' + ID_EVENT) || '[]'); } catch(e) {}
-    var isMine = myComments.indexOf(parseInt(c.id)) !== -1;
+    // Show delete if: comment is in localStorage OR belongs to logged-in user OR user is admin
+    var isMine = myComments.indexOf(parseInt(c.id)) !== -1
+              || (CURRENT_USER_ID && c.id_user && parseInt(c.id_user) === parseInt(CURRENT_USER_ID))
+              || IS_ADMIN;
 
     return `
       <div class="comment-item fade-in" data-id="${escapeHtml(c.id)}">
@@ -610,9 +644,15 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
   }
 
   async function loadReactions() {
-    var res = await fetch(BASE + 'getReactions.php?id_event=' + encodeURIComponent(ID_EVENT), { headers: { 'Accept':'application/json' }});
+    var res = await fetch(BASE + 'getReactions.php?id_event=' + encodeURIComponent(ID_EVENT) + '&session_id=' + encodeURIComponent(sessionId), { headers: { 'Accept':'application/json' }});
     var data = await res.json();
     if (data && data.counts) setReactionCounts(data.counts);
+    // Restore which emoji this session reacted with
+    if (data && data.my_reaction) {
+      document.querySelectorAll('.reaction-btn').forEach(function(btn) {
+        btn.classList.toggle('reacted', btn.dataset.type === data.my_reaction);
+      });
+    }
   }
 
   function showErr(msg) {
@@ -692,22 +732,15 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       }
       grid.innerHTML = data.map(function(ev) {
         var prix  = ev.prix == 0 ? 'Gratuit' : parseFloat(ev.prix).toFixed(2) + ' TND';
-        var date  = new Date(ev.date_debut).toLocaleDateString('fr-FR');
-        var img   = ev.image ? '../../uploads/evenements/' + ev.image : null;
-        var stars = '';
-        if (ev.avg_stars > 0) {
-          for (var i = 1; i <= 5; i++) stars += i <= Math.round(ev.avg_stars) ? '⭐' : '☆';
-          stars += ' (' + ev.avg_stars + ')';
-        }
+        var img   = ev.image || null;
         var banner = img
-          ? '<img src="' + img + '" alt="">'
+          ? '<img src="' + img + '" alt="" style="width:100%;height:100%;object-fit:cover;">'
           : '<span style="font-size:28px;opacity:.3">📅</span>';
-        return '<a class="reco-card" href="detailEvent.php?id=' + ev.id_event + '">'
+        return '<a class="reco-card" href="detailEvent.php?id=' + ev.id + '">'
           + '<div class="reco-banner" style="background:#fce8e8">' + banner + '</div>'
           + '<div class="reco-body">'
           + '<div class="reco-title">' + ev.titre.replace(/</g,'&lt;') + '</div>'
-          + '<div class="reco-meta">📅 ' + date + ' · ' + prix + '</div>'
-          + (stars ? '<div class="reco-stars">' + stars + '</div>' : '')
+          + '<div class="reco-meta">📅 ' + ev.date + ' · ' + prix + '</div>'
           + '</div></a>';
       }).join('');
     } catch(e) {
@@ -812,18 +845,22 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
         body: JSON.stringify({ id: commentId, id_event: ID_EVENT })
       });
       var data = await res.json();
-      if (data && data.success) {
+      if (data && (data.success || data.ok)) {
+        // Remove from localStorage tracking
+        try {
+          var myComments = JSON.parse(localStorage.getItem('my_comments_' + ID_EVENT) || '[]');
+          myComments = myComments.filter(function(x) { return x !== parseInt(commentId); });
+          localStorage.setItem('my_comments_' + ID_EVENT, JSON.stringify(myComments));
+        } catch(e) {}
+        // Animate out then reload list live
         var el = document.querySelector('.comment-item[data-id="' + commentId + '"]');
         if (el) {
-          el.style.transition = 'opacity .2s';
+          el.style.transition = 'opacity .2s, transform .2s';
           el.style.opacity = '0';
-          setTimeout(function () {
-            el.remove();
-            var list = document.getElementById('comments');
-            if (list && list.querySelectorAll('.comment-item').length === 0) {
-              list.innerHTML = '<div class="comment-empty">Aucun commentaire pour linstant.</div>';
-            }
-          }, 200);
+          el.style.transform = 'translateX(20px)';
+          setTimeout(function() { loadCommentaires(currentPage); }, 220);
+        } else {
+          loadCommentaires(currentPage);
         }
       } else {
         alert((data && data.error) ? data.error : 'Erreur lors de la suppression.');
@@ -849,21 +886,23 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
         var type = btn.dataset.type;
         if (!REACTION_TYPES.includes(type)) return;
 
-        var key = 'reacted_' + ID_EVENT + '_' + type;
-        var reacted = btn.classList.contains('reacted');
-        try { localStorage.setItem(key, reacted ? 'false' : 'true'); } catch (e2) {}
-
         var res = await fetch(BASE + 'addReaction.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id_event: ID_EVENT, type: type, session_id: sessionId })
         });
         var data = await res.json();
-        if (data && data.success && data.counts) {
-          btn.classList.toggle('reacted', !reacted);
-          setReactionCounts(data.counts);
-        } else {
-          try { localStorage.setItem(key, reacted ? 'true' : 'false'); } catch (e3) {}
+        if (data && data.success) {
+          // Update counts
+          setReactionCounts(data.counts || {});
+          // Update active state: clear all, then set the one returned
+          document.querySelectorAll('.reaction-btn').forEach(function(b) {
+            b.classList.remove('reacted');
+          });
+          if (data.my_reaction) {
+            var activeBtn = document.querySelector('.reaction-btn[data-type="' + data.my_reaction + '"]');
+            if (activeBtn) activeBtn.classList.add('reacted');
+          }
         }
       });
     });
@@ -1171,7 +1210,8 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
   var ID_EVENT   = <?= (int)$e->getIdEvent() ?>;
   var PRIX       = <?= (float)$e->getPrix() ?>;
   var IS_FREE    = <?= $isFree ? 'true' : 'false' ?>;
-  var BASE_URL   = '/projet_nutriplanner/view/back/';
+  var BASE_URL      = '<?= rtrim(str_replace("\\","/",str_replace(str_replace("\\","/",realpath($_SERVER["DOCUMENT_ROOT"])),"",str_replace("\\","/",realpath(__DIR__."/../../")))),"/")."/view/back/"; ?>';
+  var BASE_URL_FRONT= '<?= rtrim(str_replace("\\","/",str_replace(str_replace("\\","/",realpath($_SERVER["DOCUMENT_ROOT"])),"",str_replace("\\","/",realpath(__DIR__."/../../")))),"/")."/view/front/"; ?>';
   var promoDiscount = 0;
   var promoCode     = '';
 
@@ -1311,12 +1351,24 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       }
 
       // Send invoice & save
-      var invRes  = await fetch(BASE_URL + 'send_invoice.php', {
+      var eventTitle = <?= json_encode($e->getTitre()) ?>;
+      var invRes  = await fetch(BASE_URL_FRONT + 'send_invoice.php', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          id_event: ID_EVENT, prenom: prenom, nom: nom,
-          email: email, telephone: tel, places: places,
-          mode_paiement: mode, promo_code: promoCode
+          prenom: prenom,
+          nom: nom,
+          email: email,
+          phone: tel,
+          method: mode === 'especes' ? 'Espèces' : 'Carte bancaire',
+          items: [{
+            nom: eventTitle + (places > 1 ? ' × ' + places : ''),
+            prix: PRIX,
+            quantite: places
+          }],
+          total: Math.max(0, PRIX * places - promoDiscount),
+          user_id: <?= (int)($_SESSION['user_id'] ?? 0) ?>,
+          id_event: ID_EVENT,
+          promo_code: promoCode
         })
       });
       var invData = await invRes.json();
@@ -1324,7 +1376,8 @@ nav{background:#fff;border-bottom:1.5px solid #f7c1c1;padding:0 32px;display:fle
       if (invData.success) {
         document.getElementById('form-state').style.display   = 'none';
         document.getElementById('success-state').style.display = 'block';
-        document.getElementById('s-res-num').textContent = invData.reservation_num;
+        var resNum = invData.order || invData.reservation_num || '—';
+        document.getElementById('s-res-num').textContent = resNum;
         document.getElementById('s-email').textContent   = email;
         // Save email for Goals & Rewards
         try { localStorage.setItem('smp_user_email', email); } catch(e) {}
